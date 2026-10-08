@@ -34,6 +34,7 @@ FAIL  cf 64 KB           [Transfer] TransferStalled  4210 мс
 dotnet build
 dotnet run --project tests/Tropa.SelfTest
 dotnet run --project src/Tropa.Cli -- --only youtube,discord
+dotnet run --project src/Tropa.Tray      # окно: проверка запускается сама
 ```
 
 Тесты поднимают локальный сервер, который изображает каждый способ блокировки,

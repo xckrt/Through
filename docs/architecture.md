@@ -30,7 +30,7 @@
 | **Fetcher** | Скачивает zapret из официальных релизов, сверяет SHA-256 | |
 | **Watchdog** | Раз в N минут лёгкий Prober; при деградации запускает Tuner | |
 | **Service** | Windows-служба: держит всё выше, переживает перезагрузку | |
-| **Tray** | UI. Без прав администратора, только говорит со службой | |
+| **Tray** | UI. Без прав администратора, только говорит со службой | окно диагностики готово; пока зовёт Core напрямую, службы нет |
 
 ## Почему Prober устроен по этапам
 
@@ -107,4 +107,5 @@ fake-файлы берутся из скачанного релиза. `tropa-pr
 dotnet build
 dotnet run --project tests/Tropa.SelfTest      # тесты: локальный «злой» сервер
 dotnet run --project src/Tropa.Cli -- --only youtube,discord
+dotnet run --project src/Tropa.Tray
 ```

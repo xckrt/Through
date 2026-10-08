@@ -1,0 +1,198 @@
+<Window x:Class="Tropa.Tray.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:local="clr-namespace:Tropa.Tray"
+        Title="Тропа" Width="1060" Height="760" MinWidth="900" MinHeight="560"
+        WindowStartupLocation="CenterScreen"
+        Background="{StaticResource Paper}" Foreground="{StaticResource Ink}"
+        FontFamily="{StaticResource Body}" FontSize="14" UseLayoutRounding="True">
+
+    <Window.Resources>
+        <Style x:Key="VerdictText" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{StaticResource InkSoft}" />
+            <Style.Triggers>
+                <!-- целая зелёная тропа говорит «работает» сама, слово в каждой строке лишнее -->
+                <DataTrigger Binding="{Binding State}" Value="Ok">
+                    <Setter Property="Visibility" Value="Hidden" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding State}" Value="Throttled">
+                    <Setter Property="Foreground" Value="{StaticResource Amber}" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+
+        <Style x:Key="SummaryText" TargetType="TextBlock">
+            <Setter Property="FontFamily" Value="{StaticResource Display}" />
+            <Setter Property="FontSize" Value="15" />
+            <Setter Property="Foreground" Value="{StaticResource InkSoft}" />
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding Health}" Value="Ok">
+                    <Setter Property="Foreground" Value="{StaticResource Pine}" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Health}" Value="Blocked">
+                    <Setter Property="Foreground" Value="{StaticResource Signal}" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Health}" Value="Slow">
+                    <Setter Property="Foreground" Value="{StaticResource Amber}" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+
+        <DataTemplate x:Key="TargetRow" DataType="{x:Type local:TargetVm}">
+            <Grid Height="30">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="{StaticResource NameColumn}" />
+                    <ColumnDefinition Width="{StaticResource TrailColumn}" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="{StaticResource MetricColumn}" />
+                </Grid.ColumnDefinitions>
+                <TextBlock Text="{Binding Name}" Foreground="{StaticResource InkSoft}" VerticalAlignment="Center"
+                           TextTrimming="CharacterEllipsis" />
+                <local:TrailView Grid.Column="1" State="{Binding State}" StopAt="{Binding StopAt}" VerticalAlignment="Center"
+                                 AutomationProperties.Name="{Binding Verdict}" />
+                <TextBlock Grid.Column="2" Text="{Binding Verdict}" Style="{StaticResource VerdictText}"
+                           Margin="20,0,8,0" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                <TextBlock Grid.Column="3" Text="{Binding Metric}" Foreground="{StaticResource InkSoft}"
+                           FontFamily="{StaticResource DisplayNarrow}" Typography.NumeralAlignment="Tabular"
+                           HorizontalAlignment="Right" VerticalAlignment="Center" />
+            </Grid>
+        </DataTemplate>
+
+        <DataTemplate x:Key="ServiceBlock" DataType="{x:Type local:ServiceVm}">
+            <StackPanel>
+                <ToggleButton IsChecked="{Binding IsExpanded}" Style="{StaticResource RowToggle}"
+                              AutomationProperties.Name="{Binding Title}"
+                              AutomationProperties.HelpText="{Binding Summary}">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="{StaticResource NameColumn}" />
+                            <ColumnDefinition Width="{StaticResource TrailColumn}" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="{StaticResource MetricColumn}" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="{Binding Title}" FontFamily="{StaticResource Display}" FontSize="21"
+                                   FontWeight="SemiBold" VerticalAlignment="Center" />
+                        <TextBlock Grid.Column="2" Text="{Binding Summary}" Style="{StaticResource SummaryText}"
+                                   Margin="20,0,0,0" VerticalAlignment="Center" />
+                        <TextBlock x:Name="Chevron" Grid.Column="3" Text="&#xE70D;" FontFamily="{StaticResource Icons}"
+                                   FontSize="12" Foreground="{StaticResource InkSoft}"
+                                   HorizontalAlignment="Right" VerticalAlignment="Center" RenderTransformOrigin="0.5,0.5" />
+                    </Grid>
+                </ToggleButton>
+
+                <ItemsControl ItemsSource="{Binding Targets}" ItemTemplate="{StaticResource TargetRow}" Focusable="False" />
+
+                <StackPanel Visibility="{Binding IsExpanded, Converter={StaticResource Visible}}" Margin="0,10,0,4">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="{StaticResource NameColumn}" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Grid.Column="1" MaxWidth="640" HorizontalAlignment="Left">
+                            <TextBlock Text="{Binding PlanHeading}" TextWrapping="Wrap" Margin="0,0,0,6"
+                                       Visibility="{Binding HasPlanHeading, Converter={StaticResource Visible}}" />
+                            <ItemsControl ItemsSource="{Binding PlanItems}" Focusable="False" Margin="0,0,0,10">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <DockPanel Margin="0,2">
+                                            <Rectangle Width="10" Height="2.5" Fill="{StaticResource Pine}" Margin="0,0,10,0"
+                                                       VerticalAlignment="Center" RadiusX="1" RadiusY="1" />
+                                            <TextBlock Text="{Binding}" TextWrapping="Wrap" />
+                                        </DockPanel>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                            <ItemsControl ItemsSource="{Binding Technical}" Focusable="False">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <TextBox Text="{Binding Mode=OneWay}" IsReadOnly="True" BorderThickness="0"
+                                                 Background="Transparent" Foreground="{StaticResource InkSoft}" FontSize="12"
+                                                 TextWrapping="Wrap" Padding="0" Margin="0,1" />
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+                    </Grid>
+                </StackPanel>
+
+                <Rectangle Height="1" Fill="{StaticResource Line}" Margin="0,14,0,14" />
+            </StackPanel>
+            <DataTemplate.Triggers>
+                <DataTrigger Binding="{Binding IsExpanded}" Value="True">
+                    <Setter TargetName="Chevron" Property="RenderTransform">
+                        <Setter.Value>
+                            <RotateTransform Angle="180" />
+                        </Setter.Value>
+                    </Setter>
+                </DataTrigger>
+            </DataTemplate.Triggers>
+        </DataTemplate>
+    </Window.Resources>
+
+    <Grid Margin="48,30,48,26">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <!-- Шапка: метка тропы, название, вывод одной фразой -->
+        <StackPanel>
+            <StackPanel Orientation="Horizontal">
+                <Border BorderBrush="{StaticResource Ink}" BorderThickness="1" CornerRadius="1.5" Width="14" Height="18"
+                        VerticalAlignment="Center" ToolTip="Туристическая метка: тропа размечена">
+                    <UniformGrid Rows="3">
+                        <Rectangle Fill="White" />
+                        <Rectangle Fill="{StaticResource Signal}" />
+                        <Rectangle Fill="White" />
+                    </UniformGrid>
+                </Border>
+                <TextBlock Text="Тропа" FontFamily="{StaticResource Display}" FontSize="17" FontWeight="SemiBold"
+                           Margin="10,0,0,0" VerticalAlignment="Center" />
+            </StackPanel>
+            <TextBlock Text="{Binding Headline}" FontFamily="{StaticResource Display}" FontSize="36" FontWeight="SemiBold"
+                       TextWrapping="Wrap" Margin="0,22,0,6" />
+            <TextBlock Text="{Binding Subline}" FontSize="15.5" Foreground="{StaticResource InkSoft}"
+                       TextWrapping="Wrap" MaxWidth="680" HorizontalAlignment="Left" LineHeight="23" />
+        </StackPanel>
+
+        <!-- Подписи этапов стоят ровно над отметками троп -->
+        <Grid Grid.Row="1" Margin="0,30,0,8">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="{StaticResource NameColumn}" />
+                <ColumnDefinition Width="{StaticResource TrailColumn}" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <UniformGrid Grid.Column="1" Columns="5" TextElement.Foreground="{StaticResource InkSoft}"
+                         TextElement.FontFamily="{StaticResource DisplayNarrow}" TextElement.FontSize="12.5">
+                <TextBlock Text="DNS" HorizontalAlignment="Center" ToolTip="Поиск адреса сайта" />
+                <TextBlock Text="TCP" HorizontalAlignment="Center" ToolTip="Подключение к серверу" />
+                <TextBlock Text="TLS" HorizontalAlignment="Center" ToolTip="Защищённое соединение: здесь DPI видит имя сайта" />
+                <TextBlock Text="HTTP" HorizontalAlignment="Center" ToolTip="Запрос и ответ сервера" />
+                <TextBlock Text="передача" HorizontalAlignment="Center" ToolTip="Загрузка данных" />
+            </UniformGrid>
+        </Grid>
+
+        <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto" Focusable="False" Padding="10,0" Margin="-10,0">
+            <ItemsControl ItemsSource="{Binding Services}" ItemTemplate="{StaticResource ServiceBlock}" Focusable="False" />
+        </ScrollViewer>
+
+        <!-- Действия -->
+        <DockPanel Grid.Row="3" Margin="0,14,0,0" LastChildFill="True">
+            <Button DockPanel.Dock="Right" Content="{Binding CheckLabel}" Command="{Binding CheckCommand}"
+                    Style="{StaticResource PrimaryButton}" IsDefault="True" />
+            <Button DockPanel.Dock="Right" Content="Подобрать обход" IsEnabled="False" Margin="0,0,10,0"
+                    Style="{StaticResource QuietButton}"
+                    Visibility="{Binding CanTune, Converter={StaticResource Visible}}" />
+            <Button DockPanel.Dock="Right" Content="{Binding CopyLabel}" Command="{Binding CopyCommand}" Margin="0,0,10,0"
+                    Style="{StaticResource QuietButton}" />
+            <StackPanel VerticalAlignment="Center">
+                <TextBlock Text="{Binding CheckedAt}" Foreground="{StaticResource InkSoft}" FontSize="12.5" />
+                <TextBlock Text="Подбор обхода появится, когда Тропа научится сама запускать winws. Пока она только диагностирует."
+                           Foreground="{StaticResource InkSoft}" FontSize="12.5" TextWrapping="Wrap" Margin="0,2,16,0"
+                           Visibility="{Binding CanTune, Converter={StaticResource Visible}}" />
+            </StackPanel>
+        </DockPanel>
+    </Grid>
+</Window>
