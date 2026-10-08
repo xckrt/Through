@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\Tropa.Core\Tropa.Core.csproj" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AssemblyName>tropa-probe</AssemblyName>
+    <RootNamespace>Tropa.Cli</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Update="targets.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+</Project>

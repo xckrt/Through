@@ -1,0 +1,23 @@
+{
+  // Контрольные хосты: если лежат все, значит нет сети, а не блокировка.
+  "services": {
+    "control": [
+      { "name": "ya.ru", "host": "ya.ru", "isControl": true },
+      { "name": "vk.com", "host": "vk.com", "isControl": true }
+    ],
+    "youtube": [
+      { "name": "youtube web", "host": "www.youtube.com", "path": "/generate_204" },
+      { "name": "youtube video", "host": "redirector.googlevideo.com" },
+      { "name": "youtube img", "host": "i.ytimg.com" }
+    ],
+    "discord": [
+      { "name": "discord api", "host": "discord.com", "path": "/api/v9/gateway" },
+      { "name": "discord gateway", "host": "gateway.discord.gg" },
+      { "name": "discord cdn", "host": "cdn.discordapp.com" }
+    ],
+    // Канарейка «заморозки 16 КБ»: качаем 64 КБ с Cloudflare.
+    "cloudflare": [
+      { "name": "cf 64 KB", "host": "speed.cloudflare.com", "path": "/__down?bytes=65536", "minBytes": 65536 }
+    ]
+  }
+}
