@@ -22,6 +22,7 @@ public sealed record ServicePlan(
 
 public sealed record TuneAttempt
 {
+    public required string Service { get; init; }
     public required StrategyPreset Preset { get; init; }
     public TuneScore Score { get; init; }
     /// <summary>Худший из прогонов по каждой цели сервиса.</summary>
@@ -76,7 +77,8 @@ public sealed class Tuner(IEngineHost engine, ProbeOptions? options = null, int 
         TargetCatalog targets,
         PresetCatalog presets,
         IEnumerable<string>? only = null,
-        CancellationToken ct = default)
+        CancellationToken ct = default,
+        IProgress<TuneAttempt>? progress = null)
     {
         var selected = only?.ToArray();
         var diagnosis = await _diagnose.RunAsync(targets.Select(selected), ct);
@@ -87,7 +89,7 @@ public sealed class Tuner(IEngineHost engine, ProbeOptions? options = null, int 
         foreach (var plan in Plan(targets, selected, diagnosis, presets))
         {
             services.Add(plan.Status == PlanStatus.NeedsTuning
-                ? await TuneServiceAsync(plan, targets, ct)
+                ? await TuneServiceAsync(plan, targets, progress, ct)
                 : new ServiceTune { Plan = plan });
         }
         return new TuneReport { Diagnosis = diagnosis, Services = services };
@@ -128,7 +130,8 @@ public sealed class Tuner(IEngineHost engine, ProbeOptions? options = null, int 
         r.Failure is Failure.TcpTimeout or Failure.TcpRefused or Failure.TcpUnreachable
         || (r.Failure is Failure.TlsReset or Failure.TlsTimeout && r.SniFiltered == false);
 
-    private async Task<ServiceTune> TuneServiceAsync(ServicePlan plan, TargetCatalog targets, CancellationToken ct)
+    private async Task<ServiceTune> TuneServiceAsync(
+        ServicePlan plan, TargetCatalog targets, IProgress<TuneAttempt>? progress, CancellationToken ct)
     {
         var serviceTargets = targets.Services[plan.Service].Where(t => !t.IsControl).ToList();
         // контрольные гоняем вместе с сервисом: если сеть пропала посреди подбора, пресет не виноват
@@ -142,8 +145,9 @@ public sealed class Tuner(IEngineHost engine, ProbeOptions? options = null, int 
 
         foreach (var preset in plan.Candidates)
         {
-            var attempt = await AttemptAsync(new EngineLaunch(preset, hosts, ports), probeTargets, ct);
+            var attempt = await AttemptAsync(plan.Service, new EngineLaunch(preset, hosts, ports), probeTargets, ct);
             attempts.Add(attempt);
+            progress?.Report(attempt);
             if (attempt.Error is not null) continue;
 
             // строго лучше: при равенстве остаётся более дешёвый, он встретился раньше
@@ -154,7 +158,8 @@ public sealed class Tuner(IEngineHost engine, ProbeOptions? options = null, int 
         return new ServiceTune { Plan = plan, Attempts = attempts, Best = best };
     }
 
-    private async Task<TuneAttempt> AttemptAsync(EngineLaunch launch, List<ProbeTarget> probeTargets, CancellationToken ct)
+    private async Task<TuneAttempt> AttemptAsync(
+        string service, EngineLaunch launch, List<ProbeTarget> probeTargets, CancellationToken ct)
     {
         IEngineSession session;
         try
@@ -163,7 +168,7 @@ public sealed class Tuner(IEngineHost engine, ProbeOptions? options = null, int 
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
-            return new TuneAttempt { Preset = launch.Preset, Error = ex.Message };
+            return new TuneAttempt { Service = service, Preset = launch.Preset, Error = ex.Message };
         }
 
         var runs = new List<IReadOnlyList<ProbeResult>>();
@@ -177,6 +182,6 @@ public sealed class Tuner(IEngineHost engine, ProbeOptions? options = null, int 
             .Where(i => !probeTargets[i].IsControl)
             .Select(i => runs.Select(run => run[i]).MinBy(TuneScore.Rank)!)
             .ToList();
-        return new TuneAttempt { Preset = launch.Preset, Score = TuneScore.Of(worst), Results = worst };
+        return new TuneAttempt { Service = service, Preset = launch.Preset, Score = TuneScore.Of(worst), Results = worst };
     }
 }

@@ -7,6 +7,9 @@ using Tropa.SelfTest;
 // Каждый тест поднимает локальный сервер, изображающий конкретный способ блокировки,
 // и проверяет, что пробник распознал его правильно.
 
+if (args is [EngineTests.FakeWinwsFlag, var mode, ..])
+    return await EngineTests.FakeWinwsAsync(mode, args[2..]);
+
 var opts = new ProbeOptions
 {
     Resolver = (_, _) => Task.FromResult(new[] { IPAddress.Loopback }),
@@ -175,6 +178,7 @@ var tests = new List<(string, Func<Task>)>
 };
 
 tests.AddRange(TunerTests.All(opts));
+tests.AddRange(EngineTests.All());
 
 var failed = 0;
 foreach (var (name, body) in tests)

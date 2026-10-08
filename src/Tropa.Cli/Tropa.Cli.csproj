@@ -2,6 +2,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Tropa.Core\Tropa.Core.csproj" />
+    <ProjectReference Include="..\Tropa.Engine\Tropa.Engine.csproj" />
   </ItemGroup>
 
   <PropertyGroup>
@@ -16,6 +17,7 @@
   <ItemGroup>
     <None Update="targets.json" CopyToOutputDirectory="PreserveNewest" />
     <None Update="presets.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Update="engine.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>

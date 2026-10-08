@@ -4,7 +4,7 @@ using System.Text.Json.Serialization;
 using Tropa.Core.Probing;
 using Tropa.Core.Tuning;
 
-// tropa-probe [--targets targets.json] [--only youtube,discord] [--json] [--plan [--presets presets.json]]
+// tropa-probe [--targets targets.json] [--only youtube,discord] [--json] [--plan | --tune] [--presets presets.json]
 Console.OutputEncoding = Encoding.UTF8;
 
 string targetsPath = Path.Combine(AppContext.BaseDirectory, "targets.json");
@@ -12,6 +12,7 @@ string presetsPath = Path.Combine(AppContext.BaseDirectory, "presets.json");
 string[]? only = null;
 var json = false;
 var plan = false;
+var tune = false;
 
 for (var i = 0; i < args.Length; i++)
 {
@@ -21,10 +22,12 @@ for (var i = 0; i < args.Length; i++)
         case "--only": only = args[++i].Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries); break;
         case "--json": json = true; break;
         case "--plan": plan = true; break;
+        case "--tune": tune = true; break;
         case "--presets": presetsPath = args[++i]; break;
         case "-h" or "--help":
-            Console.WriteLine("tropa-probe [--targets targets.json] [--only youtube,discord] [--json] [--plan [--presets presets.json]]");
+            Console.WriteLine("tropa-probe [--targets targets.json] [--only youtube,discord] [--json] [--plan | --tune] [--presets presets.json]");
             Console.WriteLine("  --plan  показать, какие стратегии подборщик стал бы пробовать (ничего не запускает)");
+            Console.WriteLine("  --tune  скачать zapret по engine.json и подобрать стратегию (нужны права администратора)");
             return 0;
         default:
             Console.Error.WriteLine($"неизвестный аргумент: {args[i]}");
@@ -36,6 +39,9 @@ var catalog = TargetCatalog.Load(targetsPath);
 var runner = new ProbeRunner(new ServiceProber());
 using var cts = new CancellationTokenSource();
 Console.CancelKeyPress += (_, e) => { e.Cancel = true; cts.Cancel(); };
+
+if (tune)
+    return await TuneCommand.RunAsync(catalog, presetsPath, only, cts.Token);
 
 var results = await runner.RunAsync(catalog.Select(only), cts.Token);
 IReadOnlyList<ServicePlan>? plans = null;
