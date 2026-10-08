@@ -4,6 +4,10 @@
     <ProjectReference Include="..\..\src\Tropa.Core\Tropa.Core.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Include="..\..\src\Tropa.Cli\presets.json" Link="presets.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>net8.0</TargetFramework>

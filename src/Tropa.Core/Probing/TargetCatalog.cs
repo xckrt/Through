@@ -1,6 +1,3 @@
-using System.Text.Json;
-using System.Text.Json.Serialization;
-
 namespace Tropa.Core.Probing;
 
 /// <summary>Набор целей, сгруппированных по сервисам. Хранится в JSON, правится без пересборки.</summary>
@@ -18,15 +15,5 @@ public sealed record TargetCatalog
                       .Concat(All.Where(t => t.IsControl))
                       .Distinct();
 
-    private static readonly JsonSerializerOptions Json = new()
-    {
-        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-        ReadCommentHandling = JsonCommentHandling.Skip,
-        AllowTrailingCommas = true,
-        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
-    };
-
-    public static TargetCatalog Load(string path) =>
-        JsonSerializer.Deserialize<TargetCatalog>(File.ReadAllText(path), Json)
-        ?? throw new InvalidDataException($"пустой каталог: {path}");
+    public static TargetCatalog Load(string path) => TropaJson.Load<TargetCatalog>(path);
 }

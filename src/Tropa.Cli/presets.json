@@ -1,0 +1,70 @@
+{
+  // Стратегии winws для подбора. treats: какие диагнозы пробника пресет лечит, cost: порядок перебора.
+  // Подстановки: {ports} и {hostlist} сужают обработку до сервиса, {engineDir} указывает на папку
+  // распакованного релиза zapret (fake-файлы берутся оттуда, в репозитории их нет).
+  // Аргументы ещё не проверены на реальном winws: сверить, когда появится EngineHost.
+  "presets": [
+    {
+      "id": "split2",
+      "name": "разрезать ClientHello на два сегмента",
+      "treats": ["TlsReset", "TlsTimeout"],
+      "cost": 1,
+      "args": ["--wf-tcp={ports}", "--filter-tcp={ports}", "--hostlist={hostlist}",
+               "--dpi-desync=split2", "--dpi-desync-split-pos=1"]
+    },
+    {
+      "id": "fake-autottl",
+      "name": "подложный ClientHello с TTL до DPI",
+      "treats": ["TlsReset", "TlsTimeout"],
+      "cost": 1,
+      "args": ["--wf-tcp={ports}", "--filter-tcp={ports}", "--hostlist={hostlist}",
+               "--dpi-desync=fake", "--dpi-desync-autottl=2",
+               "--dpi-desync-fake-tls={engineDir}/files/fake/tls_clienthello_www_google_com.bin"]
+    },
+    {
+      "id": "multisplit-sniext",
+      "name": "разрез посреди SNI с перекрытием",
+      "treats": ["TlsReset", "TlsTimeout"],
+      "cost": 2,
+      "args": ["--wf-tcp={ports}", "--filter-tcp={ports}", "--hostlist={hostlist}",
+               "--dpi-desync=multisplit", "--dpi-desync-split-pos=1,sniext+1", "--dpi-desync-split-seqovl=1"]
+    },
+    {
+      "id": "fake-ttl4",
+      "name": "подложный ClientHello с низким TTL",
+      "treats": ["TlsTimeout"],
+      "cost": 2,
+      "args": ["--wf-tcp={ports}", "--filter-tcp={ports}", "--hostlist={hostlist}",
+               "--dpi-desync=fake", "--dpi-desync-ttl=4",
+               "--dpi-desync-fake-tls={engineDir}/files/fake/tls_clienthello_www_google_com.bin"]
+    },
+    {
+      "id": "fake-multidisorder-md5sig",
+      "name": "подложный пакет + перестановка сегментов, md5sig",
+      "treats": ["TlsReset", "TlsTimeout", "TransferStalled"],
+      "cost": 3,
+      "args": ["--wf-tcp={ports}", "--filter-tcp={ports}", "--hostlist={hostlist}",
+               "--dpi-desync=fake,multidisorder", "--dpi-desync-split-pos=1,midsld",
+               "--dpi-desync-repeats=11", "--dpi-desync-fooling=md5sig",
+               "--dpi-desync-fake-tls={engineDir}/files/fake/tls_clienthello_www_google_com.bin"]
+    },
+    {
+      "id": "fake-multisplit-badseq",
+      "name": "десинхронизация на весь поток против остановки на ~16 КБ",
+      "treats": ["TransferStalled", "TransferReset"],
+      "cost": 3,
+      "args": ["--wf-tcp={ports}", "--filter-tcp={ports}", "--hostlist={hostlist}",
+               "--dpi-desync=fake,multisplit", "--dpi-desync-split-pos=1",
+               "--dpi-desync-fooling=badseq", "--dpi-desync-repeats=6", "--dpi-desync-any-protocol"]
+    },
+    {
+      "id": "fake-split-repeats",
+      "name": "против замедления: подложные пакеты с повторами",
+      "treats": ["Slow", "TransferStalled"],
+      "cost": 4,
+      "args": ["--wf-tcp={ports}", "--filter-tcp={ports}", "--hostlist={hostlist}",
+               "--dpi-desync=fake,split2", "--dpi-desync-repeats=6", "--dpi-desync-autottl=2",
+               "--dpi-desync-fake-tls={engineDir}/files/fake/tls_clienthello_www_google_com.bin"]
+    }
+  ]
+}

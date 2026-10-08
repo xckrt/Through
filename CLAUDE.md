@@ -17,22 +17,23 @@ dotnet run --project src/Tropa.Cli -- --only youtube,discord   # real probe (nee
 dotnet run --project src/Tropa.Cli -- --json --targets path/to/targets.json
 ```
 
-- Tests are **not** xUnit/NUnit. `tests/Tropa.SelfTest/Program.cs` is a plain console runner over a `List<(name, Func<Task>)>`. It exits 1 on any failure. `dotnet test` does nothing useful and there is no filter flag, so to run one test, temporarily narrow the list. Add a test by appending a tuple to that list.
+- Tests are **not** xUnit/NUnit. `tests/Tropa.SelfTest/Program.cs` is a plain console runner over a `List<(name, Func<Task>)>`, and Tuner tests are appended from `TunerTests.All(opts)`. It exits 1 on any failure. `dotnet test` does nothing useful and there is no filter flag, so to run one test, temporarily narrow the list. Add a test by appending a tuple to that list.
 - CLI exit codes: 0 if every target is OK, 1 otherwise, 2 for a bad argument. The built binary is `tropa-probe`.
 
 ## Architecture
 
-- **`Tropa.Core`**: platform-neutral, no Windows dependencies (Prober and models now, Tuner planned). Keep Windows-only code (service, WinDivert/winws hosting, WPF tray) out of it.
+- **`Tropa.Core`**: platform-neutral, no Windows dependencies (Prober, Tuner, models). Keep Windows-only code (service, WinDivert/winws hosting, WPF tray) out of it.
   - `ServiceProber.ProbeAsync` runs one target through the stages via a private `Run` helper that tracks the current stage and timings. Each stage maps exceptions/timeouts to a `Failure` with `run.Fail(...)`. A result is a `ProbeResult` with `Verdict` (Ok/Throttled/Blocked/Inconclusive) + `Failure` + `FailedAt` stage + a human-readable `Detail`.
   - A transfer that stalls inside `FreezeWindowMin..FreezeWindowMax` (8–32 KB of body) gets tagged as the TSPU "16 КБ" signature in `Detail`. Tests assert on that substring.
   - `ProbeRunner` probes targets in parallel (default 4). If **all** `IsControl` targets fail, every non-OK result is rewritten to `Inconclusive` (no network, so it isn't a block).
   - `TargetCatalog` loads `targets.json`: services → target lists, camelCase, comments and trailing commas allowed. `Select(only)` always adds the control targets.
   - `ProbeOptions` holds all the knobs. `Resolver`, `AllowPrivateAddresses` and `ValidateCertificate=false` exist so tests can run against loopback.
   - When TLS fails (`TlsReset`/`TlsTimeout`), the prober reconnects to the same IP with `ProbeOptions.NeutralSni` (`ya.ru`) and sets `ProbeResult.SniFiltered`: `true` means the filtering is by name, `false` means all TLS to that IP is dead.
-- **`Tropa.Cli`**: thin arg parsing + text/JSON output over Core. `targets.json` is copied to the output directory and can be edited without rebuilding.
-- **`Tropa.SelfTest`**: `FakeServer` stands up a local TLS server that mimics each blocking behavior (RST after ClientHello, silence, a stalled body, a 451 or block-page redirect). Each test checks that the prober reports the expected `Verdict/Failure/Stage`. No internet needed.
+  - `Tuning/`: `Tuner` diagnoses without bypass, then for each service tries only the `presets.json` presets whose `Treats` matches the diagnosis, ordered by `Cost`. Each preset is probed twice and the worst result per target counts (`TuneScore`). It stops early when every target is OK and skips services blocked by IP (`PlanStatus.NotTreatable`). The engine is behind `IEngineHost`/`IEngineSession`. No real winws host exists yet; it belongs in a Windows-specific project, not Core. `TuningProfile` is `profile.json`.
+- **`Tropa.Cli`**: thin arg parsing + text/JSON output over Core. `--plan` prints the Tuner's candidate list without starting an engine. `targets.json` and `presets.json` are copied to the output directory and can be edited without rebuilding. SelfTest links `presets.json` and validates it.
+- **`Tropa.SelfTest`**: `TunerTests.cs` uses `FakeEngineHost`. While a preset is "running", `FakeServer.SniFilter(..., bypassed: engine.AllowConnection)` lets connections through when `passes(presetId, connectionNo)` returns true, which also covers flaky presets. `FakeServer` stands up a local TLS server that mimics each blocking behavior (RST after ClientHello, silence, a stalled body, a 451 or block-page redirect). Each test checks that the prober reports the expected `Verdict/Failure/Stage`. No internet needed.
 
-The `Failure` → strategy mapping table in `docs/architecture.md` drives the design: the planned Tuner tries the `winws` presets that treat the diagnosed failure first, instead of brute-forcing all of them. When you add a `Failure` value, update that table.
+The `Failure` → strategy mapping table in `docs/architecture.md` drives the design: Tuner tries the `winws` presets that treat the diagnosed failure first, instead of brute-forcing all of them. When you add a `Failure` value, update that table and the `treats` lists in `presets.json`.
 
 ## Conventions
 

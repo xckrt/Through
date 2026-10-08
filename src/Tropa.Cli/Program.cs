@@ -2,13 +2,16 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Tropa.Core.Probing;
+using Tropa.Core.Tuning;
 
-// tropa-probe [--targets targets.json] [--only youtube,discord] [--json]
+// tropa-probe [--targets targets.json] [--only youtube,discord] [--json] [--plan [--presets presets.json]]
 Console.OutputEncoding = Encoding.UTF8;
 
 string targetsPath = Path.Combine(AppContext.BaseDirectory, "targets.json");
+string presetsPath = Path.Combine(AppContext.BaseDirectory, "presets.json");
 string[]? only = null;
 var json = false;
+var plan = false;
 
 for (var i = 0; i < args.Length; i++)
 {
@@ -17,8 +20,11 @@ for (var i = 0; i < args.Length; i++)
         case "--targets": targetsPath = args[++i]; break;
         case "--only": only = args[++i].Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries); break;
         case "--json": json = true; break;
+        case "--plan": plan = true; break;
+        case "--presets": presetsPath = args[++i]; break;
         case "-h" or "--help":
-            Console.WriteLine("tropa-probe [--targets targets.json] [--only youtube,discord] [--json]");
+            Console.WriteLine("tropa-probe [--targets targets.json] [--only youtube,discord] [--json] [--plan [--presets presets.json]]");
+            Console.WriteLine("  --plan  показать, какие стратегии подборщик стал бы пробовать (ничего не запускает)");
             return 0;
         default:
             Console.Error.WriteLine($"неизвестный аргумент: {args[i]}");
@@ -32,16 +38,35 @@ using var cts = new CancellationTokenSource();
 Console.CancelKeyPress += (_, e) => { e.Cancel = true; cts.Cancel(); };
 
 var results = await runner.RunAsync(catalog.Select(only), cts.Token);
+IReadOnlyList<ServicePlan>? plans = null;
+if (plan)
+{
+    plans = ProbeRunner.IsNetworkDown(results)
+        ? []
+        : Tuner.Plan(catalog, only, results, PresetCatalog.Load(presetsPath));
+}
 
 if (json)
 {
-    Console.WriteLine(JsonSerializer.Serialize(results.Select(r => new
+    var rows = results.Select(r => new
     {
         r.Target.Name, r.Target.Host,
         Verdict = r.Verdict.ToString(), Failure = r.Failure.ToString(), FailedAt = r.FailedAt?.ToString(),
         Address = r.Address?.ToString(), r.SniFiltered, r.HttpStatus, r.BodyBytes, r.Kbps,
         ElapsedMs = (int)r.Elapsed.TotalMilliseconds, r.Detail,
-    }), new JsonSerializerOptions
+    });
+    // без --plan формат прежний (массив), с --plan объект с результатами и планом
+    object payload = plans is null ? rows : new
+    {
+        Results = rows,
+        Plan = plans.Select(p => new
+        {
+            p.Service, Status = p.Status.ToString(),
+            Diagnosis = p.Diagnosis.Where(r => !r.IsOk).Select(r => r.Failure.ToString()).Distinct(),
+            Candidates = p.Candidates.Select(c => c.Id),
+        }),
+    };
+    Console.WriteLine(JsonSerializer.Serialize(payload, new JsonSerializerOptions
     {
         WriteIndented = true,
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
@@ -72,6 +97,27 @@ else
             Console.WriteLine($"      {r.Detail}");
             Console.ResetColor();
         }
+    }
+}
+
+if (plans is not null && !json)
+{
+    Console.WriteLine();
+    if (ProbeRunner.IsNetworkDown(results))
+        Console.WriteLine("План подбора: нет сети, подбирать нечего");
+    else
+        Console.WriteLine("План подбора:");
+    foreach (var p in plans)
+    {
+        var failures = string.Join(", ", p.Diagnosis.Where(r => !r.IsOk).Select(r => r.Failure).Distinct());
+        var what = p.Status switch
+        {
+            PlanStatus.Ok => "работает без обхода",
+            PlanStatus.NotTreatable => $"{failures}: режут по адресу, настройка DPI-обработки не поможет",
+            PlanStatus.NoCandidates => $"{failures}: нет подходящих стратегий",
+            _ => $"{failures} → {string.Join(", ", p.Candidates.Select(c => c.Id))}",
+        };
+        Console.WriteLine($"  {p.Service,-12} {what}");
     }
 }
 

@@ -54,11 +54,12 @@ internal sealed class FakeServer : IAsyncDisposable
     /// <summary>
     /// DPI с фильтром по имени: подсматривает ClientHello (SNI идёт открытым текстом),
     /// на blockedHost молчит или шлёт RST, на любое другое имя поднимает TLS.
+    /// bypassed: «обход включён», соединение пропускается, как будто DPI обманули.
     /// </summary>
-    public static FakeServer SniFilter(string blockedHost, bool reset) => new(async (s, ct) =>
+    public static FakeServer SniFilter(string blockedHost, bool reset, Func<bool>? bypassed = null) => new(async (s, ct) =>
     {
         var hello = await PeekClientHelloAsync(s, ct);
-        if (hello.AsSpan().IndexOf(Encoding.ASCII.GetBytes(blockedHost)) < 0)
+        if (hello.AsSpan().IndexOf(Encoding.ASCII.GetBytes(blockedHost)) < 0 || bypassed?.Invoke() == true)
         {
             await using var ssl = new SslStream(new NetworkStream(s, ownsSocket: false));
             await ssl.AuthenticateAsServerAsync(new SslServerAuthenticationOptions { ServerCertificate = Cert.Value }, ct);

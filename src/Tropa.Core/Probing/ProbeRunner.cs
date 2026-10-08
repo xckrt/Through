@@ -21,9 +21,7 @@ public sealed class ProbeRunner(ServiceProber prober, int parallelism = 4)
             finally { gate.Release(); }
         }));
 
-        var controls = results.Where(r => r.Target.IsControl).ToList();
-        var networkDown = controls.Count > 0 && controls.All(r => !r.IsOk);
-        if (!networkDown) return results;
+        if (!IsNetworkDown(results)) return results;
 
         return results
             .Select(r => r.IsOk ? r : r with
@@ -32,5 +30,12 @@ public sealed class ProbeRunner(ServiceProber prober, int parallelism = 4)
                 Detail = $"контрольные хосты недоступны, похоже на проблему сети. {r.Detail}",
             })
             .ToArray();
+    }
+
+    /// <summary>Контрольные хосты были и все упали: нет сети, диагнозам верить нельзя.</summary>
+    public static bool IsNetworkDown(IEnumerable<ProbeResult> results)
+    {
+        var controls = results.Where(r => r.Target.IsControl).ToList();
+        return controls.Count > 0 && controls.All(r => !r.IsOk);
     }
 }

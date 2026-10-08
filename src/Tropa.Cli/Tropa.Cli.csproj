@@ -15,6 +15,7 @@
 
   <ItemGroup>
     <None Update="targets.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Update="presets.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>
