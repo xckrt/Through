@@ -51,6 +51,44 @@ internal sealed class FakeServer : IAsyncDisposable
         await Task.Delay(Timeout.Infinite, ct);
     });
 
+    /// <summary>
+    /// DPI с фильтром по имени: подсматривает ClientHello (SNI идёт открытым текстом),
+    /// на blockedHost молчит или шлёт RST, на любое другое имя поднимает TLS.
+    /// </summary>
+    public static FakeServer SniFilter(string blockedHost, bool reset) => new(async (s, ct) =>
+    {
+        var hello = await PeekClientHelloAsync(s, ct);
+        if (hello.AsSpan().IndexOf(Encoding.ASCII.GetBytes(blockedHost)) < 0)
+        {
+            await using var ssl = new SslStream(new NetworkStream(s, ownsSocket: false));
+            await ssl.AuthenticateAsServerAsync(new SslServerAuthenticationOptions { ServerCertificate = Cert.Value }, ct);
+            await ReadRequestAsync(ssl, ct);
+            await WriteAsync(ssl, "HTTP/1.1 204 No Content\r\n\r\n", ct);
+            return;
+        }
+        if (reset)
+        {
+            s.LingerState = new LingerOption(true, 0);
+            s.Close();
+            return;
+        }
+        await Task.Delay(Timeout.Infinite, ct);
+    });
+
+    /// <summary>Ждёт TLS-запись с ClientHello целиком, не забирая её из сокета.</summary>
+    private static async Task<byte[]> PeekClientHelloAsync(Socket s, CancellationToken ct)
+    {
+        var buf = new byte[16 * 1024];
+        while (true)
+        {
+            var n = await s.ReceiveAsync(buf, SocketFlags.Peek, ct);
+            if (n == 0) return [];
+            var need = n >= 5 ? 5 + (buf[3] << 8 | buf[4]) : int.MaxValue;
+            if (n >= need || n == buf.Length) return buf[..n];
+            await Task.Delay(10, ct);
+        }
+    }
+
     /// <summary>Нормальный TLS + HTTP, поведение ответа задаёт respond.</summary>
     public static FakeServer Https(Func<Stream, CancellationToken, Task> respond) => new(async (s, ct) =>
     {

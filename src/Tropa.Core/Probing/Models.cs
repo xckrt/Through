@@ -75,6 +75,11 @@ public sealed record ProbeResult
     public double? Kbps { get; init; }
     public TimeSpan Elapsed { get; init; }
     public string? Detail { get; init; }
+
+    /// <summary>Только при провале TLS: true, если тот же IP отвечает на нейтральный SNI (режут по SNI),
+    /// false, если молчит или рвёт и на него (глушат TLS на адресе), null, если не проверяли.</summary>
+    public bool? SniFiltered { get; init; }
+
     public IReadOnlyList<StageTiming> Timings { get; init; } = [];
 
     public bool IsOk => Verdict == Verdict.Ok;

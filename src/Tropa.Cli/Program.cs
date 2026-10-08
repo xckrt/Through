@@ -39,7 +39,7 @@ if (json)
     {
         r.Target.Name, r.Target.Host,
         Verdict = r.Verdict.ToString(), Failure = r.Failure.ToString(), FailedAt = r.FailedAt?.ToString(),
-        Address = r.Address?.ToString(), r.HttpStatus, r.BodyBytes, r.Kbps,
+        Address = r.Address?.ToString(), r.SniFiltered, r.HttpStatus, r.BodyBytes, r.Kbps,
         ElapsedMs = (int)r.Elapsed.TotalMilliseconds, r.Detail,
     }), new JsonSerializerOptions
     {

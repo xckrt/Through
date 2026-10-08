@@ -121,7 +121,8 @@ public sealed class ServiceProber(ProbeOptions? options = null)
         }
         catch (OperationCanceledException) when (!ct.IsCancellationRequested)
         {
-            return run.Fail(Failure.TlsTimeout, "ClientHello ушёл, ServerHello не пришёл");
+            run.SniFiltered = await NeutralSniAnswersAsync(run.Address!, t.Port, ct);
+            return run.Fail(Failure.TlsTimeout, "ClientHello ушёл, ServerHello не пришёл" + SniVerdict(run.SniFiltered));
         }
         catch (AuthenticationException ex) when (certErrors != SslPolicyErrors.None)
         {
@@ -129,7 +130,8 @@ public sealed class ServiceProber(ProbeOptions? options = null)
         }
         catch (Exception ex) when (IsReset(ex, out var how))
         {
-            return run.Fail(Failure.TlsReset, $"{how} во время рукопожатия: похоже на фильтр по SNI");
+            run.SniFiltered = await NeutralSniAnswersAsync(run.Address!, t.Port, ct);
+            return run.Fail(Failure.TlsReset, $"{how} во время рукопожатия" + SniVerdict(run.SniFiltered));
         }
 
         // ---- HTTP
@@ -228,6 +230,64 @@ public sealed class ServiceProber(ProbeOptions? options = null)
             return (0, Failure.TransferReset);
         }
     }
+
+    /// <summary>
+    /// Новое соединение на тот же IP и порт, рукопожатие с нейтральным SNI, любой сертификат.
+    /// true: сервер ответил (рукопожатие или TLS-alert), значит режут по имени.
+    /// false: таймаут или RST и тут, значит глушат TLS на адресе.
+    /// null: проверка выключена или не удалось даже подключиться.
+    /// </summary>
+    private async Task<bool?> NeutralSniAnswersAsync(IPAddress addr, int port, CancellationToken ct)
+    {
+        if (_o.NeutralSni is not { } sni) return null;
+
+        using var s = new Socket(addr.AddressFamily, SocketType.Stream, ProtocolType.Tcp) { NoDelay = true };
+        try
+        {
+            using var cts = Stage(ct, _o.ConnectTimeout);
+            await s.ConnectAsync(new IPEndPoint(addr, port), cts.Token);
+        }
+        catch (Exception ex) when (ex is SocketException || (ex is OperationCanceledException && !ct.IsCancellationRequested))
+        {
+            return null;
+        }
+
+        await using var ssl = new SslStream(new NetworkStream(s, ownsSocket: false), leaveInnerStreamOpen: false);
+        try
+        {
+            using var cts = Stage(ct, _o.TlsTimeout);
+            await ssl.AuthenticateAsClientAsync(new SslClientAuthenticationOptions
+            {
+                TargetHost = sni,
+                RemoteCertificateValidationCallback = (_, _, _, _) => true,
+            }, cts.Token);
+            return true;
+        }
+        catch (OperationCanceledException) when (!ct.IsCancellationRequested)
+        {
+            return false;
+        }
+        catch (AuthenticationException)
+        {
+            return true; // TLS-alert: сервер живой, просто не любит этот SNI
+        }
+        catch (Exception ex) when (IsReset(ex, out _))
+        {
+            return false;
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            return null; // непонятный сбой проверки не должен ломать основной диагноз
+        }
+    }
+
+    private string SniVerdict(bool? sniFiltered) => sniFiltered switch
+    {
+        true => $"; с SNI {_o.NeutralSni} тот же IP отвечает: фильтр по SNI",
+        false => $"; с SNI {_o.NeutralSni} тоже нет ответа: глушат весь TLS на этом IP",
+        null when _o.NeutralSni is not null => "; проверить с нейтральным SNI не удалось",
+        null => "",
+    };
 
     // ---------- helpers
 
@@ -340,6 +400,7 @@ public sealed class ServiceProber(ProbeOptions? options = null)
         public int? HttpStatus;
         public long BodyBytes;
         public double? Kbps;
+        public bool? SniFiltered;
 
         public void Enter(ProbeStage stage)
         {
@@ -379,6 +440,7 @@ public sealed class ServiceProber(ProbeOptions? options = null)
                 Kbps = Kbps,
                 Elapsed = clock.Elapsed,
                 Detail = detail,
+                SniFiltered = SniFiltered,
                 Timings = _timings.ToArray(),
             };
         }

@@ -30,6 +30,10 @@ public sealed record ProbeOptions
     /// <summary>Только для тестов против самоподписанного сервера.</summary>
     public bool ValidateCertificate { get; init; } = true;
 
+    /// <summary>SNI для повторного рукопожатия на тот же IP при провале TLS: отличает фильтр по SNI
+    /// от глушения всего TLS на адресе. null = не проверять.</summary>
+    public string? NeutralSni { get; init; } = "ya.ru";
+
     /// <summary>Подмена резолвера (тесты, DoH). По умолчанию системный DNS.</summary>
     public HostResolver? Resolver { get; init; }
 

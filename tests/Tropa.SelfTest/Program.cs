@@ -12,7 +12,8 @@ var opts = new ProbeOptions
     Resolver = (_, _) => Task.FromResult(new[] { IPAddress.Loopback }),
     AllowPrivateAddresses = true,
     ValidateCertificate = false,
-    ConnectTimeout = TimeSpan.FromSeconds(2),
+    // Windows на RST повторяет SYN, и отказ на закрытый порт приходит только через ~2 с
+    ConnectTimeout = TimeSpan.FromSeconds(5),
     TlsTimeout = TimeSpan.FromSeconds(1),
     ReadIdleTimeout = TimeSpan.FromSeconds(1),
 };
@@ -27,6 +28,7 @@ var tests = new List<(string, Func<Task>)>
         await using var srv = FakeServer.ResetAfterClientHello();
         var r = await prober.ProbeAsync(T(srv.Port));
         Expect(r, Verdict.Blocked, Failure.TlsReset, ProbeStage.Tls);
+        Assert(r.SniFiltered == false, $"RST на любой SNI, SniFiltered={r.SniFiltered}");
     }),
 
     ("тишина после ClientHello → TlsTimeout", async () =>
@@ -34,6 +36,47 @@ var tests = new List<(string, Func<Task>)>
         await using var srv = FakeServer.SilentAfterClientHello();
         var r = await prober.ProbeAsync(T(srv.Port));
         Expect(r, Verdict.Blocked, Failure.TlsTimeout, ProbeStage.Tls);
+    }),
+
+    ("дроп по SNI → TlsTimeout, SniFiltered=true", async () =>
+    {
+        await using var srv = FakeServer.SniFilter("example.test", reset: false);
+        var r = await prober.ProbeAsync(T(srv.Port));
+        Expect(r, Verdict.Blocked, Failure.TlsTimeout, ProbeStage.Tls);
+        Assert(r.SniFiltered == true, $"SniFiltered={r.SniFiltered} ({r.Detail})");
+        Assert(r.Detail!.Contains("фильтр по SNI"), r.Detail);
+    }),
+
+    ("RST по SNI → TlsReset, SniFiltered=true", async () =>
+    {
+        await using var srv = FakeServer.SniFilter("example.test", reset: true);
+        var r = await prober.ProbeAsync(T(srv.Port));
+        Expect(r, Verdict.Blocked, Failure.TlsReset, ProbeStage.Tls);
+        Assert(r.SniFiltered == true, $"SniFiltered={r.SniFiltered} ({r.Detail})");
+    }),
+
+    ("глухо на любой SNI → SniFiltered=false", async () =>
+    {
+        await using var srv = FakeServer.SilentAfterClientHello();
+        var r = await prober.ProbeAsync(T(srv.Port));
+        Expect(r, Verdict.Blocked, Failure.TlsTimeout, ProbeStage.Tls);
+        Assert(r.SniFiltered == false, $"SniFiltered={r.SniFiltered} ({r.Detail})");
+        Assert(r.Detail!.Contains("весь TLS"), r.Detail);
+    }),
+
+    ("NeutralSni = null → проверки нет", async () =>
+    {
+        await using var srv = FakeServer.SniFilter("example.test", reset: true);
+        var r = await new ServiceProber(opts with { NeutralSni = null }).ProbeAsync(T(srv.Port));
+        Expect(r, Verdict.Blocked, Failure.TlsReset, ProbeStage.Tls);
+        Assert(r.SniFiltered is null, $"SniFiltered={r.SniFiltered}");
+    }),
+
+    ("нейтральный SNI тоже фильтруется → SniFiltered=false", async () =>
+    {
+        await using var srv = FakeServer.SniFilter("example.test", reset: true);
+        var r = await new ServiceProber(opts with { NeutralSni = "neutral.example.test" }).ProbeAsync(T(srv.Port));
+        Assert(r.SniFiltered == false, $"SniFiltered={r.SniFiltered} ({r.Detail})");
     }),
 
     ("заморозка на 16 КБ → TransferStalled + почерк ТСПУ", async () =>
