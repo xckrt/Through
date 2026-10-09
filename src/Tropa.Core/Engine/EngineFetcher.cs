@@ -17,12 +17,46 @@ public sealed class EngineFetcher(HttpClient http, string installRoot)
         manifest.Validate();
         var dir = Path.Combine(installRoot, manifest.Version);
 
-        if (Installed(dir, manifest) is { } ready)
-        {
+        var install = Installed(dir, manifest);
+        if (install is not null)
             log?.Report($"zapret {manifest.Version} уже установлен");
-            return ready;
-        }
+        else
+            install = await DownloadReleaseAsync(manifest, dir, log, ct);
 
+        await EnsureExtrasAsync(install.Root, manifest, log, ct);
+        return install;
+    }
+
+    /// <summary>Дополнительные файлы (шаблоны ClientHello Flowseal) в files/extra, каждый со своим хешем.</summary>
+    private async Task EnsureExtrasAsync(string root, EngineManifest m, IProgress<string>? log, CancellationToken ct)
+    {
+        var dir = Path.Combine(root, "files", "extra");
+        foreach (var extra in m.Extras)
+        {
+            var path = Path.Combine(dir, extra.Name);
+            if (File.Exists(path) && Hash(await File.ReadAllBytesAsync(path, ct)).Equals(extra.Sha256, StringComparison.OrdinalIgnoreCase))
+                continue;
+
+            log?.Report($"скачиваю {extra.Name}");
+            using var response = await http.GetAsync(extra.Url, HttpCompletionOption.ResponseHeadersRead, ct);
+            response.EnsureSuccessStatusCode();
+            var data = await response.Content.ReadAsByteArrayAsync(ct);
+            if (data.Length > EngineExtra.MaxBytes) throw new InvalidDataException($"{extra.Name}: файл больше {EngineExtra.MaxBytes / 1024} КБ");
+            var got = Hash(data);
+            if (!got.Equals(extra.Sha256, StringComparison.OrdinalIgnoreCase))
+                throw new InvalidDataException($"SHA-256 {extra.Name} не совпал: ожидали {extra.Sha256.ToLowerInvariant()}, получили {got.ToLowerInvariant()}");
+
+            Directory.CreateDirectory(dir);
+            var tmp = path + ".tmp";
+            await File.WriteAllBytesAsync(tmp, data, ct);
+            File.Move(tmp, path, overwrite: true);
+        }
+    }
+
+    private static string Hash(byte[] data) => Convert.ToHexString(SHA256.HashData(data));
+
+    private async Task<EngineInstall> DownloadReleaseAsync(EngineManifest manifest, string dir, IProgress<string>? log, CancellationToken ct)
+    {
         Directory.CreateDirectory(installRoot);
         var errors = new List<string>();
         foreach (var url in manifest.ResolvedUrls)
@@ -91,8 +125,15 @@ public sealed class EngineFetcher(HttpClient http, string installRoot)
         {
             // ExtractToDirectory сам отказывается писать за пределы папки (../ в именах)
             ZipFile.ExtractToDirectory(zip, staging);
-            if (Locate(staging) is null)
+            if (Locate(staging) is not { } found)
                 throw new InvalidDataException("в архиве нет winws.exe");
+            if (m.WinwsSha256.Length > 0 && Environment.Is64BitOperatingSystem)
+            {
+                using var exe = File.OpenRead(found.Winws);
+                var got = Convert.ToHexString(SHA256.HashData(exe));
+                if (!got.Equals(m.WinwsSha256, StringComparison.OrdinalIgnoreCase))
+                    throw new InvalidDataException($"SHA-256 winws.exe не совпал: ожидали {m.WinwsSha256.ToLowerInvariant()}, получили {got.ToLowerInvariant()}");
+            }
             File.WriteAllText(Path.Combine(staging, Marker), m.Sha256.ToLowerInvariant());
 
             if (Directory.Exists(dir)) Directory.Delete(dir, recursive: true);

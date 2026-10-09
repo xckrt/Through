@@ -4,7 +4,8 @@ using System.Windows.Media.Animation;
 
 namespace Tropa.Tray;
 
-public enum TrailState { Pending, Ok, Throttled, Broken, Unknown }
+/// <summary>Minor — оборвалось, но это второстепенный хост: крестик янтарный, а не красный.</summary>
+public enum TrailState { Pending, Ok, Throttled, Broken, Unknown, Minor }
 
 /// <summary>
 /// Соединение как тропа из пяти отметок: DNS, TCP, TLS, HTTP, передача.
@@ -48,8 +49,18 @@ public sealed class TrailView : FrameworkElement
 
     public TrailView()
     {
-        Loaded += (_, _) => Animate(State);
-        Unloaded += (_, _) => BeginAnimation(PhaseProperty, null);
+        // цвета тропы берутся из темы при отрисовке: при смене темы просто перерисовываемся
+        void Repaint() => InvalidateVisual();
+        Loaded += (_, _) =>
+        {
+            ThemeManager.Changed += Repaint;
+            Animate(State);
+        };
+        Unloaded += (_, _) =>
+        {
+            ThemeManager.Changed -= Repaint;
+            BeginAnimation(PhaseProperty, null);
+        };
     }
 
     private static bool Motion => SystemParameters.ClientAreaAnimation;
@@ -138,14 +149,14 @@ public sealed class TrailView : FrameworkElement
                 dc.DrawEllipse(amber, null, new Point(X(Stages - 1), cy), r, r);
                 break;
             }
-            case TrailState.Broken or TrailState.Unknown:
+            case TrailState.Broken or TrailState.Unknown or TrailState.Minor:
             {
                 var k = passed;
-                var color = State == TrailState.Broken ? Brush("Signal") : fog;
+                var color = State switch { TrailState.Broken => Brush("Signal"), TrailState.Minor => Brush("Amber"), _ => fog };
                 // путь доходит почти до отметки и обрывается: видно, где именно
                 if (k > 0)
                     dc.DrawLine(path, new Point(X(k - 1), cy), new Point(X(k) - 11, cy));
-                if (State == TrailState.Broken)
+                if (State is TrailState.Broken or TrailState.Minor)
                 {
                     var cross = new Pen(color, 2.5) { StartLineCap = PenLineCap.Round, EndLineCap = PenLineCap.Round };
                     const double s = 4.5;

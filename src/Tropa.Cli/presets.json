@@ -1,70 +1,238 @@
 {
-  // Стратегии winws для подбора. treats: какие диагнозы пробника пресет лечит, cost: порядок перебора.
-  // Подстановки: {ports} и {hostlist} сужают обработку до сервиса, {engineDir} указывает на папку
-  // распакованного релиза zapret (fake-файлы берутся оттуда, в репозитории их нет).
-  // Аргументы ещё не проверены на реальном winws: сверить, когда появится EngineHost.
+  // Стратегии winws для подбора. treats: какие диагнозы пробника пресет лечит; cost: порядок перебора;
+  // services: только для этих сервисов (нет поля — для любого).
+  // Подстановки: {ports} и {hostlist} сужают обработку до сервиса, {engineDir} — папка релиза zapret.
+  //
+  // Стратегии взяты из general*.bat проекта Flowseal/zapret-discord-youtube (MIT): это то, что
+  // реально работает у провайдеров РФ. Опции сверены с winws из bol-van/zapret v72.13.
+  // Шаблоны Flowseal (4pda_to, max_ru, ACTIVE_*) лежат в {engineDir}/files/extra: их скачивает Fetcher
+  // по engine.json с закреплёнными хешами. Подменять их «похожими» нельзя: первый прогон показал,
+  // что с шаблоном vk_com стратегия 568 не работает вовсе, а с 4pda_to — работает.
   "presets": [
+    // ---- Google / YouTube: --ip-id=zero и шаблон ClientHello google
     {
-      "id": "split2",
-      "name": "разрезать ClientHello на два сегмента",
-      "treats": ["TlsReset", "TlsTimeout"],
-      "cost": 1,
-      "args": ["--wf-tcp={ports}", "--filter-tcp={ports}", "--hostlist={hostlist}",
-               "--dpi-desync=split2", "--dpi-desync-split-pos=1"]
+      "id": "yt-seqovl-681", "name": "разрез с перекрытием 681 байт (Flowseal general)", "services": ["youtube"],
+      "treats": ["TlsReset", "TlsTimeout", "TransferStalled"], "cost": 1,
+      "args": ["--wf-tcp={ports}", "--filter-tcp={ports}", "--hostlist={hostlist}", "--ip-id=zero",
+               "--dpi-desync=multisplit", "--dpi-desync-split-seqovl=681", "--dpi-desync-split-pos=1",
+               "--dpi-desync-split-seqovl-pattern={engineDir}/files/fake/tls_clienthello_www_google_com.bin"]
     },
     {
-      "id": "fake-autottl",
-      "name": "подложный ClientHello с TTL до DPI",
-      "treats": ["TlsReset", "TlsTimeout"],
-      "cost": 1,
-      "args": ["--wf-tcp={ports}", "--filter-tcp={ports}", "--hostlist={hostlist}",
-               "--dpi-desync=fake", "--dpi-desync-autottl=2",
+      "id": "yt-seqovl-652", "name": "разрез с перекрытием 652 байта, позиция 2 (ALT2)", "services": ["youtube"],
+      "treats": ["TlsReset", "TlsTimeout", "TransferStalled"], "cost": 2,
+      "args": ["--wf-tcp={ports}", "--filter-tcp={ports}", "--hostlist={hostlist}", "--ip-id=zero",
+               "--dpi-desync=multisplit", "--dpi-desync-split-seqovl=652", "--dpi-desync-split-pos=2",
+               "--dpi-desync-split-seqovl-pattern={engineDir}/files/fake/tls_clienthello_www_google_com.bin"]
+    },
+    {
+      "id": "yt-seqovl-sniext", "name": "разрез посреди SNI с перекрытием 679 (ALT7)", "services": ["youtube"],
+      "treats": ["TlsReset", "TlsTimeout", "TransferStalled"], "cost": 3,
+      "args": ["--wf-tcp={ports}", "--filter-tcp={ports}", "--hostlist={hostlist}", "--ip-id=zero",
+               "--dpi-desync=multisplit", "--dpi-desync-split-pos=2,sniext+1", "--dpi-desync-split-seqovl=679",
+               "--dpi-desync-split-seqovl-pattern={engineDir}/files/fake/tls_clienthello_www_google_com.bin"]
+    },
+    {
+      "id": "yt-fake-seqovl-ts", "name": "подложный ClientHello + разрез с перекрытием, fooling ts (FAKE TLS AUTO ALT3)", "services": ["youtube"],
+      "treats": ["TlsReset", "TlsTimeout", "TransferStalled", "Slow"], "cost": 4,
+      "args": ["--wf-tcp={ports}", "--filter-tcp={ports}", "--hostlist={hostlist}", "--ip-id=zero",
+               "--dpi-desync=fake,multisplit", "--dpi-desync-split-seqovl=681", "--dpi-desync-split-pos=1",
+               "--dpi-desync-fooling=ts", "--dpi-desync-repeats=8",
+               "--dpi-desync-split-seqovl-pattern={engineDir}/files/fake/tls_clienthello_www_google_com.bin",
+               "--dpi-desync-fake-tls-mod=rnd,dupsid,sni=www.google.com"]
+    },
+    {
+      "id": "yt-fake-seqovl-badseq", "name": "подложный ClientHello + разрез с перекрытием, badseq (FAKE TLS AUTO ALT2)", "services": ["youtube"],
+      "treats": ["TlsReset", "TlsTimeout", "TransferStalled", "Slow"], "cost": 5,
+      "args": ["--wf-tcp={ports}", "--filter-tcp={ports}", "--hostlist={hostlist}", "--ip-id=zero",
+               "--dpi-desync=fake,multisplit", "--dpi-desync-split-seqovl=681", "--dpi-desync-split-pos=1",
+               "--dpi-desync-fooling=badseq", "--dpi-desync-badseq-increment=10000000", "--dpi-desync-repeats=8",
+               "--dpi-desync-split-seqovl-pattern={engineDir}/files/fake/tls_clienthello_www_google_com.bin",
+               "--dpi-desync-fake-tls-mod=rnd,dupsid,sni=www.google.com"]
+    },
+    {
+      "id": "yt-fake-ts", "name": "подложный ClientHello google, fooling ts (SIMPLE FAKE)", "services": ["youtube"],
+      "treats": ["TlsReset", "TlsTimeout", "TransferStalled", "Slow"], "cost": 6,
+      "args": ["--wf-tcp={ports}", "--filter-tcp={ports}", "--hostlist={hostlist}", "--ip-id=zero",
+               "--dpi-desync=fake", "--dpi-desync-repeats=6", "--dpi-desync-fooling=ts",
                "--dpi-desync-fake-tls={engineDir}/files/fake/tls_clienthello_www_google_com.bin"]
     },
     {
-      "id": "multisplit-sniext",
-      "name": "разрез посреди SNI с перекрытием",
-      "treats": ["TlsReset", "TlsTimeout"],
-      "cost": 2,
+      "id": "yt-fake-badseq", "name": "подложный ClientHello google, badseq (SIMPLE FAKE ALT)", "services": ["youtube"],
+      "treats": ["TlsReset", "TlsTimeout", "TransferStalled", "Slow"], "cost": 7,
+      "args": ["--wf-tcp={ports}", "--filter-tcp={ports}", "--hostlist={hostlist}", "--ip-id=zero",
+               "--dpi-desync=fake", "--dpi-desync-repeats=6", "--dpi-desync-fooling=badseq", "--dpi-desync-badseq-increment=2",
+               "--dpi-desync-fake-tls={engineDir}/files/fake/tls_clienthello_www_google_com.bin"]
+    },
+    {
+      "id": "yt-fakedsplit-ts", "name": "подложный пакет + разрез, fooling ts (ALT)", "services": ["youtube"],
+      "treats": ["TlsReset", "TlsTimeout", "TransferStalled", "Slow"], "cost": 8,
+      "args": ["--wf-tcp={ports}", "--filter-tcp={ports}", "--hostlist={hostlist}", "--ip-id=zero",
+               "--dpi-desync=fake,fakedsplit", "--dpi-desync-repeats=6", "--dpi-desync-fooling=ts",
+               "--dpi-desync-fakedsplit-pattern=0x00",
+               "--dpi-desync-fake-tls={engineDir}/files/fake/tls_clienthello_www_google_com.bin"]
+    },
+    {
+      "id": "yt-fake-multisplit-badseq", "name": "подложный пакет + многократный разрез, badseq (ALT4)", "services": ["youtube"],
+      "treats": ["TlsReset", "TlsTimeout", "TransferStalled", "Slow"], "cost": 9,
+      "args": ["--wf-tcp={ports}", "--filter-tcp={ports}", "--hostlist={hostlist}", "--ip-id=zero",
+               "--dpi-desync=fake,multisplit", "--dpi-desync-repeats=6", "--dpi-desync-fooling=badseq",
+               "--dpi-desync-badseq-increment=1000",
+               "--dpi-desync-fake-tls={engineDir}/files/fake/tls_clienthello_www_google_com.bin"]
+    },
+    {
+      "id": "yt-hostfakesplit", "name": "подмена имени в разрезе на www.google.com (ALT9)", "services": ["youtube"],
+      "treats": ["TlsReset", "TlsTimeout"], "cost": 10,
+      "args": ["--wf-tcp={ports}", "--filter-tcp={ports}", "--hostlist={hostlist}", "--ip-id=zero",
+               "--dpi-desync=hostfakesplit", "--dpi-desync-repeats=4", "--dpi-desync-fooling=ts",
+               "--dpi-desync-hostfakesplit-mod=host=www.google.com"]
+    },
+    {
+      "id": "yt-fake-hostfakesplit", "name": "подложный пакет + подмена имени (ALT3)", "services": ["youtube"],
+      "treats": ["TlsReset", "TlsTimeout"], "cost": 11,
+      "args": ["--wf-tcp={ports}", "--filter-tcp={ports}", "--hostlist={hostlist}", "--ip-id=zero",
+               "--dpi-desync=fake,hostfakesplit", "--dpi-desync-fake-tls-mod=rnd,dupsid,sni=www.google.com",
+               "--dpi-desync-hostfakesplit-mod=host=www.google.com,altorder=1", "--dpi-desync-fooling=ts"]
+    },
+    {
+      "id": "yt-fake-multidisorder", "name": "подложный пакет + перестановка, badseq (FAKE TLS AUTO)", "services": ["youtube"],
+      "treats": ["TlsReset", "TlsTimeout", "TransferStalled"], "cost": 12,
+      "args": ["--wf-tcp={ports}", "--filter-tcp={ports}", "--hostlist={hostlist}", "--ip-id=zero",
+               "--dpi-desync=fake,multidisorder", "--dpi-desync-split-pos=1,midsld", "--dpi-desync-repeats=11",
+               "--dpi-desync-fooling=badseq", "--dpi-desync-fake-tls=0x00000000", "--dpi-desync-fake-tls=!",
+               "--dpi-desync-fake-tls-mod=rnd,dupsid,sni=www.google.com"]
+    },
+
+    // ---- Остальные сайты (Discord и др.)
+    {
+      "id": "seqovl-568", "name": "разрез с перекрытием 568 байт (Flowseal general)",
+      "treats": ["TlsReset", "TlsTimeout", "TransferStalled"], "cost": 20,
+      "args": ["--wf-tcp={ports}", "--filter-tcp={ports}", "--hostlist={hostlist}",
+               "--dpi-desync=multisplit", "--dpi-desync-split-seqovl=568", "--dpi-desync-split-pos=1",
+               "--dpi-desync-split-seqovl-pattern={engineDir}/files/extra/tls_clienthello_4pda_to.bin"]
+    },
+    {
+      "id": "multisplit-sniext", "name": "разрез посреди SNI с перекрытием",
+      "treats": ["TlsReset", "TlsTimeout"], "cost": 21,
       "args": ["--wf-tcp={ports}", "--filter-tcp={ports}", "--hostlist={hostlist}",
                "--dpi-desync=multisplit", "--dpi-desync-split-pos=1,sniext+1", "--dpi-desync-split-seqovl=1"]
     },
     {
-      "id": "fake-ttl4",
-      "name": "подложный ClientHello с низким TTL",
-      "treats": ["TlsTimeout"],
-      "cost": 2,
+      "id": "seqovl-681", "name": "разрез с перекрытием 681 байт (ALT6)",
+      "treats": ["TlsReset", "TlsTimeout", "TransferStalled"], "cost": 22,
       "args": ["--wf-tcp={ports}", "--filter-tcp={ports}", "--hostlist={hostlist}",
-               "--dpi-desync=fake", "--dpi-desync-ttl=4",
+               "--dpi-desync=multisplit", "--dpi-desync-split-seqovl=681", "--dpi-desync-split-pos=1",
+               "--dpi-desync-split-seqovl-pattern={engineDir}/files/fake/tls_clienthello_www_google_com.bin"]
+    },
+    {
+      "id": "seqovl-652", "name": "разрез с перекрытием 652 байта, позиция 2 (ALT2)",
+      "treats": ["TlsReset", "TlsTimeout", "TransferStalled"], "cost": 23,
+      "args": ["--wf-tcp={ports}", "--filter-tcp={ports}", "--hostlist={hostlist}",
+               "--dpi-desync=multisplit", "--dpi-desync-split-seqovl=652", "--dpi-desync-split-pos=2",
+               "--dpi-desync-split-seqovl-pattern={engineDir}/files/fake/tls_clienthello_www_google_com.bin"]
+    },
+    {
+      "id": "seqovl-sniext", "name": "разрез посреди SNI с перекрытием 679 (ALT7)",
+      "treats": ["TlsReset", "TlsTimeout", "TransferStalled"], "cost": 24,
+      "args": ["--wf-tcp={ports}", "--filter-tcp={ports}", "--hostlist={hostlist}",
+               "--dpi-desync=multisplit", "--dpi-desync-split-pos=2,sniext+1", "--dpi-desync-split-seqovl=679",
+               "--dpi-desync-split-seqovl-pattern={engineDir}/files/fake/tls_clienthello_www_google_com.bin"]
+    },
+    {
+      "id": "fake-seqovl-ts", "name": "подложный ClientHello + разрез с перекрытием, fooling ts (FAKE TLS AUTO ALT3)",
+      "treats": ["TlsReset", "TlsTimeout", "TransferStalled", "Slow"], "cost": 25,
+      "args": ["--wf-tcp={ports}", "--filter-tcp={ports}", "--hostlist={hostlist}",
+               "--dpi-desync=fake,multisplit", "--dpi-desync-split-seqovl=681", "--dpi-desync-split-pos=1",
+               "--dpi-desync-fooling=ts", "--dpi-desync-repeats=8",
+               "--dpi-desync-split-seqovl-pattern={engineDir}/files/fake/tls_clienthello_www_google_com.bin",
+               "--dpi-desync-fake-tls-mod=rnd,dupsid,sni=www.google.com"]
+    },
+    {
+      "id": "fake-seqovl-664", "name": "подложный пакет + разрез с перекрытием 664, fooling ts (ALT11)",
+      "treats": ["TlsReset", "TlsTimeout", "TransferStalled", "Slow"], "cost": 26,
+      "args": ["--wf-tcp={ports}", "--filter-tcp={ports}", "--hostlist={hostlist}",
+               "--dpi-desync=fake,multisplit", "--dpi-desync-split-seqovl=664", "--dpi-desync-split-pos=1",
+               "--dpi-desync-fooling=ts", "--dpi-desync-repeats=8",
+               "--dpi-desync-split-seqovl-pattern={engineDir}/files/extra/tls_clienthello_max_ru.bin",
+               "--dpi-desync-fake-tls={engineDir}/files/fake/stun.bin",
+               "--dpi-desync-fake-tls={engineDir}/files/extra/tls_clienthello_max_ru.bin"]
+    },
+    {
+      "id": "fake-ts", "name": "подложный ClientHello, fooling ts (SIMPLE FAKE)",
+      "treats": ["TlsReset", "TlsTimeout", "TransferStalled", "Slow"], "cost": 27,
+      "args": ["--wf-tcp={ports}", "--filter-tcp={ports}", "--hostlist={hostlist}",
+               "--dpi-desync=fake", "--dpi-desync-repeats=6", "--dpi-desync-fooling=ts",
+               "--dpi-desync-fake-tls={engineDir}/files/fake/stun.bin",
                "--dpi-desync-fake-tls={engineDir}/files/fake/tls_clienthello_www_google_com.bin"]
     },
     {
-      "id": "fake-multidisorder-md5sig",
-      "name": "подложный пакет + перестановка сегментов, md5sig",
-      "treats": ["TlsReset", "TlsTimeout", "TransferStalled"],
-      "cost": 3,
+      "id": "fake-badseq", "name": "подложный ClientHello, badseq (SIMPLE FAKE ALT)",
+      "treats": ["TlsReset", "TlsTimeout", "TransferStalled", "Slow"], "cost": 28,
       "args": ["--wf-tcp={ports}", "--filter-tcp={ports}", "--hostlist={hostlist}",
-               "--dpi-desync=fake,multidisorder", "--dpi-desync-split-pos=1,midsld",
-               "--dpi-desync-repeats=11", "--dpi-desync-fooling=md5sig",
+               "--dpi-desync=fake", "--dpi-desync-repeats=6", "--dpi-desync-fooling=badseq", "--dpi-desync-badseq-increment=2",
+               "--dpi-desync-fake-tls={engineDir}/files/fake/stun.bin",
                "--dpi-desync-fake-tls={engineDir}/files/fake/tls_clienthello_www_google_com.bin"]
     },
     {
-      "id": "fake-multisplit-badseq",
-      "name": "десинхронизация на весь поток против остановки на ~16 КБ",
-      "treats": ["TransferStalled", "TransferReset"],
-      "cost": 3,
+      "id": "fakedsplit-ts", "name": "подложный пакет + разрез, fooling ts (ALT)",
+      "treats": ["TlsReset", "TlsTimeout", "TransferStalled", "Slow"], "cost": 29,
       "args": ["--wf-tcp={ports}", "--filter-tcp={ports}", "--hostlist={hostlist}",
-               "--dpi-desync=fake,multisplit", "--dpi-desync-split-pos=1",
-               "--dpi-desync-fooling=badseq", "--dpi-desync-repeats=6", "--dpi-desync-any-protocol"]
+               "--dpi-desync=fake,fakedsplit", "--dpi-desync-repeats=6", "--dpi-desync-fooling=ts",
+               "--dpi-desync-fakedsplit-pattern=0x00",
+               "--dpi-desync-fake-tls={engineDir}/files/fake/stun.bin",
+               "--dpi-desync-fake-tls={engineDir}/files/fake/tls_clienthello_www_google_com.bin"]
     },
     {
-      "id": "fake-split-repeats",
-      "name": "против замедления: подложные пакеты с повторами",
-      "treats": ["Slow", "TransferStalled"],
-      "cost": 4,
+      "id": "fake-multisplit-badseq", "name": "подложный пакет + многократный разрез, badseq (ALT4)",
+      "treats": ["TlsReset", "TlsTimeout", "TransferStalled", "Slow"], "cost": 30,
       "args": ["--wf-tcp={ports}", "--filter-tcp={ports}", "--hostlist={hostlist}",
-               "--dpi-desync=fake,split2", "--dpi-desync-repeats=6", "--dpi-desync-autottl=2",
+               "--dpi-desync=fake,multisplit", "--dpi-desync-repeats=6", "--dpi-desync-fooling=badseq",
+               "--dpi-desync-badseq-increment=1000",
+               "--dpi-desync-fake-tls={engineDir}/files/fake/stun.bin",
                "--dpi-desync-fake-tls={engineDir}/files/fake/tls_clienthello_www_google_com.bin"]
+    },
+    {
+      "id": "fake-hostfakesplit", "name": "подложный пакет + подмена имени на ya.ru (ALT3)",
+      "treats": ["TlsReset", "TlsTimeout"], "cost": 31,
+      "args": ["--wf-tcp={ports}", "--filter-tcp={ports}", "--hostlist={hostlist}",
+               "--dpi-desync=fake,hostfakesplit", "--dpi-desync-fake-tls-mod=rnd,dupsid,sni=ya.ru",
+               "--dpi-desync-hostfakesplit-mod=host=ya.ru,altorder=1", "--dpi-desync-fooling=ts"]
+    },
+    {
+      "id": "fake-multidisorder", "name": "подложный пакет + перестановка, badseq (FAKE TLS AUTO)",
+      "treats": ["TlsReset", "TlsTimeout", "TransferStalled"], "cost": 32,
+      "args": ["--wf-tcp={ports}", "--filter-tcp={ports}", "--hostlist={hostlist}",
+               "--dpi-desync=fake,multidisorder", "--dpi-desync-split-pos=1,midsld", "--dpi-desync-repeats=11",
+               "--dpi-desync-fooling=badseq", "--dpi-desync-fake-tls=0x00000000", "--dpi-desync-fake-tls=!",
+               "--dpi-desync-fake-tls-mod=rnd,dupsid,sni=www.google.com"]
+    }
+  ],
+
+  // Профили, которые включаются под защитой вместе со стратегией сервиса, но не подбираются:
+  // пробник не умеет мерить QUIC и голос по UDP. Взяты из того же general.bat Flowseal.
+  "companions": [
+    {
+      // браузер ходит на YouTube по QUIC; без обхода видео тормозит, пока не откатится на TCP
+      "id": "youtube-quic", "service": "youtube",
+      "args": ["--wf-udp=443", "--filter-udp=443", "--hostlist={hostlist}",
+               "--dpi-desync=fake", "--dpi-desync-repeats=6",
+               "--dpi-desync-fake-quic={engineDir}/files/fake/quic_initial_www_google_com.bin"]
+    },
+    {
+      // голос Discord: UDP по IP, имени сайта в пакетах нет, поэтому без hostlist, по протоколу (l7)
+      "id": "discord-voice", "service": "discord",
+      "args": ["--wf-udp=19294-19344,50000-50100", "--filter-udp=19294-19344,50000-50100",
+               "--filter-l7=discord,stun", "--dpi-desync=fake",
+               "--dpi-desync-fake-discord={engineDir}/files/extra/ACTIVE_DISCORD_UDP.bin",
+               "--dpi-desync-fake-stun={engineDir}/files/extra/ACTIVE_DISCORD_UDP.bin",
+               "--dpi-desync-repeats=6"]
+    },
+    {
+      // медиасерверы Discord (discord.media) на нестандартных портах: у Flowseal для них отдельный профиль
+      "id": "discord-media", "service": "discord",
+      "args": ["--wf-tcp=2053,2083,2087,2096,8443", "--filter-tcp=2053,2083,2087,2096,8443",
+               "--hostlist-domains=discord.media",
+               "--dpi-desync=multisplit", "--dpi-desync-split-seqovl=681", "--dpi-desync-split-pos=1",
+               "--dpi-desync-split-seqovl-pattern={engineDir}/files/fake/tls_clienthello_www_google_com.bin"]
     }
   ]
 }

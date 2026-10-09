@@ -13,11 +13,17 @@ public readonly record struct TuneScore(int Ok, int Throttled, int Progress, int
     public int CompareTo(TuneScore other) =>
         (Ok, Throttled, Progress).CompareTo((other.Ok, other.Throttled, other.Progress));
 
-    public static TuneScore Of(IReadOnlyCollection<ProbeResult> results) => new(
-        results.Count(r => r.Verdict == Verdict.Ok),
-        results.Count(r => r.Verdict == Verdict.Throttled),
-        results.Sum(Rank),
-        results.Count);
+    /// <summary>Ok, Throttled и Total — только по важным проверкам; второстепенные влияют лишь на Progress:
+    /// из двух одинаково рабочих стратегий выигрывает та, что починила и их.</summary>
+    public static TuneScore Of(IReadOnlyCollection<ProbeResult> results)
+    {
+        var required = results.Where(r => !r.Target.Optional).ToList();
+        return new(
+            required.Count(r => r.Verdict == Verdict.Ok),
+            required.Count(r => r.Verdict == Verdict.Throttled),
+            results.Sum(Rank),
+            required.Count);
+    }
 
     /// <summary>Ранг одного результата: из двух прогонов берём тот, у кого он меньше.</summary>
     public static int Rank(ProbeResult r) => r.Verdict switch

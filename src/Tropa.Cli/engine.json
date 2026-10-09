@@ -1,13 +1,25 @@
 {
   // Релиз zapret (bol-van/zapret), который скачивает Тропа. Бинарей в репозитории нет.
-  // Пока version и sha256 пусты, скачивание не начнётся: без закреплённого хеша
-  // подменённый архив не отличить от настоящего.
-  // Заполнить: открыть страницу релиза на GitHub, взять тег (например, v71.4)
-  // и SHA-256 архива zapret-<тег>.zip (GitHub показывает его рядом с файлом).
-  "version": "",
-  "sha256": "",
+  // sha256 — хеш архива (GitHub показывает его рядом с файлом в релизе),
+  // winwsSha256 — хеш binaries/windows-x86_64/winws.exe из авторского sha256sum.txt того же релиза.
+  // Обновление: поменять version и оба хеша, сверив их со страницей релиза.
+  "version": "v72.13",
+  "sha256": "c493e33a0dc4eba23a8686efdaba55f59755ad6ade3564aebd9d13f4c65e2e0c",
+  "winwsSha256": "a14bff1df6234ea555d2e0c61b589f0707c0b12d6c9b7eeccda76012154996e8",
   "urls": [
     "https://github.com/bol-van/zapret/releases/download/{version}/zapret-{version}.zip"
+  ],
+  // Шаблоны Flowseal/zapret-discord-youtube (MIT), которых нет в релизе bol-van, с закреплёнными хешами.
+  // Именно шаблон решает: DPI пропускает поток, начало которого похоже на ClientHello «разрешённого» сайта.
+  "extras": [
+    { "name": "tls_clienthello_4pda_to.bin", "url": "https://github.com/Flowseal/zapret-discord-youtube/raw/1.10.3/bin/tls_clienthello_4pda_to.bin",
+      "sha256": "eefeaf09dde8d69b1f176212541f63c68b314a33a335eced99a8a29f17254da8" },
+    { "name": "tls_clienthello_max_ru.bin", "url": "https://github.com/Flowseal/zapret-discord-youtube/raw/1.10.3/bin/tls_clienthello_max_ru.bin",
+      "sha256": "4ee0870abe0a0128600b0095189987ba1d210dae8bf963bc725aff49cf922624" },
+    { "name": "ACTIVE_DISCORD_UDP.bin", "url": "https://github.com/Flowseal/zapret-discord-youtube/raw/1.10.3/bin/ACTIVE_DISCORD_UDP.bin",
+      "sha256": "2fe18b3bd20807d36704d0b072092ee49ae84edca907a4420ab9a0f0f28fddcf" },
+    { "name": "ACTIVE_GAME_UDP.bin", "url": "https://github.com/Flowseal/zapret-discord-youtube/raw/1.10.3/bin/ACTIVE_GAME_UDP.bin",
+      "sha256": "e065870cb0d13152e6132807bbf42218a9e7cd8d96f5602b61674cc540f3a56e" }
   ],
   "maxBytes": 67108864
 }

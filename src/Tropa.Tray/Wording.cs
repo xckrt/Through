@@ -1,3 +1,4 @@
+using Tropa.Core.Control;
 using Tropa.Core.Probing;
 
 namespace Tropa.Tray;
@@ -14,7 +15,7 @@ internal static class Wording
         _ => key.Length > 0 ? char.ToUpperInvariant(key[0]) + key[1..] : key,
     };
 
-    public static string Explain(ProbeResult r) => r.Verdict switch
+    public static string Explain(TargetReport r) => r.Verdict switch
     {
         Verdict.Ok => "работает",
         Verdict.Inconclusive => "нет сети, проверить нельзя",
@@ -39,12 +40,11 @@ internal static class Wording
         },
     };
 
-    public static string Metric(ProbeResult r)
+    public static string Metric(TargetReport r)
     {
-        if (r.IsOk && r.Target.MinBytes > 0 && r.Kbps is { } k)
+        if (r.IsOk && r.MinBytes > 0 && r.Kbps is { } k)
             return k >= 1000 ? $"{k / 1000:F1} Мбит/с" : $"{k:F0} кбит/с";
-        var ms = r.Elapsed.TotalMilliseconds;
-        return ms < 1000 ? $"{ms:F0} мс" : $"{ms / 1000:F1} с";
+        return r.ElapsedMs < 1000 ? $"{r.ElapsedMs} мс" : $"{r.ElapsedMs / 1000.0:F1} с";
     }
 
     /// <summary>«YouTube», «YouTube и Discord», «YouTube, Discord и Cloudflare».</summary>

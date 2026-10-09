@@ -179,6 +179,10 @@ var tests = new List<(string, Func<Task>)>
 
 tests.AddRange(TunerTests.All(opts));
 tests.AddRange(EngineTests.All());
+tests.AddRange(ControlTests.All());
+tests.AddRange(AppTests.All());
+tests.AddRange(SiteCheckTests.All(opts));
+tests.AddRange(AppUpdateTests.All());
 
 var failed = 0;
 foreach (var (name, body) in tests)

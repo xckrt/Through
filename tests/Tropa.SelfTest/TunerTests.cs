@@ -128,6 +128,54 @@ internal static class TunerTests
             finally { File.Delete(path); }
         }),
 
+        ("Tuner: пресет для другого сервиса не пробуется", async () =>
+        {
+            var engine = new FakeEngineHost((id, _) => id == "b");
+            await using var srv = FakeServer.SniFilter(Host, reset: true, engine.AllowConnection);
+            var presets = Presets() with
+            {
+                Presets = [.. Presets().Presets.Select(p => p.Id == "a" ? p with { Services = ["youtube"] } : p)],
+            };
+            await new Tuner(engine, opts).TuneAsync(Catalog(srv.Port), presets);
+            Assert(engine.Started.SequenceEqual(["b"]), $"started={string.Join(",", engine.Started)}");
+        }),
+
+        ("presets.json: файлы только из официального релиза или закреплённых extras", () =>
+        {
+            // содержимое files/fake/ в bol-van/zapret v72.13 (то, что ставит Fetcher), без файлов Flowseal
+            string[] official =
+            [
+                "stun.bin", "tls_clienthello_www_google_com.bin", "tls_clienthello_vk_com.bin", "tls_clienthello_vk_com_kyber.bin",
+                "tls_clienthello_iana_org.bin", "tls_clienthello_gosuslugi_ru.bin", "tls_clienthello_sberbank_ru.bin",
+                "tls_clienthello_rutracker_org_kyber.bin", "quic_initial_www_google_com.bin", "quic_initial_vk_com.bin",
+            ];
+            var catalog = PresetCatalog.Load(Path.Combine(AppContext.BaseDirectory, "presets.json"));
+            var extras = Tropa.Core.Engine.EngineManifest.Load(Path.Combine(AppContext.BaseDirectory, "engine.json")).Extras.Select(e => e.Name).ToList();
+            var args = catalog.Presets.SelectMany(p => p.Args).Concat(catalog.Companions.SelectMany(c => c.Args)).ToList();
+            foreach (var a in args.Where(a => a.Contains("{engineDir}/files/")))
+            {
+                var rest = a[(a.IndexOf("{engineDir}/files/", StringComparison.Ordinal) + "{engineDir}/files/".Length)..];
+                var ok = rest.StartsWith("fake/") ? official.Contains(rest["fake/".Length..])
+                       : rest.StartsWith("extra/") && extras.Contains(rest["extra/".Length..]);
+                Assert(ok, $"{rest}: нет ни в официальном релизе, ни в extras engine.json ({a})");
+            }
+            Assert(catalog.Presets.Any(p => p.AppliesTo("youtube") && p.Services is not null), "нет стратегий под Google");
+            return Task.CompletedTask;
+        }),
+
+        ("targets.json: обход шире проверки (иначе приложение Discord висит на «Starting…»)", () =>
+        {
+            var t = TargetCatalog.Load(Path.Combine(AppContext.BaseDirectory, "targets.json"));
+            var (yt, _) = t.BypassScope("youtube");
+            var (dc, dcPorts) = t.BypassScope("discord");
+            Assert(yt.Contains("googlevideo.com") && yt.Contains("youtube.com"), string.Join(",", yt));
+            Assert(dc.Contains("discordapp.net") && dc.Contains("discord.gg") && dc.Contains("discord.media"), string.Join(",", dc));
+            var companions = PresetCatalog.Load(Path.Combine(AppContext.BaseDirectory, "presets.json")).Companions;
+            Assert(companions.Any(c => c.Service == "discord" && c.Args.Any(a => a.Contains("8443"))),
+                "медиа Discord на нестандартных портах должно идти отдельным профилем");
+            return Task.CompletedTask;
+        }),
+
         ("presets.json: читается, подстановки раскрываются", () =>
         {
             var catalog = PresetCatalog.Load(Path.Combine(AppContext.BaseDirectory, "presets.json"));

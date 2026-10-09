@@ -8,6 +8,7 @@
   <ItemGroup>
     <None Include="..\..\src\Tropa.Cli\presets.json" Link="presets.json" CopyToOutputDirectory="PreserveNewest" />
     <None Include="..\..\src\Tropa.Cli\engine.json" Link="engine.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\..\src\Tropa.Cli\targets.json" Link="targets.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
   <PropertyGroup>

@@ -27,10 +27,16 @@ public sealed record WinwsOptions
 /// </summary>
 public sealed class WinwsEngineHost(WinwsOptions options) : IEngineHost
 {
-    public async Task<IEngineSession> StartAsync(EngineLaunch launch, CancellationToken ct = default)
+    public async Task<IEngineSession> StartAsync(IReadOnlyList<EngineLaunch> launches, CancellationToken ct = default)
     {
-        var hostlist = Path.Combine(Path.GetTempPath(), $"tropa-hosts-{Guid.NewGuid():N}.txt");
-        await File.WriteAllLinesAsync(hostlist, launch.Hosts, ct);
+        if (launches.Count == 0) throw new ArgumentException("нечего запускать", nameof(launches));
+        var hostlists = new List<string>();
+        foreach (var launch in launches)
+        {
+            var path = Path.Combine(Path.GetTempPath(), $"tropa-hosts-{Guid.NewGuid():N}.txt");
+            hostlists.Add(path);
+            await File.WriteAllLinesAsync(path, launch.Hosts, ct);
+        }
 
         var psi = new ProcessStartInfo(options.ExecutablePath)
         {
@@ -40,7 +46,7 @@ public sealed class WinwsEngineHost(WinwsOptions options) : IEngineHost
             CreateNoWindow = true,
             WorkingDirectory = Path.GetDirectoryName(options.ExecutablePath) ?? "",
         };
-        foreach (var a in options.PrefixArgs.Concat(launch.RenderArgs(hostlist, options.EngineDir)))
+        foreach (var a in options.PrefixArgs.Concat(EngineLaunch.Compose(launches, hostlists, options.EngineDir)))
             psi.ArgumentList.Add(a);
 
         var log = new BoundedLog();
@@ -66,7 +72,7 @@ public sealed class WinwsEngineHost(WinwsOptions options) : IEngineHost
             catch (InvalidOperationException) { ready.TrySetException(new InvalidOperationException($"winws завершился: {log}")); }
         });
 
-        var session = new WinwsSession(process, hostlist, log);
+        var session = new WinwsSession(process, hostlists, log);
         try
         {
             process.Start();
@@ -95,14 +101,14 @@ public sealed class WinwsSession : IEngineSession
     private readonly Process _process;
     private readonly BoundedLog _log;
 
-    internal WinwsSession(Process process, string hostlistPath, BoundedLog log)
+    internal WinwsSession(Process process, IReadOnlyList<string> hostlistPaths, BoundedLog log)
     {
         _process = process;
-        HostlistPath = hostlistPath;
+        HostlistPaths = hostlistPaths;
         _log = log;
     }
 
-    public string HostlistPath { get; }
+    public IReadOnlyList<string> HostlistPaths { get; }
     public string Log => _log.ToString();
 
     public bool HasExited
@@ -132,7 +138,8 @@ public sealed class WinwsSession : IEngineSession
         finally
         {
             _process.Dispose();
-            try { File.Delete(HostlistPath); } catch (IOException) { }
+            foreach (var path in HostlistPaths)
+                try { File.Delete(path); } catch (IOException) { }
         }
     }
 }

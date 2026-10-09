@@ -10,6 +10,51 @@ public sealed record EngineLaunch(StrategyPreset Preset, IReadOnlyList<string> H
                           .Replace("{ports}", string.Join(',', Ports))
                           .Replace("{engineDir}", engineDir))
             .ToList();
+
+    /// <summary>
+    /// Несколько сервисов в одном winws: общие --wf-* (фильтр WinDivert) один раз с объединёнными
+    /// портами, затем профиль каждого сервиса, разделённые --new.
+    /// </summary>
+    public static IReadOnlyList<string> Compose(
+        IReadOnlyList<EngineLaunch> launches, IReadOnlyList<string> hostlistPaths, string engineDir)
+    {
+        var global = new List<string>();
+        var ports = new Dictionary<string, List<string>>(); // --wf-tcp / --wf-udp → порты и диапазоны «a-b»
+        var profiles = new List<List<string>>();
+
+        for (var i = 0; i < launches.Count; i++)
+        {
+            var profile = new List<string>();
+            foreach (var arg in launches[i].RenderArgs(hostlistPaths[i], engineDir))
+            {
+                if (!arg.StartsWith("--wf-", StringComparison.Ordinal)) { profile.Add(arg); continue; }
+                var eq = arg.IndexOf('=');
+                var key = eq < 0 ? arg : arg[..eq];
+                if (key is "--wf-tcp" or "--wf-udp" && eq > 0)
+                {
+                    var list = ports.TryGetValue(key, out var l) ? l : ports[key] = [];
+                    foreach (var p in arg[(eq + 1)..].Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+                        if (!list.Contains(p)) list.Add(p);
+                }
+                else if (!global.Contains(arg))
+                {
+                    global.Add(arg);
+                }
+            }
+            profiles.Add(profile);
+        }
+
+        static int Start(string p) => int.TryParse(p.Split('-')[0], out var n) ? n : int.MaxValue;
+        var result = ports.OrderBy(kv => kv.Key)
+            .Select(kv => $"{kv.Key}={string.Join(',', kv.Value.OrderBy(Start))}")
+            .Concat(global).ToList();
+        for (var i = 0; i < profiles.Count; i++)
+        {
+            if (i > 0) result.Add("--new");
+            result.AddRange(profiles[i]);
+        }
+        return result;
+    }
 }
 
 /// <summary>
@@ -18,8 +63,9 @@ public sealed record EngineLaunch(StrategyPreset Preset, IReadOnlyList<string> H
 /// </summary>
 public interface IEngineHost
 {
-    /// <summary>Возвращается, когда движок готов обрабатывать трафик. Бросает, если не стартовал.</summary>
-    Task<IEngineSession> StartAsync(EngineLaunch launch, CancellationToken ct = default);
+    /// <summary>Один движок на все launches (у каждого свой профиль). Возвращается, когда движок
+    /// готов обрабатывать трафик. Бросает, если не стартовал.</summary>
+    Task<IEngineSession> StartAsync(IReadOnlyList<EngineLaunch> launches, CancellationToken ct = default);
 }
 
 /// <summary>Запущенный движок. DisposeAsync останавливает его.</summary>
@@ -27,4 +73,7 @@ public interface IEngineSession : IAsyncDisposable
 {
     /// <summary>Что движок успел написать в stderr: для отчёта, если пресет не взлетел.</summary>
     string Log { get; }
+
+    /// <summary>Движок умер сам: сторож службы перезапустит его.</summary>
+    bool HasExited { get; }
 }

@@ -1,0 +1,19 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <!-- «Топокарта»: фон как бумага карты, путь сосной, обрыв краской туристической метки -->
+    <SolidColorBrush x:Key="Paper" Color="#EEF1EC" />
+    <SolidColorBrush x:Key="Surface" Color="#E3E8E1" />
+    <SolidColorBrush x:Key="Field" Color="#F8FAF6" />
+    <SolidColorBrush x:Key="Chrome" Color="#E4E9E2" />
+    <SolidColorBrush x:Key="Ink" Color="#1C2A2E" />
+    <SolidColorBrush x:Key="InkSoft" Color="#56645F" />
+    <SolidColorBrush x:Key="Line" Color="#C9D2CB" />
+    <SolidColorBrush x:Key="Fog" Color="#9AA59F" />
+    <SolidColorBrush x:Key="Pine" Color="#2E7D5B" />
+    <SolidColorBrush x:Key="PineDark" Color="#23634A" />
+    <SolidColorBrush x:Key="Signal" Color="#C8322B" />
+    <SolidColorBrush x:Key="Amber" Color="#B7791F" />
+    <!-- текст на сосновой кнопке и бегунок переключателя -->
+    <SolidColorBrush x:Key="OnAccent" Color="#FFFFFF" />
+    <SolidColorBrush x:Key="Knob" Color="#FFFFFF" />
+</ResourceDictionary>

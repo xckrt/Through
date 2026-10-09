@@ -137,7 +137,10 @@ public sealed class ServiceProber(ProbeOptions? options = null)
         // ---- HTTP
         run.Enter(ProbeStage.Http);
         var request = $"GET {t.Path} HTTP/1.1\r\nHost: {t.Host}\r\nUser-Agent: {_o.UserAgent}\r\n" +
-                      "Accept: */*\r\nAccept-Encoding: identity\r\nConnection: close\r\n\r\n";
+                      (t.WebSocket
+                          ? "Upgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Version: 13\r\n" +
+                            $"Sec-WebSocket-Key: {Convert.ToBase64String(Guid.NewGuid().ToByteArray())}\r\n\r\n"
+                          : "Accept: */*\r\nAccept-Encoding: identity\r\nConnection: close\r\n\r\n");
         try
         {
             using var cts = Stage(ct, _o.TlsTimeout);
@@ -174,6 +177,8 @@ public sealed class ServiceProber(ProbeOptions? options = null)
 
         var headerText = Encoding.ASCII.GetString(head.GetBuffer(), 0, headerEnd);
         run.HttpStatus = ParseStatus(headerText);
+        if (t.WebSocket && run.HttpStatus != 101)
+            return run.Fail(Failure.HttpNoResponse, $"websocket не поднялся: сервер ответил HTTP {run.HttpStatus?.ToString() ?? "?"}");
         if (IsBlockPage(run.HttpStatus, headerText, out var why))
             return run.Fail(Failure.HttpBlockPage, why);
 

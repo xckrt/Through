@@ -24,6 +24,10 @@ public sealed record TuneAttempt
 {
     public required string Service { get; init; }
     public required StrategyPreset Preset { get; init; }
+
+    /// <summary>Попытка для одного упрямого хоста (уточнение), а не для всего сервиса.</summary>
+    public string? Host { get; init; }
+
     public TuneScore Score { get; init; }
     /// <summary>Худший из прогонов по каждой цели сервиса.</summary>
     public IReadOnlyList<ProbeResult> Results { get; init; } = [];
@@ -33,6 +37,10 @@ public sealed record TuneAttempt
 
 public enum TuneOutcome { AlreadyOk, Fixed, Improved, NoFix, NotTreatable, NoCandidates }
 
+/// <summary>Уточнение: этот хост обходится своей стратегией, остальной сервис — основной.
+/// В winws профиль уточнения стоит раньше основного, а winws берёт первый подходящий.</summary>
+public sealed record HostOverride(string Host, StrategyPreset Preset);
+
 public sealed record ServiceTune
 {
     public required ServicePlan Plan { get; init; }
@@ -40,14 +48,23 @@ public sealed record ServiceTune
     /// <summary>Лучшая попытка, если она лучше, чем без обхода.</summary>
     public TuneAttempt? Best { get; init; }
 
+    /// <summary>Отдельные стратегии для хостов, которые основная не взяла.</summary>
+    public IReadOnlyList<HostOverride> Overrides { get; init; } = [];
+
+    /// <summary>Итог всей связки (основная + уточнения), если уточнения есть.</summary>
+    public TuneScore? CombinedScore { get; init; }
+
     public string Service => Plan.Service;
+
+    public TuneScore? FinalScore => CombinedScore ?? Best?.Score;
 
     public TuneOutcome Outcome => Plan.Status switch
     {
         PlanStatus.Ok => TuneOutcome.AlreadyOk,
         PlanStatus.NotTreatable => TuneOutcome.NotTreatable,
         PlanStatus.NoCandidates => TuneOutcome.NoCandidates,
-        _ => Best is null ? TuneOutcome.NoFix : Best.Score.IsPerfect ? TuneOutcome.Fixed : TuneOutcome.Improved,
+        _ when Best is null && Overrides.Count == 0 => TuneOutcome.NoFix,
+        _ => FinalScore is { IsPerfect: true } ? TuneOutcome.Fixed : TuneOutcome.Improved,
     };
 }
 
@@ -72,16 +89,33 @@ public sealed class Tuner(IEngineHost engine, ProbeOptions? options = null, int 
     private readonly ProbeRunner _attempt =
         new(new ServiceProber((options ?? ProbeOptions.Default) with { NeutralSni = null }));
 
-    /// <summary>Диагноз без обхода, затем подбор по каждому сервису. Движок перед вызовом должен быть остановлен.</summary>
+    private IReadOnlyList<EngineLaunch> _background = [];
+
+    /// <summary>
+    /// Диагноз без обхода, затем подбор по каждому сервису. Движок перед вызовом должен быть остановлен.
+    /// background — стратегии других сервисов: они работают и во время диагноза, и в каждой попытке,
+    /// чтобы переподбор одного сервиса не рвал остальные.
+    /// </summary>
     public async Task<TuneReport> TuneAsync(
         TargetCatalog targets,
         PresetCatalog presets,
         IEnumerable<string>? only = null,
         CancellationToken ct = default,
-        IProgress<TuneAttempt>? progress = null)
+        IProgress<TuneAttempt>? progress = null,
+        IReadOnlyList<EngineLaunch>? background = null)
     {
+        _background = background ?? [];
         var selected = only?.ToArray();
-        var diagnosis = await _diagnose.RunAsync(targets.Select(selected), ct);
+        IReadOnlyList<ProbeResult> diagnosis;
+        if (_background.Count > 0)
+        {
+            await using var bg = await engine.StartAsync(_background, ct);
+            diagnosis = await _diagnose.RunAsync(targets.Select(selected), ct);
+        }
+        else
+        {
+            diagnosis = await _diagnose.RunAsync(targets.Select(selected), ct);
+        }
         if (ProbeRunner.IsNetworkDown(diagnosis))
             return new TuneReport { Diagnosis = diagnosis, NetworkDown = true };
 
@@ -121,7 +155,7 @@ public sealed class Tuner(IEngineHost engine, ProbeOptions? options = null, int 
         if (treatable.Count == 0)
             return new(service, diagnosis, PlanStatus.NotTreatable, []);
 
-        var candidates = presets.Treating(treatable);
+        var candidates = presets.Treating(treatable, service);
         return new(service, diagnosis, candidates.Count == 0 ? PlanStatus.NoCandidates : PlanStatus.NeedsTuning, candidates);
     }
 
@@ -136,8 +170,7 @@ public sealed class Tuner(IEngineHost engine, ProbeOptions? options = null, int 
         var serviceTargets = targets.Services[plan.Service].Where(t => !t.IsControl).ToList();
         // контрольные гоняем вместе с сервисом: если сеть пропала посреди подбора, пресет не виноват
         var probeTargets = serviceTargets.Concat(targets.All.Where(t => t.IsControl)).Distinct().ToList();
-        var hosts = serviceTargets.Select(t => t.Host).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
-        var ports = serviceTargets.Select(t => t.Port).Distinct().Order().ToList();
+        var (hosts, ports) = targets.BypassScope(plan.Service);
 
         var baseline = TuneScore.Of(plan.Diagnosis);
         var attempts = new List<TuneAttempt>();
@@ -145,7 +178,7 @@ public sealed class Tuner(IEngineHost engine, ProbeOptions? options = null, int 
 
         foreach (var preset in plan.Candidates)
         {
-            var attempt = await AttemptAsync(plan.Service, new EngineLaunch(preset, hosts, ports), probeTargets, ct);
+            var attempt = await AttemptAsync(plan.Service, null, [new EngineLaunch(preset, hosts, ports)], probeTargets, ct);
             attempts.Add(attempt);
             progress?.Report(attempt);
             if (attempt.Error is not null) continue;
@@ -154,21 +187,71 @@ public sealed class Tuner(IEngineHost engine, ProbeOptions? options = null, int 
             if (attempt.Score.CompareTo(best?.Score ?? baseline) > 0) best = attempt;
             if (attempt.Score.IsPerfect) break;
         }
+        // с одной целью уточнять нечего: поиск по хосту повторил бы тот же перебор
+        // второстепенные цели тоже стоит починить уточнением, если основная их не взяла
+        if (best is { Score.IsPerfect: true } && best.Results.All(r => r.IsOk) || serviceTargets.Count < 2)
+            return new ServiceTune { Plan = plan, Attempts = attempts, Best = best };
 
-        return new ServiceTune { Plan = plan, Attempts = attempts, Best = best };
+        // ни одна стратегия не взяла весь сервис: ищем свою для каждого упрямого хоста,
+        // основная при этом работает на остальном (так же, как будет под защитой)
+        var main = best is null ? null : new EngineLaunch(best.Preset, hosts, ports);
+        var failing = serviceTargets
+            .Where(t => best is null || best.Results.FirstOrDefault(r => r.Target == t) is not { IsOk: true })
+            .ToList();
+        var overrides = new List<HostOverride>();
+        foreach (var target in failing)
+        {
+            if (overrides.Any(o => o.Host == target.Host)) continue;
+            var probe = new List<ProbeTarget> { target };
+            probe.AddRange(targets.All.Where(t => t.IsControl));
+            foreach (var preset in plan.Candidates)
+            {
+                var launches = Launches(overrides.Append(new HostOverride(target.Host, preset)), main, ports);
+                var attempt = await AttemptAsync(plan.Service, target.Host, launches, probe, ct);
+                attempts.Add(attempt);
+                progress?.Report(attempt);
+                if (attempt.Error is null && attempt.Score.IsPerfect)
+                {
+                    overrides.Add(new HostOverride(target.Host, preset));
+                    break;
+                }
+            }
+        }
+        if (overrides.Count == 0)
+            return new ServiceTune { Plan = plan, Attempts = attempts, Best = best };
+
+        // проверка связки целиком: уточнения не должны были сломать остальное
+        var combined = await AttemptAsync(plan.Service, null, Launches(overrides, main, ports), probeTargets, ct);
+        if (combined.Error is not null || combined.Score.CompareTo(best?.Score ?? baseline) <= 0)
+            return new ServiceTune { Plan = plan, Attempts = attempts, Best = best };
+        return new ServiceTune
+        {
+            Plan = plan, Attempts = attempts, Best = best,
+            Overrides = overrides, CombinedScore = combined.Score,
+        };
     }
 
-    private async Task<TuneAttempt> AttemptAsync(
-        string service, EngineLaunch launch, List<ProbeTarget> probeTargets, CancellationToken ct)
+    /// <summary>Уточнения первыми: winws берёт первый подходящий профиль.</summary>
+    public static IReadOnlyList<EngineLaunch> Launches(IEnumerable<HostOverride> overrides, EngineLaunch? main, IReadOnlyList<int> ports)
     {
+        var list = overrides.Select(o => new EngineLaunch(o.Preset, [o.Host], ports)).ToList();
+        if (main is not null) list.Add(main);
+        return list;
+    }
+
+    /// <summary>Попытка: launches[0] — то, что сейчас пробуем (для уточнения — стратегия хоста).</summary>
+    private async Task<TuneAttempt> AttemptAsync(
+        string service, string? host, IReadOnlyList<EngineLaunch> launches, List<ProbeTarget> probeTargets, CancellationToken ct)
+    {
+        var tried = host is null ? launches[0].Preset : launches.First(l => l.Hosts.Contains(host)).Preset;
         IEngineSession session;
         try
         {
-            session = await engine.StartAsync(launch, ct);
+            session = await engine.StartAsync([.. launches, .. _background], ct);
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
-            return new TuneAttempt { Service = service, Preset = launch.Preset, Error = ex.Message };
+            return new TuneAttempt { Service = service, Host = host, Preset = tried, Error = ex.Message };
         }
 
         var runs = new List<IReadOnlyList<ProbeResult>>();
@@ -182,6 +265,6 @@ public sealed class Tuner(IEngineHost engine, ProbeOptions? options = null, int 
             .Where(i => !probeTargets[i].IsControl)
             .Select(i => runs.Select(run => run[i]).MinBy(TuneScore.Rank)!)
             .ToList();
-        return new TuneAttempt { Service = service, Preset = launch.Preset, Score = TuneScore.Of(worst), Results = worst };
+        return new TuneAttempt { Service = service, Host = host, Preset = tried, Score = TuneScore.Of(worst), Results = worst };
     }
 }

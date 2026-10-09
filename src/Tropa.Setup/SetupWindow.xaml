@@ -1,0 +1,108 @@
+<Window x:Class="Tropa.Setup.SetupWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Установка Тропы" Width="640" Height="500" ResizeMode="NoResize" WindowStartupLocation="CenterScreen"
+        Icon="tropa.ico" Background="{StaticResource Paper}" Foreground="{StaticResource Ink}"
+        FontFamily="{StaticResource Body}" FontSize="14" UseLayoutRounding="True">
+
+    <WindowChrome.WindowChrome>
+        <WindowChrome CaptionHeight="46" ResizeBorderThickness="0" GlassFrameThickness="0,0,0,1" UseAeroCaptionButtons="False" />
+    </WindowChrome.WindowChrome>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="46" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <Border Background="{StaticResource Chrome}" BorderBrush="{StaticResource Line}" BorderThickness="0,0,0,1">
+            <DockPanel>
+                <Button DockPanel.Dock="Right" Width="46" Content="&#xE8BB;" FontFamily="{StaticResource Icons}" FontSize="10"
+                        Background="Transparent" BorderThickness="0" Foreground="{StaticResource Ink}" Click="CloseClicked"
+                        WindowChrome.IsHitTestVisibleInChrome="True" ToolTip="Закрыть" x:Name="CloseButton" />
+                <StackPanel Orientation="Horizontal" Margin="22,0,0,0" VerticalAlignment="Center">
+                    <Border BorderBrush="{StaticResource Ink}" BorderThickness="1" CornerRadius="1.5" Width="12" Height="16">
+                        <UniformGrid Rows="3">
+                            <Rectangle Fill="White" />
+                            <Rectangle Fill="{StaticResource Signal}" />
+                            <Rectangle Fill="White" />
+                        </UniformGrid>
+                    </Border>
+                    <TextBlock Text="Тропа" FontFamily="{StaticResource Display}" FontSize="16" FontWeight="SemiBold" Margin="10,0,0,1" />
+                    <TextBlock x:Name="VersionText" FontFamily="{StaticResource DisplayNarrow}" Foreground="{StaticResource InkSoft}"
+                               Margin="8,2,0,0" />
+                </StackPanel>
+            </DockPanel>
+        </Border>
+
+        <Grid Grid.Row="1" Margin="40,30,40,28">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <StackPanel>
+                <TextBlock x:Name="Headline" FontFamily="{StaticResource Display}" FontSize="30" FontWeight="SemiBold" TextWrapping="Wrap" />
+                <TextBlock x:Name="Subline" Foreground="{StaticResource InkSoft}" FontSize="15" TextWrapping="Wrap" LineHeight="22" Margin="0,8,0,0" />
+            </StackPanel>
+
+            <!-- выбор перед установкой -->
+            <StackPanel x:Name="OptionsPanel" Grid.Row="1" Margin="0,24,0,0">
+                <CheckBox x:Name="DesktopBox" Style="{StaticResource Switch}" IsChecked="True" Content="Ярлык на рабочем столе" />
+                <CheckBox x:Name="AutostartBox" Style="{StaticResource Switch}" IsChecked="True" Content="Запускать Тропу вместе с Windows (в трее)" />
+                <CheckBox x:Name="LaunchBox" Style="{StaticResource Switch}" IsChecked="True" Content="Открыть Тропу после установки" />
+                <TextBlock x:Name="FolderText" Foreground="{StaticResource InkSoft}" FontSize="13" Margin="0,8,0,0" />
+            </StackPanel>
+
+            <!-- выбор перед удалением -->
+            <StackPanel x:Name="UninstallPanel" Grid.Row="1" Margin="0,24,0,0" Visibility="Collapsed">
+                <CheckBox x:Name="RemoveDataBox" Style="{StaticResource Switch}" IsChecked="False"
+                          Content="Удалить и настройки: подобранные стратегии, свои приложения, журнал" />
+            </StackPanel>
+
+            <!-- ход установки: тропа из пяти отметок -->
+            <StackPanel x:Name="ProgressPanel" Grid.Row="1" Margin="0,34,0,0" Visibility="Collapsed">
+                <ItemsControl x:Name="Steps" Focusable="False">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <UniformGrid Rows="1" />
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <StackPanel>
+                                <Grid Height="18">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition />
+                                        <ColumnDefinition />
+                                    </Grid.ColumnDefinitions>
+                                    <!-- соединения только между отметками: у первой нет левого, у последней правого -->
+                                    <Rectangle Height="3" VerticalAlignment="Center" Fill="{Binding LeftLine}" Visibility="{Binding LeftVisible}" />
+                                    <Rectangle Grid.Column="1" Height="3" VerticalAlignment="Center" Fill="{Binding RightLine}" Visibility="{Binding RightVisible}" />
+                                    <Ellipse Grid.ColumnSpan="2" Width="14" Height="14" Fill="{Binding Dot}" Stroke="{Binding Ring}" StrokeThickness="2" />
+                                </Grid>
+                                <TextBlock Text="{Binding Label}" HorizontalAlignment="Center" Margin="0,8,0,0"
+                                           FontFamily="{StaticResource DisplayNarrow}" FontSize="12.5" Foreground="{Binding Text}" />
+                            </StackPanel>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+                <TextBlock x:Name="StepText" Margin="0,22,0,0" FontSize="15" />
+            </StackPanel>
+
+            <!-- ошибка -->
+            <StackPanel x:Name="ErrorPanel" Grid.Row="1" Margin="0,22,0,0" Visibility="Collapsed">
+                <TextBox x:Name="ErrorText" IsReadOnly="True" BorderThickness="0" Background="Transparent" TextWrapping="Wrap"
+                         Foreground="{StaticResource Signal}" FontSize="14" />
+            </StackPanel>
+
+            <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right">
+                <Button x:Name="LogButton" Content="Журнал установки" Style="{StaticResource Quiet}" Margin="0,0,10,0"
+                        Click="OpenLog" Visibility="Collapsed" />
+                <Button x:Name="SecondaryButton" Content="Отмена" Style="{StaticResource Quiet}" Margin="0,0,10,0" Click="CloseClicked" />
+                <Button x:Name="PrimaryButton" Content="Установить" Style="{StaticResource Primary}" Click="PrimaryClicked" IsDefault="True" />
+            </StackPanel>
+        </Grid>
+    </Grid>
+</Window>

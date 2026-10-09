@@ -1,0 +1,12 @@
+<Project>
+  <!-- одна версия на все проекты: её показывает окно, по ней проверяются обновления, ею помечен установщик -->
+  <PropertyGroup>
+    <Version>1.0.0</Version>
+    <Product>Тропа</Product>
+    <Company>Tropa</Company>
+    <Copyright>MIT, github.com/xckrt/Tropa</Copyright>
+    <RepositoryUrl>https://github.com/xckrt/Tropa</RepositoryUrl>
+    <!-- без хвоста +commit в версии: её сравнивают с тегами релизов -->
+    <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
+  </PropertyGroup>
+</Project>

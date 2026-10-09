@@ -20,6 +20,17 @@ public sealed record ProbeTarget
     /// <summary>Контрольный хост, который заведомо не блокируется.
     /// Если упали все контрольные, значит нет интернета, а не блокировка.</summary>
     public bool IsControl { get; init; }
+
+    /// <summary>Проверять как websocket: апгрейд (HTTP 101) и первое сообщение сервера.
+    /// Так работает gateway Discord: TLS и короткий HTTP проходят, а живое соединение рвут.</summary>
+    public bool WebSocket { get; init; }
+
+    /// <summary>Второстепенная проверка: без неё сервис работает (например, хост обновлений клиента).
+    /// Её провал не делает сервис «сломанным» и не запускает переподбор, но подборщик всё равно пытается её починить.</summary>
+    public bool Optional { get; init; }
+
+    /// <summary>Зачем этот хост, человеческими словами: «обновления клиента».</summary>
+    public string? Role { get; init; }
 }
 
 public enum ProbeStage { Dns, Tcp, Tls, Http, Transfer }

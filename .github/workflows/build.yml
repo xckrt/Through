@@ -1,0 +1,19 @@
+name: build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+      - name: Сборка
+        run: dotnet build Tropa.sln -c Release
+      - name: Тесты (локальные «злые» серверы, интернет не нужен)
+        run: dotnet run --project tests/Tropa.SelfTest -c Release --no-build

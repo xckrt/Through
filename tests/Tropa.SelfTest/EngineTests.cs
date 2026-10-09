@@ -87,20 +87,29 @@ internal static class EngineTests
             Assert(err.Contains("winws.exe"), err);
         })),
 
-        ("engine.json из репозитория: пустой хеш, качать не даст", () =>
+        ("engine.json из репозитория: версия и оба хеша закреплены", () =>
         {
             var m = EngineManifest.Load(Path.Combine(AppContext.BaseDirectory, "engine.json"));
-            Assert(m.Urls.All(u => u.StartsWith("https://")), "только https");
-            try { m.Validate(); }
-            catch (InvalidDataException) { return Task.CompletedTask; }
-            Assert(m.Sha256.Length == 64, "если хеш заполнен, он должен быть полным SHA-256");
+            m.Validate();
+            Assert(m.WinwsSha256.Length == 64, "нет хеша winws.exe");
+            Assert(m.ResolvedUrls.All(u => u.Contains(m.Version)), string.Join(", ", m.ResolvedUrls));
             return Task.CompletedTask;
         }),
+
+        ("Fetcher: архив честный, но winws.exe внутри не тот → отказ", () => InSandbox(async dir =>
+        {
+            var zip = Zip(("zapret-v1/binaries/windows-x86_64/winws.exe", "MZ"));
+            var http = new FakeHttp { ["https://a.test/z.zip"] = zip };
+            var err = await Throws(() => new EngineFetcher(new HttpClient(http), dir)
+                .EnsureAsync(Manifest(zip, "https://a.test/z.zip") with { WinwsSha256 = new string('0', 64) }));
+            Assert(err.Contains("winws.exe не совпал"), err);
+            Assert(!Directory.Exists(Path.Combine(dir, "v1")), "не должно остаться установки");
+        })),
 
         ("WinwsEngineHost: ждёт готовности, отдаёт аргументы и hostlist, убивает при остановке", () => InSandbox(async dir =>
         {
             var host = Host("ready", engineDir: dir);
-            var session = (WinwsSession)await host.StartAsync(Launch());
+            var session = (WinwsSession)await host.StartAsync([Launch()]);
             await Task.Delay(200); // эхо аргументов приходит сразу за маркером
             var log = session.Log;
             Assert(log.Contains("capture is started"), log);
@@ -110,18 +119,18 @@ internal static class EngineTests
 
             await session.DisposeAsync();
             Assert(session.HasExited, "после остановки процесс должен быть мёртв");
-            Assert(!File.Exists(session.HostlistPath), "временный hostlist не удалён");
+            Assert(session.HostlistPaths.All(p => !File.Exists(p)), "временный hostlist не удалён");
         })),
 
         ("WinwsEngineHost: winws упал на старте → ошибка с его выводом", async () =>
         {
-            var err = await Throws(() => Host("crash").StartAsync(Launch()));
+            var err = await Throws(() => Host("crash").StartAsync([Launch()]));
             Assert(err.Contains("кодом 3") && err.Contains("unknown option"), err);
         }),
 
         ("WinwsEngineHost: молчит → таймаут готовности", async () =>
         {
-            var err = await Throws(() => Host("silent", ready: TimeSpan.FromMilliseconds(800)).StartAsync(Launch()));
+            var err = await Throws(() => Host("silent", ready: TimeSpan.FromMilliseconds(800)).StartAsync([Launch()]));
             Assert(err.Contains("не сообщил о готовности"), err);
         }),
 

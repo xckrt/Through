@@ -18,6 +18,9 @@ internal static class TropaJson
         Converters = { new JsonStringEnumConverter() },
     };
 
+    /// <summary>Для канала службы: одно сообщение = одна строка, без отступов.</summary>
+    public static readonly JsonSerializerOptions Line = new(Options) { WriteIndented = false };
+
     public static T Load<T>(string path) where T : class =>
         JsonSerializer.Deserialize<T>(File.ReadAllText(path), Options)
         ?? throw new InvalidDataException($"пустой файл: {path}");
