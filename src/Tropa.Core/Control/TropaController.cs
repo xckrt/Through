@@ -1,3 +1,5 @@
+using System.Net;
+using System.Net.NetworkInformation;
 using System.Net.Sockets;
 using System.Security.Cryptography;
 using Tropa.Core.Doh;
@@ -1187,18 +1189,46 @@ public sealed class TropaController(ControllerOptions o) : IAsyncDisposable
     }
 
     /// <summary>Адрес компьютера в домашней сети (тот, через который он ходит наружу), только частный.</summary>
+    /// <summary>
+    /// Адрес компьютера в домашней сети (к нему подключается телефон), или null, если его нет.
+    /// Сначала спрашиваем систему, каким адресом она идёт наружу — верно, когда VPN не включён.
+    /// Если наружу идёт туннель VPN (адрес не домашний), берём частный IPv4 с работающего адаптера,
+    /// у которого есть шлюз: это Wi-Fi или Ethernet, а не туннель или WSL (у них шлюза нет).
+    /// </summary>
     public static string? LanAddress()
     {
         try
         {
             using var s = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
             s.Connect("8.8.8.8", 53); // без отправки: просто спросить систему, каким адресом она пошла бы наружу
-            if (s.LocalEndPoint is not System.Net.IPEndPoint { Address: var a }) return null;
-            var b = a.GetAddressBytes();
-            var isPrivate = b[0] == 10 || (b[0] == 172 && b[1] is >= 16 and <= 31) || (b[0] == 192 && b[1] == 168);
-            return isPrivate ? a.ToString() : null;
+            if (s.LocalEndPoint is IPEndPoint { Address: var a } && IsHomeIPv4(a)) return a.ToString();
         }
-        catch (SocketException) { return null; }
+        catch (SocketException) { }
+
+        try
+        {
+            return NetworkInterface.GetAllNetworkInterfaces()
+                .Where(n => n.OperationalStatus == OperationalStatus.Up
+                         && n.NetworkInterfaceType is not (NetworkInterfaceType.Loopback or NetworkInterfaceType.Tunnel))
+                .Select(n => new { Nic = n, Props = n.GetIPProperties() })
+                .Where(x => x.Props.GatewayAddresses.Any(g => g.Address.AddressFamily == AddressFamily.InterNetwork
+                                                           && !g.Address.Equals(IPAddress.Any)))
+                .SelectMany(x => x.Props.UnicastAddresses
+                    .Where(u => u.Address.AddressFamily == AddressFamily.InterNetwork && IsHomeIPv4(u.Address))
+                    .Select(u => new { x.Nic, u.Address }))
+                .OrderBy(x => x.Nic.NetworkInterfaceType is NetworkInterfaceType.Wireless80211 or NetworkInterfaceType.Ethernet ? 0 : 1)
+                .Select(x => x.Address.ToString())
+                .FirstOrDefault();
+        }
+        catch (NetworkInformationException) { return null; }
+    }
+
+    /// <summary>Частный IPv4 домашней сети: 10.x, 172.16–31.x, 192.168.x (без APIPA 169.254).</summary>
+    private static bool IsHomeIPv4(IPAddress a)
+    {
+        if (a.AddressFamily != AddressFamily.InterNetwork) return false;
+        var b = a.GetAddressBytes();
+        return b[0] == 10 || (b[0] == 172 && b[1] is >= 16 and <= 31) || (b[0] == 192 && b[1] == 168);
     }
 
     /// <summary>Пускать телефоны: прокси перезапускается на всех адресах (секрет и порт те же), порт — в брандмауэр.</summary>
