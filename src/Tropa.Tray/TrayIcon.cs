@@ -21,18 +21,18 @@ public sealed class TrayIcon : IDisposable
 
     public TrayIcon()
     {
-        _protect = new Forms.ToolStripMenuItem("Включить защиту", null, (_, _) => ToggleProtection?.Invoke());
-        _telegram = new Forms.ToolStripMenuItem("Включить прокси Telegram", null, (_, _) => ToggleTelegram?.Invoke());
+        _protect = new Forms.ToolStripMenuItem(Loc.T("Включить защиту"), null, (_, _) => ToggleProtection?.Invoke());
+        _telegram = new Forms.ToolStripMenuItem(Loc.T("Включить прокси Telegram"), null, (_, _) => ToggleTelegram?.Invoke());
         var menu = new Forms.ContextMenuStrip();
-        menu.Items.Add(new Forms.ToolStripMenuItem("Открыть Тропу", null, (_, _) => Open?.Invoke()) { Font = new Font(Forms.Control.DefaultFont, FontStyle.Bold) });
+        menu.Items.Add(new Forms.ToolStripMenuItem(Loc.T("Открыть Тропу"), null, (_, _) => Open?.Invoke()) { Font = new Font(Forms.Control.DefaultFont, FontStyle.Bold) });
         menu.Items.Add(_protect);
         menu.Items.Add(_telegram);
         menu.Items.Add(new Forms.ToolStripSeparator());
-        menu.Items.Add(new Forms.ToolStripMenuItem("Выйти из окна", null, (_, _) => Exit?.Invoke()));
+        menu.Items.Add(new Forms.ToolStripMenuItem(Loc.T("Выйти из окна"), null, (_, _) => Exit?.Invoke()));
 
         _icon = new Forms.NotifyIcon { ContextMenuStrip = menu, Visible = true };
         _icon.MouseClick += (_, e) => { if (e.Button == Forms.MouseButtons.Left) Open?.Invoke(); };
-        Update(Pill.NoService, "Тропа", protecting: false, canToggle: false);
+        Update(Pill.NoService, Loc.T("Тропа"), protecting: false, canToggle: false);
     }
 
     public void Update(Pill pill, string text, bool protecting, bool canToggle)
@@ -50,15 +50,15 @@ public sealed class TrayIcon : IDisposable
         old?.Dispose();
 
         // подсказка у значка ограничена 63 символами
-        var tip = $"Тропа: {text}";
+        var tip = Loc.F("Тропа: {0}", text);
         _icon.Text = tip.Length > 63 ? tip[..63] : tip;
-        _protect.Text = protecting ? "Выключить защиту" : "Включить защиту";
+        _protect.Text = protecting ? Loc.T("Выключить защиту") : Loc.T("Включить защиту");
         _protect.Enabled = canToggle;
     }
 
     public void UpdateTelegram(bool on, bool canToggle)
     {
-        _telegram.Text = on ? "Выключить прокси Telegram" : "Включить прокси Telegram";
+        _telegram.Text = on ? Loc.T("Выключить прокси Telegram") : Loc.T("Включить прокси Telegram");
         _telegram.Checked = on;
         _telegram.Enabled = canToggle;
     }

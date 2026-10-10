@@ -8,7 +8,7 @@ across reboots and network changes.
 
 ![Tropa overview](site/img/overview-dark.png)
 
-> The interface is in Russian for now: Tropa is built for networks with DPI-based blocking (TSPU and similar).
+> The interface is in English and Russian (Settings → Language). Tropa is built for networks with DPI-based blocking (TSPU and similar).
 
 ## Install
 

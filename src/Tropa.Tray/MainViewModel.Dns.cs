@@ -13,10 +13,10 @@ public sealed partial class MainViewModel
 
     public string DnsText => _status?.Dns switch
     {
-        null or { Enabled: false } => "Провайдер видит, какие сайты вы открываете, и может подменить их адреса. С защищённым DNS запросы идут через HTTPS к Cloudflare или Google.",
-        { Running: true, Error: null, Stats: { } st } => $"Включён: адреса сайтов приходят через {st.Upstream} по HTTPS. Запросов {st.Queries}, из кэша {st.CacheHits}.",
-        { Error: { } e } => $"Пока не работает: {e}. Интернет идёт через прежний DNS, Тропа попробует снова сама.",
-        _ => "Включаю…",
+        null or { Enabled: false } => Loc.T("Провайдер видит, какие сайты вы открываете, и может подменить их адреса. С защищённым DNS запросы идут через HTTPS к Cloudflare или Google."),
+        { Running: true, Error: null, Stats: { } st } => Loc.F("Включён: адреса сайтов приходят через {0} по HTTPS. Запросов {1}, из кэша {2}.", st.Upstream, st.Queries, st.CacheHits),
+        { Error: { } e } => Loc.F("Пока не работает: {0}. Интернет идёт через прежний DNS, Тропа попробует снова сама.", Loc.Msg(e)),
+        _ => Loc.T("Включаю…"),
     };
 
     public ICommand DnsToggleCommand => _dnsToggle ??= new RelayCommand(() => SetDnsAsync(!DnsOn), () => !_dnsBusy && !IsRunning);
@@ -43,7 +43,7 @@ public sealed partial class MainViewModel
         }
         catch (Exception ex) when (ex is InvalidOperationException or IOException)
         {
-            Log($"защищённый DNS: {ex.Message}", error: true);
+            Log(Loc.F("защищённый DNS: {0}", ex.Message), error: true);
         }
         finally
         {

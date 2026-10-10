@@ -34,7 +34,7 @@ public sealed partial class MainViewModel
     {
         if (_client is null) return;
         await TelegramCallAsync("telegram.lan", new { on = !TgLanOn });
-        Log(TgLanOn ? "прокси Telegram открыт для телефонов в домашней сети" : "прокси Telegram снова только для этого компьютера");
+        Log(TgLanOn ? Loc.T("прокси Telegram открыт для телефонов в домашней сети") : Loc.T("прокси Telegram снова только для этого компьютера"));
     }, () => !_tgBusy && TgOn && _client is not null);
     private ICommand? _tgLan;
 

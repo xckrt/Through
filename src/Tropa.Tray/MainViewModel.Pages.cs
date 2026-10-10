@@ -66,7 +66,7 @@ public sealed partial class MainViewModel
     // ---------- плашка состояния в заголовке
 
     private Pill _pill = Pill.NoService;
-    private string _pillText = "служба не установлена";
+    private string _pillText = Loc.T("служба не установлена");
 
     public Pill Pill { get => _pill; private set => Set(ref _pill, value); }
     public string PillText { get => _pillText; private set => Set(ref _pillText, value); }
@@ -77,7 +77,7 @@ public sealed partial class MainViewModel
 
     private void Log(string text, bool error = false)
     {
-        LogLines.Insert(0, new LogLine(DateTime.Now.ToString("HH:mm:ss"), text, error));
+        LogLines.Insert(0, new LogLine(DateTime.Now.ToString("HH:mm:ss"), Loc.Msg(text), error));
         while (LogLines.Count > 500) LogLines.RemoveAt(LogLines.Count - 1);
     }
 
@@ -85,7 +85,7 @@ public sealed partial class MainViewModel
     {
         var path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "Tropa", "service.log");
         if (File.Exists(path)) Process.Start(new ProcessStartInfo(path) { UseShellExecute = true })?.Dispose();
-        else Log("журнала службы ещё нет: служба не запускалась");
+        else Log(Loc.T("журнала службы ещё нет: служба не запускалась"));
         return Task.CompletedTask;
     });
     private ICommand? _openLog;
@@ -99,7 +99,7 @@ public sealed partial class MainViewModel
 
     public IReadOnlyList<AppTemplate> Templates { get; } =
     [
-        new("Dead by Daylight", "Серверы игры на AWS и CloudFront, античит EasyAntiCheat на Cloudflare. Обход включается всегда: игра чаще тормозит, чем не открывается.",
+        new("Dead by Daylight", Loc.T("Серверы игры на AWS и CloudFront, античит EasyAntiCheat на Cloudflare. Обход включается всегда: игра чаще тормозит, чем не открывается."),
             new AppDefinition
             {
                 Key = "dbd", Title = "Dead by Daylight",
@@ -107,21 +107,21 @@ public sealed partial class MainViewModel
                 CheckHosts = ["steam.live.bhvrdbd.com", "cdn.live.dbd.bhvronline.com", "easyanticheat.net"],
                 Always = true,
             }),
-        new("Roblox", "Сайт и лаунчер. Если тормозит сама игра, добавьте её UDP-порты.",
+        new("Roblox", Loc.T("Сайт и лаунчер. Если тормозит сама игра, добавьте её UDP-порты."),
             new AppDefinition
             {
                 Key = "roblox", Title = "Roblox",
                 Domains = ["roblox.com", "rbxcdn.com", "robloxlabs.com", "rbx.com"],
                 CheckHosts = ["www.roblox.com", "apis.roblox.com"],
             }),
-        new("Twitch", "Сайт, чат и видеопоток.",
+        new("Twitch", Loc.T("Сайт, чат и видеопоток."),
             new AppDefinition
             {
                 Key = "twitch", Title = "Twitch",
                 Domains = ["twitch.tv", "ttvnw.net", "jtvnw.net", "twitchcdn.net", "twitchsvc.net", "live-video.net"],
                 CheckHosts = ["www.twitch.tv", "static-cdn.jtvnw.net"],
             }),
-        new("Своё приложение", "Впишите домены, с которыми работает приложение. Поддомены обходятся сами.",
+        new(Loc.T("Своё приложение"), Loc.T("Впишите домены, с которыми работает приложение. Поддомены обходятся сами."),
             new AppDefinition { Key = "", Title = "" }),
     ];
 
@@ -180,7 +180,7 @@ public sealed partial class MainViewModel
         try
         {
             await _client.CallAsync<AppDefinition[]>("apps.remove", new { key }, _cts.Token);
-            Log($"приложение «{TitleOf(key)}» удалено");
+            Log(Loc.F("приложение «{0}» удалено", TitleOf(key)));
             Services.Remove(Services.First(s => s.Key == key));
             await RefreshAppsAsync();
         }
@@ -219,7 +219,7 @@ public sealed partial class MainViewModel
             IsRunning = true;
             await EnsureServiceAsync();
             await _client!.CallAsync<AppDefinition[]>("apps.add", app, _cts.Token);
-            Log($"добавлено приложение «{app.Title}»");
+            Log(Loc.F("добавлено приложение «{0}»", app.Title));
             FormVisible = false;
         }
         catch (Exception ex) when (ex is InvalidOperationException or IOException)
@@ -261,14 +261,14 @@ public sealed partial class MainViewModel
         {
             if (targets.All(t => t.IsControl)) continue;
             var domains = builtIn!.Domains.GetValueOrDefault(key, []).Count;
-            AppRows.Add(Row(key, Wording.ServiceTitle(key), domains > 0 ? $"встроенный, доменов: {domains}" : "встроенный", false));
+            AppRows.Add(Row(key, Wording.ServiceTitle(key), domains > 0 ? Loc.F("встроенный, доменов: {0}", domains) : Loc.T("встроенный"), false));
         }
         foreach (var a in _userApps)
         {
-            var parts = new List<string> { $"доменов: {a.Domains.Length}" };
+            var parts = new List<string> { Loc.F("доменов: {0}", a.Domains.Length) };
             if (a.UdpPorts.Length > 0) parts.Add($"UDP {string.Join(",", a.UdpPorts)}");
             if (a.TcpPorts.Length > 0) parts.Add($"TCP {string.Join(",", a.TcpPorts)}");
-            if (a.Always) parts.Add("обход всегда");
+            if (a.Always) parts.Add(Loc.T("обход всегда"));
             AppRows.Add(Row(a.Key, a.Title, string.Join(", ", parts), true));
         }
     }
@@ -283,7 +283,7 @@ public sealed partial class MainViewModel
         }
         else
         {
-            row.Summary = "ещё не проверялось";
+            row.Summary = Loc.T("ещё не проверялось");
         }
         return row;
     }
@@ -297,7 +297,7 @@ public sealed partial class MainViewModel
     // ---------- настройки
 
     private bool _autoUpdate = true;
-    private string _engineText = "zapret ещё не скачан";
+    private string _engineText = Loc.T("zapret ещё не скачан");
     private string _updateText = "";
     private bool _autostart = Tray.Autostart.IsOn();
 
@@ -336,6 +336,25 @@ public sealed partial class MainViewModel
         }
     }
 
+    public LanguageChoice Language => _ui.Language;
+
+    /// <summary>Сменить язык: сохранить и перезапустить окно (строки XAML переводятся при загрузке).</summary>
+    public ICommand SetLanguageCommand => _setLanguage ??= new ParamCommand(p =>
+    {
+        if (p is not string name || !Enum.TryParse<LanguageChoice>(name, out var choice) || choice == _ui.Language) return Task.CompletedTask;
+        _ui.Language = choice;
+        _ui.Save();
+        Raise(nameof(Language));
+        var exe = Environment.ProcessPath;
+        if (exe is not null)
+        {
+            Process.Start(new ProcessStartInfo(exe) { UseShellExecute = false })?.Dispose();
+            System.Windows.Application.Current.Shutdown();
+        }
+        return Task.CompletedTask;
+    });
+    private ICommand? _setLanguage;
+
     public bool Autostart
     {
         get => _autostart;
@@ -343,7 +362,7 @@ public sealed partial class MainViewModel
         {
             if (!Set(ref _autostart, value)) return;
             try { Tray.Autostart.Set(value); }
-            catch (Exception ex) when (ex is UnauthorizedAccessException or IOException) { Log($"автозапуск: {ex.Message}", error: true); }
+            catch (Exception ex) when (ex is UnauthorizedAccessException or IOException) { Log(Loc.F("автозапуск: {0}", ex.Message), error: true); }
         }
     }
 
@@ -385,7 +404,7 @@ public sealed partial class MainViewModel
 
     public string EngineText { get => _engineText; private set => Set(ref _engineText, value); }
     public string UpdateText { get => _updateText; private set => Set(ref _updateText, value); }
-    public string BuildText => $"Тропа, сборка {Core.TropaBuild.Id}";
+    public string BuildText => Loc.F("Тропа, сборка {0}", Core.TropaBuild.Id);
     public bool HasService => _client is not null;
     public bool CanUninstall => HasService && !IsPortable;
 
@@ -393,7 +412,7 @@ public sealed partial class MainViewModel
     {
         if (_client is null) return;
         IsRunning = true;
-        UpdateText = "Проверяю…";
+        UpdateText = Loc.T("Проверяю…");
         try
         {
             var r = await _client.CallAsync<EngineUpdateResult>("engine.update", ct: _cts.Token);
@@ -419,11 +438,11 @@ public sealed partial class MainViewModel
         {
             using var p = Process.Start(new ProcessStartInfo(exe, "uninstall") { UseShellExecute = true, Verb = "runas", WindowStyle = ProcessWindowStyle.Hidden });
             if (p is not null) await p.WaitForExitAsync();
-            Log("служба Тропы удалена, winws остановлен");
+            Log(Loc.T("служба Тропы удалена, winws остановлен"));
         }
         catch (System.ComponentModel.Win32Exception ex) when (ex.NativeErrorCode == 1223)
         {
-            Log("удаление службы отменено");
+            Log(Loc.T("удаление службы отменено"));
         }
     }, () => !IsRunning && _client is not null);
     private ICommand? _uninstall;
@@ -443,19 +462,19 @@ public sealed partial class MainViewModel
         CommunityShare = s.Community?.Share ?? false;
         Raise(nameof(HasCommunity));
         _syncingSettings = false;
-        EngineText = s.EngineVersion is { } v ? $"zapret {v}" : "zapret скачается при первом подборе";
-        if (s.LastUpdateCheck is { } at && UpdateText is "" or "Проверяю…")
-            UpdateText = $"Последняя проверка обновлений: {at.LocalDateTime:dd.MM HH:mm}";
+        EngineText = s.EngineVersion is { } v ? $"zapret {v}" : Loc.T("zapret скачается при первом подборе");
+        if (s.LastUpdateCheck is { } at && (UpdateText == "" || UpdateText == Loc.T("Проверяю…")))
+            UpdateText = Loc.F("Последняя проверка обновлений: {0:dd.MM HH:mm}", at.LocalDateTime);
         Raise(nameof(HasService));
         Raise(nameof(CanUninstall));
 
         (Pill, PillText) = s switch
         {
-            { State: ControllerState.Tuning } => (Pill.Busy, "подбираю обход"),
-            { Protecting: true } when Services.Any(x => !x.IsControl && x.Health == Health.Blocked) => (Pill.Warn, "защита включена, не всё работает"),
-            { Protecting: true } => (Pill.On, "защита включена"),
-            { ProtectionWanted: true } => (Pill.Warn, "защита не запустилась"),
-            _ => (Pill.Off, "защита выключена"),
+            { State: ControllerState.Tuning } => (Pill.Busy, Loc.T("подбираю обход")),
+            { Protecting: true } when Services.Any(x => !x.IsControl && x.Health == Health.Blocked) => (Pill.Warn, Loc.T("защита включена, не всё работает")),
+            { Protecting: true } => (Pill.On, Loc.T("защита включена")),
+            { ProtectionWanted: true } => (Pill.Warn, Loc.T("защита не запустилась")),
+            _ => (Pill.Off, Loc.T("защита выключена")),
         };
     }
 
@@ -464,14 +483,14 @@ public sealed partial class MainViewModel
 
     /// <summary>Заголовок уведомления для сообщений службы, о которых стоит сказать, пока окно закрыто.</summary>
     private static string? Notable(string msg) =>
-        msg.Contains("перестало работать") ? "Тропа подбирает обход заново"
-        : msg.Contains("zapret обновлён") ? "zapret обновлён"
-        : msg.Contains("остановился сам") ? "Тропа перезапустила движок"
-        : msg.Contains("не удалось включить защиту") || msg.Contains("не запустился") ? "Тропа: нужна помощь"
-        : msg.StartsWith("подбор закончен") ? "Подбор закончен"
-        : msg.StartsWith("ранний сигнал") ? "Тропа: провайдер что-то поменял"
+        msg.Contains("перестало работать") ? Loc.T("Тропа подбирает обход заново")
+        : msg.Contains("zapret обновлён") ? Loc.T("zapret обновлён")
+        : msg.Contains("остановился сам") ? Loc.T("Тропа перезапустила движок")
+        : msg.Contains("не удалось включить защиту") || msg.Contains("не запустился") ? Loc.T("Тропа: нужна помощь")
+        : msg.StartsWith("подбор закончен") ? Loc.T("Подбор закончен")
+        : msg.StartsWith("ранний сигнал") ? Loc.T("Тропа: провайдер что-то поменял")
         : msg.StartsWith("Telegram: не отвечают") || msg.StartsWith("прокси Telegram не запустился") ? "Telegram"
-        : msg.StartsWith("порт ") && msg.Contains("прокси Telegram") ? "Telegram: подключите прокси заново"
+        : msg.StartsWith("порт ") && msg.Contains("прокси Telegram") ? Loc.T("Telegram: подключите прокси заново")
         : null;
 
     public bool Notify
@@ -507,6 +526,7 @@ public sealed class UiSettings
     public bool MinimizeToTray { get; set; } = true;
     public bool TrayHintShown { get; set; }
     public ThemeChoice Theme { get; set; } = ThemeChoice.System;
+    public LanguageChoice Language { get; set; } = LanguageChoice.System;
     public bool Notify { get; set; } = true;
     public bool CheckAppUpdates { get; set; } = true;
     /// <summary>Версия, которую человек отложил кнопкой «Позже»: про неё больше не напоминаем.</summary>

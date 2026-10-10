@@ -67,7 +67,7 @@ ShortDescription: Diagnoses network blocking and configures the zapret DPI engin
 Description: |-
   Tropa checks services stage by stage (DNS, TCP, TLS, HTTP, transfer), names how a connection is blocked and picks a
   working zapret strategy for it, then keeps it working across reboots and network changes. It also includes a local
-  Telegram proxy and secure DNS (DoH). The interface is in Russian.
+  Telegram proxy and secure DNS (DoH). The interface is in English and Russian.
 Moniker: tropa
 Tags:
   - dpi

@@ -72,7 +72,7 @@ public partial class MainWindow : Window
         e.Cancel = true;
         Hide();
         if (_vm.FirstTrayHint())
-            _tray.Hint("Тропа работает", "Окно свернулось в трей. Защиту держит служба, окно открывается значком у часов.");
+            _tray.Hint(Loc.T("Тропа работает"), Loc.T("Окно свернулось в трей. Защиту держит служба, окно открывается значком у часов."));
     }
 
     private void ShowFromTray()
@@ -113,6 +113,6 @@ public partial class MainWindow : Window
         var maximized = WindowState == WindowState.Maximized;
         Frame.Margin = maximized ? new Thickness(7) : new Thickness(0);
         MaxButton.Content = maximized ? "" : "";
-        MaxButton.ToolTip = maximized ? "Восстановить" : "Развернуть";
+        MaxButton.ToolTip = maximized ? Loc.T("Восстановить") : Loc.T("Развернуть");
     }
 }

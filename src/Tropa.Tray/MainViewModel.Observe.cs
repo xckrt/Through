@@ -28,15 +28,15 @@ public sealed partial class MainViewModel
     public ObservableCollection<RunningAppVm> RunningApps { get; } = [];
     public bool PickerVisible { get => _pickerVisible; private set => Set(ref _pickerVisible, value); }
     public bool Observing { get => _observing; private set { Set(ref _observing, value); CommandManager.InvalidateRequerySuggested(); } }
-    public string ObserveText { get => _observeText; private set => Set(ref _observeText, value); }
+    public string ObserveText { get => _observeText; private set => Set(ref _observeText, Loc.Msg(value)); }
 
     public ICommand OpenPickerCommand => _openPicker ??= new RelayCommand(() =>
     {
         RunningApps.Clear();
         foreach (var app in WindowedApps()) RunningApps.Add(app);
         ObserveText = RunningApps.Count == 0
-            ? "Не вижу программ с окнами. Запустите игру или приложение и откройте список снова."
-            : "Выберите программу. Тропа послушает её полминуты, пока вы ей пользуетесь, и сама заполнит домены и порты.";
+            ? Loc.T("Не вижу программ с окнами. Запустите игру или приложение и откройте список снова.")
+            : Loc.T("Выберите программу. Тропа послушает её полминуты, пока вы ей пользуетесь, и сама заполнит домены и порты.");
         PickerVisible = true;
         FormVisible = false;
         return Task.CompletedTask;
@@ -55,11 +55,11 @@ public sealed partial class MainViewModel
         if (p is not RunningAppVm app || Observing) return;
         Observing = true;
         var left = ObserveSeconds;
-        ObserveText = $"Слушаю «{app.Title}»: {left} с. Пользуйтесь программой как обычно — зайдите в матч, откройте чат.";
+        ObserveText = Loc.F("Слушаю «{0}»: {1} с. Пользуйтесь программой как обычно — зайдите в матч, откройте чат.", app.Title, left);
         _observeTimer = new DispatcherTimer(TimeSpan.FromSeconds(1), DispatcherPriority.Normal, (_, _) =>
         {
-            if (--left > 0) ObserveText = $"Слушаю «{app.Title}»: {left} с. Пользуйтесь программой как обычно — зайдите в матч, откройте чат.";
-            else ObserveText = "Собираю, что услышал…";
+            if (--left > 0) ObserveText = Loc.F("Слушаю «{0}»: {1} с. Пользуйтесь программой как обычно — зайдите в матч, откройте чат.", app.Title, left);
+            else ObserveText = Loc.T("Собираю, что услышал…");
         }, Application.Current.Dispatcher);
         try
         {
@@ -69,20 +69,20 @@ public sealed partial class MainViewModel
             if (suggestion.Domains.Length == 0 && suggestion.UdpPorts.Length == 0 && suggestion.TcpPorts.Length == 0)
             {
                 ObserveText = t.ProcessFound
-                    ? $"За {t.Seconds} с «{app.Title}» никуда не ходил. Попробуйте ещё раз и поиграйте в это время: зайдите в матч или лобби."
-                    : $"«{app.Title}» закрылся, пока я слушал. Запустите его и попробуйте снова.";
+                    ? Loc.F("За {0} с «{1}» никуда не ходил. Попробуйте ещё раз и поиграйте в это время: зайдите в матч или лобби.", t.Seconds, app.Title)
+                    : Loc.F("«{0}» закрылся, пока я слушал. Запустите его и попробуйте снова.", app.Title);
                 return;
             }
             PickerVisible = false;
             UseTemplateCommand.Execute(new AppTemplate(app.Title,
-                $"Тропа услышала {t.Hosts.Length} {Wording.Plural(t.Hosts.Length, "имя", "имени", "имён")} и {t.Endpoints.Length} " +
-                $"{Wording.Plural(t.Endpoints.Length, "адрес", "адреса", "адресов")}. Лишнее можно удалить, недостающее — дописать.",
+                Loc.F("Тропа услышала {0} {1} и {2} ", t.Hosts.Length, Wording.Plural(t.Hosts.Length, "имя", "имени", "имён"), t.Endpoints.Length) +
+                Loc.F("{0}. Лишнее можно удалить, недостающее — дописать.", Wording.Plural(t.Endpoints.Length, "адрес", "адреса", "адресов")),
                 suggestion));
-            Log($"«{app.Title}»: услышал {suggestion.Domains.Length} доменов и {suggestion.UdpPorts.Length + suggestion.TcpPorts.Length} портов");
+            Log(Loc.F("«{0}»: услышал {1} доменов и {2} портов", app.Title, suggestion.Domains.Length, suggestion.UdpPorts.Length + suggestion.TcpPorts.Length));
         }
         catch (Exception ex) when (ex is InvalidOperationException or IOException)
         {
-            ObserveText = $"Не получилось послушать: {ex.Message}";
+            ObserveText = Loc.F("Не получилось послушать: {0}", ex.Message);
         }
         finally
         {

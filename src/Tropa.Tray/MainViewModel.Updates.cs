@@ -25,7 +25,7 @@ public sealed partial class MainViewModel
     public bool HasBanner => BannerText is not null;
     public string BannerAction { get => _bannerAction; private set => Set(ref _bannerAction, value); }
     public bool BannerIsUpdate => _release is not null && !_bannerIsCrash;
-    public string VersionText => $"Тропа {TropaBuild.VersionText}";
+    public string VersionText => Loc.F("Тропа {0}", TropaBuild.VersionText);
 
     public bool CheckAppUpdates
     {
@@ -65,8 +65,8 @@ public sealed partial class MainViewModel
 
     public ICommand ReportProblemCommand => _report ??= new RelayCommand(() =>
     {
-        var cut = CrashReports.OpenIssue("Проблема: ", CrashReports.Build("(опишите, что пошло не так)", LogLinesText(), StatusLine()));
-        Log(cut ? "открыт черновик отчёта на GitHub; полный текст в буфере обмена" : "открыт черновик отчёта на GitHub");
+        var cut = CrashReports.OpenIssue(Loc.T("Проблема: "), CrashReports.Build(Loc.T("(опишите, что пошло не так)"), LogLinesText(), StatusLine()));
+        Log(cut ? Loc.T("открыт черновик отчёта на GitHub; полный текст в буфере обмена") : Loc.T("открыт черновик отчёта на GitHub"));
         return Task.CompletedTask;
     });
     private ICommand? _report;
@@ -77,8 +77,8 @@ public sealed partial class MainViewModel
         if (CrashReports.Pending().Count > 0)
         {
             _bannerIsCrash = true;
-            BannerText = "В прошлый раз Тропа упала. Отправите отчёт? Это поможет её починить.";
-            BannerAction = "Отправить отчёт";
+            BannerText = Loc.T("В прошлый раз Тропа упала. Отправите отчёт? Это поможет её починить.");
+            BannerAction = Loc.T("Отправить отчёт");
             Raise(nameof(BannerIsUpdate));
         }
         await Task.Delay(TimeSpan.FromSeconds(5));
@@ -100,21 +100,21 @@ public sealed partial class MainViewModel
             var release = await AppUpdates.CheckAsync(http, TropaBuild.Version, _cts.Token);
             if (release is null)
             {
-                if (manual) AppUpdateText = $"У вас последняя версия ({TropaBuild.VersionText}).";
+                if (manual) AppUpdateText = Loc.F("У вас последняя версия ({0}).", TropaBuild.VersionText);
                 return;
             }
-            AppUpdateText = $"Вышла Тропа {release.Version}.";
+            AppUpdateText = Loc.F("Вышла Тропа {0}.", release.Version);
             if (!manual && _ui.SkippedVersion == release.Version.ToString()) return;
             if (_bannerIsCrash && HasBanner) return; // отчёт о падении важнее, обновление покажем в настройках
             _release = release;
             _bannerIsCrash = false;
-            BannerText = $"Вышла Тропа {release.Version}. Обновление займёт минуту, подобранные стратегии сохранятся.";
-            BannerAction = "Обновить";
+            BannerText = Loc.F("Вышла Тропа {0}. Обновление займёт минуту, подобранные стратегии сохранятся.", release.Version);
+            BannerAction = Loc.T("Обновить");
             Raise(nameof(BannerIsUpdate));
         }
         catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or InvalidDataException)
         {
-            if (manual) AppUpdateText = $"Не удалось проверить обновления: {ex.Message}";
+            if (manual) AppUpdateText = Loc.F("Не удалось проверить обновления: {0}", ex.Message);
         }
     }
 
@@ -137,7 +137,7 @@ public sealed partial class MainViewModel
         var path = Path.Combine(Path.GetTempPath(), r.SetupName);
         try
         {
-            BannerText = $"Скачиваю Тропу {r.Version}…";
+            BannerText = Loc.F("Скачиваю Тропу {0}…", r.Version);
             using (var http = new HttpClient { Timeout = TimeSpan.FromMinutes(10) })
             {
                 http.DefaultRequestHeaders.UserAgent.ParseAdd($"Tropa/{TropaBuild.VersionText}");
@@ -153,31 +153,31 @@ public sealed partial class MainViewModel
                 {
                     await dst.WriteAsync(buf.AsMemory(0, n), _cts.Token);
                     done += n;
-                    if (total > 0) BannerText = $"Скачиваю Тропу {r.Version}: {done * 100 / total} %";
+                    if (total > 0) BannerText = Loc.F("Скачиваю Тропу {0}: {1} %", r.Version, done * 100 / total);
                 }
             }
 
-            BannerText = "Сверяю контрольную сумму…";
+            BannerText = Loc.T("Сверяю контрольную сумму…");
             await using (var f = File.OpenRead(path))
             {
                 var got = Convert.ToHexString(await SHA256.HashDataAsync(f, _cts.Token));
                 if (!got.Equals(r.Sha256, StringComparison.OrdinalIgnoreCase))
-                    throw new InvalidDataException("скачанный установщик не совпал с релизом по SHA-256, ставить его нельзя");
+                    throw new InvalidDataException(Loc.T("скачанный установщик не совпал с релизом по SHA-256, ставить его нельзя"));
             }
 
-            BannerText = "Запускаю обновление: Windows спросит разрешение…";
+            BannerText = Loc.T("Запускаю обновление: Windows спросит разрешение…");
             Process.Start(new ProcessStartInfo(path, "/update") { UseShellExecute = true })?.Dispose();
-            Log($"запущено обновление до {r.Version}");
+            Log(Loc.F("запущено обновление до {0}", r.Version));
             Application.Current.Shutdown(); // установщику нужны файлы окна
         }
         catch (System.ComponentModel.Win32Exception ex) when (ex.NativeErrorCode == 1223)
         {
-            BannerText = "Обновление отменено. Можно запустить снова кнопкой «Обновить».";
+            BannerText = Loc.T("Обновление отменено. Можно запустить снова кнопкой «Обновить».");
         }
         catch (Exception ex) when (ex is HttpRequestException or IOException or InvalidDataException or TaskCanceledException)
         {
-            BannerText = $"Не удалось обновиться: {ex.Message}";
-            Log($"обновление: {ex.Message}", error: true);
+            BannerText = Loc.F("Не удалось обновиться: {0}", ex.Message);
+            Log(Loc.F("обновление: {0}", ex.Message), error: true);
         }
         finally
         {
@@ -188,12 +188,12 @@ public sealed partial class MainViewModel
 
     private Task SendCrashAsync()
     {
-        var report = CrashReports.Build("Тропа упала. (Если помните, что делали перед этим, допишите сюда.)", LogLinesText(), StatusLine());
-        var cut = CrashReports.OpenIssue($"Падение Тропы {TropaBuild.VersionText}", report);
+        var report = CrashReports.Build(Loc.T("Тропа упала. (Если помните, что делали перед этим, допишите сюда.)"), LogLinesText(), StatusLine());
+        var cut = CrashReports.OpenIssue(Loc.F("Падение Тропы {0}", TropaBuild.VersionText), report);
         CrashReports.MarkSeen();
         BannerText = cut
-            ? "Черновик отчёта открыт в браузере. Отчёт длинный: полный текст в буфере обмена, вставьте его в issue."
-            : "Черновик отчёта открыт в браузере: проверьте текст и нажмите Submit. Спасибо!";
+            ? Loc.T("Черновик отчёта открыт в браузере. Отчёт длинный: полный текст в буфере обмена, вставьте его в issue.")
+            : Loc.T("Черновик отчёта открыт в браузере: проверьте текст и нажмите Submit. Спасибо!");
         _bannerIsCrash = false;
         Raise(nameof(BannerIsUpdate));
         return Task.CompletedTask;
@@ -202,7 +202,7 @@ public sealed partial class MainViewModel
     private IEnumerable<string> LogLinesText() => LogLines.Select(l => $"{l.Time} {l.Text}");
 
     private string? StatusLine() => _status is { } s
-        ? $"защита {(s.Protecting ? "включена" : "выключена")}, zapret {s.EngineVersion ?? "не скачан"}, " +
-          $"профиль: {string.Join(", ", s.Profile.Select(kv => $"{kv.Key}={kv.Value}"))}"
-        : "не подключена";
+        ? Loc.F("защита {0}, zapret {1}, ", (s.Protecting ? Loc.T("включена") : Loc.T("выключена")), s.EngineVersion ?? Loc.T("не скачан")) +
+          Loc.F("профиль: {0}", string.Join(", ", s.Profile.Select(kv => $"{kv.Key}={kv.Value}")))
+        : Loc.T("не подключена");
 }

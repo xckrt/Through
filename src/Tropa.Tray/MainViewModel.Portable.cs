@@ -20,7 +20,7 @@ public sealed partial class MainViewModel
     private async Task StartPortableHostAsync()
     {
         var exe = Path.Combine(AppContext.BaseDirectory, "Tropa.Service.exe");
-        if (!File.Exists(exe)) throw new InvalidOperationException("Рядом с программой нет Tropa.Service.exe. Распакуйте архив целиком.");
+        if (!File.Exists(exe)) throw new InvalidOperationException(Loc.T("Рядом с программой нет Tropa.Service.exe. Распакуйте архив целиком."));
         var data = Path.Combine(AppContext.BaseDirectory, "data");
         try
         {
@@ -33,7 +33,7 @@ public sealed partial class MainViewModel
         }
         catch (Win32Exception ex) when (ex.NativeErrorCode == 1223)
         {
-            throw new InvalidOperationException("Без разрешения администратора обход не включить: winws работает с сетевым драйвером.");
+            throw new InvalidOperationException(Loc.T("Без разрешения администратора обход не включить: winws работает с сетевым драйвером."));
         }
 
         for (var i = 0; i < 30; i++)

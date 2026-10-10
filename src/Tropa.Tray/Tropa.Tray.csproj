@@ -36,4 +36,8 @@
     <None Include="..\Tropa.Cli\engine.json" Link="engine.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- английский интерфейс: ключ — русская строка из кода, значение — перевод (Loc) -->
+    <EmbeddedResource Include="en.json" LogicalName="Tropa.Tray.en.json" />
+  </ItemGroup>
 </Project>

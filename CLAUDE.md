@@ -71,6 +71,7 @@ The `Failure` → strategy mapping table in `docs/architecture.md` drives the de
 ## Conventions
 
 - Code comments, XML docs, CLI output and `Detail` strings are in **Russian**. Keep it that way.
+- The window is bilingual. Every UI string goes through `Loc.T("…")`, `Loc.F("… {0} …", x)` or `{local:Tr '…'}` in XAML, and the Russian text is the key. Add the English to `src/Tropa.Tray/en.json`: `LocTests` fails on a missing key or mismatched placeholders. Plural forms use the key `one|few|many` with the value `one|other`. The service and Core stay Russian. The window translates their messages when it shows them (`Loc.Msg`, applied in `Log`, `Subline` and the other text setters) by matching `en.json` format keys as regexes, so put the Core format string (`"порт {0} занят …"`) into en.json too. Do not compare UI text by prefix (`StartsWith`); compare raw service messages, or whole `Loc.T` strings.
 - No binaries in the repo. `winws`/WinDivert must be downloaded at runtime from official zapret releases with SHA-256 verification (the planned Fetcher).
 - Known Prober gaps (in the docs): no QUIC/UDP (YouTube QUIC, Discord voice), DNS spoofing is caught only for obvious bogus addresses (no DoH cross-check), and HTTP is HTTP/1.1 with `Connection: close`.
 - If a build suddenly fails with missing `Microsoft.NETCore.App.Ref` files or "could not resolve SDK", a Visual Studio/.NET installer is usually running. Wait for it to finish, or run `dotnet restore --force` (it fetches the targeting pack from NuGet).

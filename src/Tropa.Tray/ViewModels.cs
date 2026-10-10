@@ -83,7 +83,7 @@ public sealed class TargetVm(string service, string name, string host) : Observa
             _ => TrailState.Unknown,
         };
         Verdict = r.Optional && r.Verdict == Core.Probing.Verdict.Blocked
-            ? $"недоступно: {r.Role ?? "второстепенное"}"
+            ? Loc.F("недоступно: {0}", r.Role is { } role ? Loc.T(role) : Loc.T("второстепенное"))
             : Wording.Explain(r);
         Metric = Wording.Metric(r);
     }
@@ -118,6 +118,9 @@ public sealed class ServiceVm : Observable
     public Health Health { get => _health; private set => Set(ref _health, value); }
     public string Summary { get => _summary; private set => Set(ref _summary, value); }
 
+    /// <summary>Что второстепенное не работает (через запятую) — для общей сводки.</summary>
+    public string MinorText { get; private set; } = "";
+
     public string? PlanHeading
     {
         get => _planHeading;
@@ -145,7 +148,7 @@ public sealed class ServiceVm : Observable
         // здоровье сервиса — по важным проверкам; второстепенные дают только «работает, кроме…»
         var all = Targets.Select(t => t.Result).ToList();
         var results = all.Where(r => r is null || !r.Optional).ToList();
-        var minor = all.Where(r => r is { Optional: true, Verdict: Verdict.Blocked }).Select(r => r!.Role ?? r.Host).ToList();
+        var minor = all.Where(r => r is { Optional: true, Verdict: Verdict.Blocked }).Select(r => r!.Role is { } role ? Loc.T(role) : r.Host).ToList();
         Health = all.Any(r => r is null) ? Health.Pending
             : results.Any(r => r!.Verdict == Verdict.Blocked) ? Health.Blocked
             : results.Any(r => r!.Verdict == Verdict.Inconclusive) ? Health.Unknown
@@ -156,16 +159,16 @@ public sealed class ServiceVm : Observable
         var active = (report ?? Report)?.ActivePreset;
         Summary = Health switch
         {
-            Health.Pending => "проверяю",
-            Health.Ok when IsControl => "сеть в порядке",
-            Health.Ok => active is null ? "работает" : "работает через обход",
-            Health.Slow => "работает медленно",
-            Health.Partial => $"работает, кроме: {string.Join(", ", minor)}",
-            Health.Unknown => "нет сети",
-            _ when active is not null => "не работает даже с обходом",
-            _ when SniFiltered => "режут по имени сайта",
-            _ when (report ?? Report)?.Plan == PlanStatus.NotTreatable => "заблокирован по адресу",
-            _ => "не работает",
+            Health.Pending => Loc.T("проверяю"),
+            Health.Ok when IsControl => Loc.T("сеть в порядке"),
+            Health.Ok => active is null ? Loc.T("работает") : Loc.T("работает через обход"),
+            Health.Slow => Loc.T("работает медленно"),
+            Health.Partial => Loc.F("работает, кроме: {0}", MinorText = string.Join(", ", minor)),
+            Health.Unknown => Loc.T("нет сети"),
+            _ when active is not null => Loc.T("не работает даже с обходом"),
+            _ when SniFiltered => Loc.T("режут по имени сайта"),
+            _ when (report ?? Report)?.Plan == PlanStatus.NotTreatable => Loc.T("заблокирован по адресу"),
+            _ => Loc.T("не работает"),
         };
 
         if (report is null) return;
@@ -174,16 +177,16 @@ public sealed class ServiceVm : Observable
         PlanItems.Clear();
         var name = presetName ?? (id => id);
         PlanHeading = active is { Length: > 0 }
-            ? $"Работает через стратегию «{name(active)}» ({active})." + (report.Overrides.Count > 0 ? " Упрямым хостам Тропа подобрала свои:" : "")
+            ? Loc.F("Работает через стратегию «{0}» ({1}).", name(active), active) + (report.Overrides.Count > 0 ? Loc.T(" Упрямым хостам Тропа подобрала свои:") : "")
             : active is not null
-            ? "Ни одна стратегия не взяла сервис целиком, поэтому у хостов свои:"
+            ? Loc.T("Ни одна стратегия не взяла сервис целиком, поэтому у хостов свои:")
             : report.Plan switch
             {
                 PlanStatus.NeedsTuning =>
-                    $"Подборщик попробует {report.Candidates.Length} {Wording.Plural(report.Candidates.Length, "стратегию", "стратегии", "стратегий")}, от простых к сложным:",
+                    Loc.F("Подборщик попробует {0} {1}, от простых к сложным:", report.Candidates.Length, Wording.Plural(report.Candidates.Length, "стратегию", "стратегии", "стратегий")),
                 PlanStatus.NotTreatable =>
-                    "Соединение блокируют по адресу сервера. Настройка DPI-обработки тут не поможет, нужен VPN или прокси.",
-                PlanStatus.NoCandidates => "Для такой блокировки пока нет готовых стратегий.",
+                    Loc.T("Соединение блокируют по адресу сервера. Настройка DPI-обработки тут не поможет, нужен VPN или прокси."),
+                PlanStatus.NoCandidates => Loc.T("Для такой блокировки пока нет готовых стратегий."),
                 _ => null,
             };
         if (active is null)
@@ -191,12 +194,12 @@ public sealed class ServiceVm : Observable
                 PlanItems.Add(c.Name is null ? c.Id : $"{c.Name} ({c.Id})");
         else
             foreach (var (host, preset) in report.Overrides)
-                PlanItems.Add($"для {host} отдельно: «{name(preset)}» ({preset})");
+                PlanItems.Add(Loc.F("для {0} отдельно: «{1}» ({2})", host, name(preset), preset));
 
         Technical.Clear();
         foreach (var t in Targets)
             if (t.Result is { } r)
-                Technical.Add($"{r.Host}{(r.Address is null ? "" : $" ({r.Address})")}: {r.Detail ?? "без замечаний"}");
+                Technical.Add($"{r.Host}{(r.Address is null ? "" : $" ({r.Address})")}: {(Loc.Msg(r.Detail) is { Length: > 0 } d ? d : Loc.T("без замечаний"))}");
     }
 }
 
@@ -219,11 +222,11 @@ public sealed partial class MainViewModel : Observable
     private int _attempts;
     private bool _serviceOutdated;
 
-    private string _headline = "Проверяю сервисы";
-    private string _subline = "Обычно это занимает до 15 секунд.";
+    private string _headline = Loc.T("Проверяю сервисы");
+    private string _subline = Loc.T("Обычно это занимает до 15 секунд.");
     private bool _running;
-    private string _checkLabel = "Проверить";
-    private string _copyLabel = "Копировать отчёт";
+    private string _checkLabel = Loc.T("Проверить");
+    private string _copyLabel = Loc.T("Копировать отчёт");
     private string _checkedAt = "";
     private string _modeNote = "";
     private bool _tuneVisible;
@@ -253,7 +256,7 @@ public sealed partial class MainViewModel : Observable
     public RelayCommand ProtectCommand { get; }
 
     public string Headline { get => _headline; private set => Set(ref _headline, value); }
-    public string Subline { get => _subline; private set => Set(ref _subline, value); }
+    public string Subline { get => _subline; private set => Set(ref _subline, Loc.Msg(value)); }
     public bool IsRunning { get => _running; private set { Set(ref _running, value); CommandManager.InvalidateRequerySuggested(); } }
     public string CheckLabel { get => _checkLabel; private set => Set(ref _checkLabel, value); }
     public string CopyLabel { get => _copyLabel; private set => Set(ref _copyLabel, value); }
@@ -270,7 +273,7 @@ public sealed partial class MainViewModel : Observable
     public bool TuneIsPrimary => TuneVisible && Services.Any(s => !s.IsControl && s.Health == Health.Blocked);
     public bool TuneIsSecondary => TuneVisible && !TuneIsPrimary;
     public bool ProtectVisible { get => _protectVisible; private set => Set(ref _protectVisible, value); }
-    public string ProtectLabel => _protecting ? "Выключить защиту" : "Включить защиту";
+    public string ProtectLabel => _protecting ? Loc.T("Выключить защиту") : Loc.T("Включить защиту");
 
     public void Cancel() => _cts.Cancel();
 
@@ -294,8 +297,8 @@ public sealed partial class MainViewModel : Observable
 
         TuneVisible = true;
         ModeNote = IsPortable
-            ? "Переносная версия: обход работает, пока открыта Тропа. При включении Windows спросит разрешение администратора."
-            : "Обход настраивает служба Тропы. При первом подборе Windows один раз спросит разрешение администратора.";
+            ? Loc.T("Переносная версия: обход работает, пока открыта Тропа. При включении Windows спросит разрешение администратора.")
+            : Loc.T("Обход настраивает служба Тропы. При первом подборе Windows один раз спросит разрешение администратора.");
         await CheckAsync();
     }
 
@@ -338,7 +341,7 @@ public sealed partial class MainViewModel : Observable
     {
         var exe = Path.Combine(AppContext.BaseDirectory, "Tropa.Service.exe");
         if (!File.Exists(exe))
-            throw new InvalidOperationException("Рядом с программой нет Tropa.Service.exe. Переустановите Тропу.");
+            throw new InvalidOperationException(Loc.T("Рядом с программой нет Tropa.Service.exe. Переустановите Тропу."));
 
         Process process;
         try
@@ -353,14 +356,14 @@ public sealed partial class MainViewModel : Observable
         catch (Win32Exception ex) when (ex.NativeErrorCode == 1223) // человек нажал «Нет» в окне UAC
         {
             throw new InvalidOperationException(
-                "Без разрешения администратора Тропа не может настроить обход: winws работает с сетевым драйвером.");
+                Loc.T("Без разрешения администратора Тропа не может настроить обход: winws работает с сетевым драйвером."));
         }
 
         using (process)
         {
             await process.WaitForExitAsync(_cts.Token);
             if (process.ExitCode != 0)
-                throw new InvalidOperationException($"Служба не установилась: {LastInstallError() ?? $"код {process.ExitCode}"}");
+                throw new InvalidOperationException(Loc.F("Служба не установилась: {0}", LastInstallError() ?? Loc.F("код {0}", process.ExitCode)));
         }
 
         for (var i = 0; i < 20; i++)
@@ -377,7 +380,7 @@ public sealed partial class MainViewModel : Observable
         try
         {
             var last = File.Exists(log) ? File.ReadLines(log).LastOrDefault(l => l.Contains("ошибка:")) : null;
-            return last?[(last.IndexOf("ошибка:", StringComparison.Ordinal) + "ошибка:".Length)..].Trim();
+            return last?[(last.IndexOf("ошибка:", StringComparison.Ordinal) + Loc.T("ошибка:").Length)..].Trim();
         }
         catch (IOException) { return null; }
     }
@@ -387,9 +390,9 @@ public sealed partial class MainViewModel : Observable
         if (IsRunning) return;
         IsRunning = true;
         var label = CheckLabel;
-        CheckLabel = "Проверяю…";
-        Headline = "Проверяю сервисы";
-        Subline = "Обычно это занимает до 15 секунд.";
+        CheckLabel = Loc.T("Проверяю…");
+        Headline = Loc.T("Проверяю сервисы");
+        Subline = Loc.T("Обычно это занимает до 15 секунд.");
         try
         {
             if (_client is not null)
@@ -401,14 +404,14 @@ public sealed partial class MainViewModel : Observable
             {
                 await CheckLocallyAsync();
             }
-            label = "Проверить снова";
+            label = Loc.T("Проверить снова");
         }
         catch (OperationCanceledException)
         {
         }
         catch (Exception ex)
         {
-            Headline = "Проверка не запустилась";
+            Headline = Loc.T("Проверка не запустилась");
             Subline = ex.Message;
         }
         finally
@@ -447,7 +450,7 @@ public sealed partial class MainViewModel : Observable
             }, PresetName);
         }
         Summarize(networkDown, protecting: false);
-        CheckedAt = $"Проверено в {DateTime.Now:HH:mm}";
+        CheckedAt = Loc.F("Проверено в {0:HH:mm}", DateTime.Now);
     }
 
     private Task TuneAsync() => TuneAsync(null);
@@ -462,26 +465,26 @@ public sealed partial class MainViewModel : Observable
         try
         {
             await EnsureServiceAsync();
-            Headline = "Подбираю обход";
+            Headline = Loc.T("Подбираю обход");
             Subline = _status?.EngineVersion is null
-                ? "Сначала Тропа скачает zapret с GitHub (около 8 МБ) и сверит хеши, затем переберёт стратегии. Это займёт несколько минут."
-                : "Это займёт несколько минут. Пока идёт подбор, сервисы могут открываться с перебоями.";
-            Log("подбор начат" + (services is null ? "" : $": {string.Join(", ", services.Select(Wording.ServiceTitle))}"));
+                ? Loc.T("Сначала Тропа скачает zapret с GitHub (около 8 МБ) и сверит хеши, затем переберёт стратегии. Это займёт несколько минут.")
+                : Loc.T("Это займёт несколько минут. Пока идёт подбор, сервисы могут открываться с перебоями.");
+            Log(Loc.T("подбор начат") + (services is null ? "" : $": {string.Join(", ", services.Select(Wording.ServiceTitle))}"));
             var summary = await _client!.CallAsync<TuneSummary>("tune", services is null ? null : new { services }, _cts.Token);
             ApplyStatus(await _client.CallAsync<StatusReport>("status", ct: _cts.Token));
             await RefreshAppsAsync();
             if (summary.NetworkDown)
             {
-                Headline = "Подбор отменён";
-                Subline = "Контрольные сайты недоступны: похоже, нет сети.";
+                Headline = Loc.T("Подбор отменён");
+                Subline = Loc.T("Контрольные сайты недоступны: похоже, нет сети.");
             }
-            Log("подбор закончен: " + string.Join(", ", summary.Services.Select(x => $"{TitleOf(x.Service)} — {OutcomeText(x.Outcome)}")));
+            Log(Loc.T("подбор закончен: ") + string.Join(", ", summary.Services.Select(x => $"{TitleOf(x.Service)} — {OutcomeText(x.Outcome)}")));
         }
         catch (Exception ex) when (ex is InvalidOperationException or IOException)
         {
-            Headline = "Подбор не удался";
+            Headline = Loc.T("Подбор не удался");
             Subline = ex.Message;
-            Log("подбор не удался: " + ex.Message, error: true);
+            Log(Loc.T("подбор не удался: ") + ex.Message, error: true);
         }
         finally
         {
@@ -493,11 +496,11 @@ public sealed partial class MainViewModel : Observable
     private async Task EnsureServiceAsync()
     {
         if (_client is not null && !_serviceOutdated) return;
-        if (_pipeName is null) throw new InvalidOperationException("Служба Тропы недоступна.");
-        Headline = _serviceOutdated ? "Обновляю службу Тропы" : "Устанавливаю службу Тропы";
+        if (_pipeName is null) throw new InvalidOperationException(Loc.T("Служба Тропы недоступна."));
+        Headline = _serviceOutdated ? Loc.T("Обновляю службу Тропы") : Loc.T("Устанавливаю службу Тропы");
         Subline = _serviceOutdated
-            ? "Служба осталась от прошлой версии. Windows спросит разрешение администратора, чтобы её заменить."
-            : "Windows спросит разрешение администратора. Оно нужно один раз: служба запускает winws, а тот работает с сетевым драйвером.";
+            ? Loc.T("Служба осталась от прошлой версии. Windows спросит разрешение администратора, чтобы её заменить.")
+            : Loc.T("Windows спросит разрешение администратора. Оно нужно один раз: служба запускает winws, а тот работает с сетевым драйвером.");
         if (_client is { } old)
         {
             _client = null;
@@ -505,23 +508,23 @@ public sealed partial class MainViewModel : Observable
         }
         if (IsPortable)
         {
-            Headline = "Запускаю Тропу";
-            Subline = "Windows спросит разрешение администратора: обход работает с сетевым драйвером. В переносной версии он держится, пока открыта Тропа.";
+            Headline = Loc.T("Запускаю Тропу");
+            Subline = Loc.T("Windows спросит разрешение администратора: обход работает с сетевым драйвером. В переносной версии он держится, пока открыта Тропа.");
             await StartPortableHostAsync();
         }
         else await InstallServiceAsync();
         _serviceOutdated = false;
-        Log(Headline == "Обновляю службу Тропы" ? "служба обновлена" : "служба установлена");
+        Log(Headline == Loc.T("Обновляю службу Тропы") ? Loc.T("служба обновлена") : Loc.T("служба установлена"));
     }
 
     private static string OutcomeText(TuneOutcome o) => o switch
     {
-        TuneOutcome.AlreadyOk => "работает без обхода",
-        TuneOutcome.Fixed => "починен",
-        TuneOutcome.Improved => "стало лучше",
-        TuneOutcome.NotTreatable => "блок по адресу",
-        TuneOutcome.NoCandidates => "нет стратегий",
-        _ => "не помогло",
+        TuneOutcome.AlreadyOk => Loc.T("работает без обхода"),
+        TuneOutcome.Fixed => Loc.T("починен"),
+        TuneOutcome.Improved => Loc.T("стало лучше"),
+        TuneOutcome.NotTreatable => Loc.T("блок по адресу"),
+        TuneOutcome.NoCandidates => Loc.T("нет стратегий"),
+        _ => Loc.T("не помогло"),
     };
 
     private async Task ProtectAsync()
@@ -558,14 +561,14 @@ public sealed partial class MainViewModel : Observable
             case "attempt":
                 var a = ControlProtocol.FromData<AttemptReport>(data);
                 _attempts++;
-                var who = a.Host is null ? TitleOf(a.Service) : $"{TitleOf(a.Service)}, только {a.Host}";
+                var who = a.Host is null ? TitleOf(a.Service) : Loc.F("{0}, только {1}", TitleOf(a.Service), a.Host);
                 Log(a.Error is null
                     ? $"{who}: «{a.PresetName ?? a.PresetId}» — {a.Score}"
-                    : $"{who}: «{a.PresetName ?? a.PresetId}» не запустился: {a.Error}", error: a.Error is not null);
+                    : Loc.F("{0}: «{1}» не запустился: {2}", who, a.PresetName ?? a.PresetId, a.Error), error: a.Error is not null);
                 var what = $"{Wording.ServiceTitle(a.Service)}, «{a.PresetName ?? a.PresetId}»";
                 Subline = a.Error is null
-                    ? $"{what}: {a.Score}. Попыток: {_attempts}."
-                    : $"{what}: движок не запустился. Попыток: {_attempts}.";
+                    ? Loc.F("{0}: {1}. Попыток: {2}.", what, a.Score, _attempts)
+                    : Loc.F("{0}: движок не запустился. Попыток: {1}.", what, _attempts);
                 break;
             case "status":
                 var status = ControlProtocol.FromData<StatusReport>(data);
@@ -573,7 +576,7 @@ public sealed partial class MainViewModel : Observable
                 {
                     _lastServiceMessage = msg;
                     Log(msg, error: msg.StartsWith("не ") || msg.Contains("не удалось") || msg.Contains("не запустил"));
-                    if (Notable(msg) is { } title) Notice?.Invoke(title, msg);
+                    if (Notable(msg) is { } title) Notice?.Invoke(title, Loc.Msg(msg));
                 }
                 // сторож мог сам перезапустить движок или переподобрать: показываем, но не перебиваем идущую операцию окна
                 if (!IsRunning) ApplyStatus(status);
@@ -586,7 +589,7 @@ public sealed partial class MainViewModel : Observable
     {
         _client = null;
         ProtectVisible = false;
-        ModeNote = "Связь со службой Тропы потеряна: она остановлена или перезапускается. Доступна только диагностика.";
+        ModeNote = Loc.T("Связь со службой Тропы потеряна: она остановлена или перезапускается. Доступна только диагностика.");
         CommandManager.InvalidateRequerySuggested();
     }
 
@@ -607,7 +610,7 @@ public sealed partial class MainViewModel : Observable
             svc.Refresh(s.Services.FirstOrDefault(r => r.Key == svc.Key) ?? new ServiceReport { Key = svc.Key }, PresetName);
 
         Summarize(s.NetworkDown, s.Protecting);
-        if (s.LastCheckAt is { } at) CheckedAt = $"Проверено в {at.LocalDateTime:HH:mm}";
+        if (s.LastCheckAt is { } at) CheckedAt = Loc.F("Проверено в {0:HH:mm}", at.LocalDateTime);
         if (s.Message is { } m && m.StartsWith("не удалось")) Subline = m;
     }
 
@@ -621,10 +624,10 @@ public sealed partial class MainViewModel : Observable
         Raise(nameof(ProtectLabel));
         ProtectVisible = s.Profile.Count > 0;
         TuneVisible = true;
-        ModeNote = _serviceOutdated ? "Служба Тропы из прошлой версии: она обновится при подборе обхода."
-            : s.State == ControllerState.Tuning ? "Служба подбирает обход." : s.Protecting
-            ? $"Защита включена (winws {s.EngineVersion}). Если что-то сломается, служба подберёт заново."
-            : s.Profile.Count > 0 ? "Защита выключена." : "";
+        ModeNote = _serviceOutdated ? Loc.T("Служба Тропы из прошлой версии: она обновится при подборе обхода.")
+            : s.State == ControllerState.Tuning ? Loc.T("Служба подбирает обход.") : s.Protecting
+            ? Loc.F("Защита включена (winws {0}). Если что-то сломается, служба подберёт заново.", s.EngineVersion)
+            : s.Profile.Count > 0 ? Loc.T("Защита выключена.") : "";
     }
 
     private void Build(IEnumerable<(string Service, string Name, string Host)> targets)
@@ -655,48 +658,48 @@ public sealed partial class MainViewModel : Observable
 
         if (networkDown)
         {
-            Headline = "Нет подключения к интернету";
-            Subline = "Контрольные сайты тоже не открываются, так что дело не в блокировке. Проверьте сеть и запустите проверку снова.";
+            Headline = Loc.T("Нет подключения к интернету");
+            Subline = Loc.T("Контрольные сайты тоже не открываются, так что дело не в блокировке. Проверьте сеть и запустите проверку снова.");
             return;
         }
         var partial = services.Where(s => s.Health == Health.Partial).ToList();
         if (broken.Count == 0 && slow.Count == 0)
         {
-            Headline = "Всё открывается";
+            Headline = Loc.T("Всё открывается");
             if (partial.Count > 0)
             {
-                Subline = $"У {Wording.JoinAnd(partial.Select(s => s.Title).ToList())} не открывается второстепенное " +
-                          $"({string.Join(", ", partial.Select(s => s.Summary.Replace("работает, кроме: ", "")))}). " +
-                          "На работу это не влияет, переподбирать из-за этого Тропа не будет.";
+                Subline = Loc.F("У {0} не открывается второстепенное ", Wording.JoinAnd(partial.Select(s => s.Title).ToList())) +
+                          $"({string.Join(", ", partial.Select(s => s.MinorText))}). " +
+                          Loc.T("На работу это не влияет, переподбирать из-за этого Тропа не будет.");
                 return;
             }
             var bypassed = services.Where(s => s.Report?.ActivePreset is not null).Select(s => s.Title).ToList();
             Subline = protecting && bypassed.Count > 0
-                ? $"{Wording.JoinAnd(bypassed)} {(bypassed.Count == 1 ? "работает" : "работают")} через настройку DPI-обработки."
-                : $"{Wording.JoinAnd(services.Select(s => s.Title).ToList())} работают без обхода.";
+                ? Loc.F("{0} {1} через настройку DPI-обработки.", Wording.JoinAnd(bypassed), (bypassed.Count == 1 ? Loc.T("работает") : Loc.T("работают")))
+                : Loc.F("{0} работают без обхода.", Wording.JoinAnd(services.Select(s => s.Title).ToList()));
             return;
         }
         if (broken.Count == 0)
         {
-            Headline = slow.Count == 1 ? $"{slow[0].Title} работает медленно" : $"{Wording.JoinAnd(slow.Select(s => s.Title).ToList())} работают медленно";
-            Subline = "Похоже на замедление со стороны провайдера.";
+            Headline = slow.Count == 1 ? Loc.F("{0} работает медленно", slow[0].Title) : Loc.F("{0} работают медленно", Wording.JoinAnd(slow.Select(s => s.Title).ToList()));
+            Subline = Loc.T("Похоже на замедление со стороны провайдера.");
             return;
         }
 
         var list = Wording.JoinAnd(broken.Select(s => s.Title).ToList());
         var one = broken.Count == 1;
-        Headline = one ? $"{list} не открывается" : $"{list} не открываются";
+        Headline = one ? Loc.F("{0} не открывается", list) : Loc.F("{0} не открываются", list);
         if (protecting && broken.Any(s => s.Report?.ActivePreset is not null))
         {
-            Subline = "Обход включён, но провайдер, похоже, поменял фильтр. Служба заметит это и подберёт стратегию заново, или нажмите «Подобрать обход».";
+            Subline = Loc.T("Обход включён, но провайдер, похоже, поменял фильтр. Служба заметит это и подберёт стратегию заново, или нажмите «Подобрать обход».");
             return;
         }
         Subline = broken.All(s => s.SniFiltered)
-            ? $"Провайдер узнаёт {(one ? "его" : "их")} по имени сайта и глушит соединение, а сами серверы доступны. " +
-              "Нажмите «Подобрать обход»."
+            ? Loc.F("Провайдер узнаёт {0} по имени сайта и глушит соединение, а сами серверы доступны. ", (one ? Loc.T("его") : Loc.T("их"))) +
+              Loc.T("Нажмите «Подобрать обход».")
             : broken.All(s => s.Report?.Plan == PlanStatus.NotTreatable)
-                ? "Серверы заблокированы по адресу. Настройка DPI-обработки тут не поможет, нужен VPN или прокси."
-                : "Нажмите на сервис, чтобы увидеть, на каком этапе рвётся соединение.";
+                ? Loc.T("Серверы заблокированы по адресу. Настройка DPI-обработки тут не поможет, нужен VPN или прокси.")
+                : Loc.T("Нажмите на сервис, чтобы увидеть, на каком этапе рвётся соединение.");
     }
 
     private PresetCatalog Presets()
@@ -708,7 +711,7 @@ public sealed partial class MainViewModel : Observable
         }
     }
 
-    private string PresetName(string id) => Presets().Presets.FirstOrDefault(p => p.Id == id)?.Name ?? id;
+    private string PresetName(string id) => Presets().Presets.FirstOrDefault(p => p.Id == id)?.Name is { } name ? Loc.T(name) : id;
 
     private async Task CopyAsync()
     {
@@ -716,26 +719,26 @@ public sealed partial class MainViewModel : Observable
         sb.AppendLine($"Tropa, {DateTime.Now:yyyy-MM-dd HH:mm}");
         sb.AppendLine(Headline);
         if (_status is { } st)
-            sb.AppendLine($"служба: защита {(st.Protecting ? "включена" : "выключена")}, профиль: {string.Join(", ", st.Profile.Select(kv => $"{kv.Key}={kv.Value}"))}");
+            sb.AppendLine(Loc.F("служба: защита {0}, профиль: {1}", (st.Protecting ? Loc.T("включена") : Loc.T("выключена")), string.Join(", ", st.Profile.Select(kv => $"{kv.Key}={kv.Value}"))));
         foreach (var r in _last)
         {
             var where = r.FailedAt is { } stage ? $"[{stage}] {r.Failure}" : r.HttpStatus is { } code ? $"HTTP {code}" : "";
-            sb.AppendLine($"{r.Verdict,-12} {r.Name,-18} {where,-26} {r.ElapsedMs} мс");
+            sb.AppendLine(Loc.F("{0,-12} {1,-18} {2,-26} {3} мс", r.Verdict, r.Name, where, r.ElapsedMs));
             if (r.Detail is not null) sb.AppendLine($"             {r.Detail}");
         }
         foreach (var s in Services.Where(s => s.Report?.Candidates.Length > 0))
-            sb.AppendLine($"план {s.Key}: {string.Join(", ", s.Report!.Candidates.Select(c => c.Id))}");
+            sb.AppendLine(Loc.F("план {0}: {1}", s.Key, string.Join(", ", s.Report!.Candidates.Select(c => c.Id))));
 
         try
         {
             Clipboard.SetText(sb.ToString());
-            CopyLabel = "Скопировано";
+            CopyLabel = Loc.T("Скопировано");
         }
         catch (Exception)
         {
-            CopyLabel = "Буфер обмена занят";
+            CopyLabel = Loc.T("Буфер обмена занят");
         }
         await Task.Delay(2000);
-        CopyLabel = "Копировать отчёт";
+        CopyLabel = Loc.T("Копировать отчёт");
     }
 }

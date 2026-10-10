@@ -2,7 +2,7 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:local="clr-namespace:Tropa.Tray"
-        Title="Тропа" Width="1100" Height="780" MinWidth="940" MinHeight="580"
+        Title="{local:Tr 'Тропа'}" Width="1100" Height="780" MinWidth="940" MinHeight="580"
         WindowStartupLocation="CenterScreen" Icon="tropa.ico"
         Background="{DynamicResource Paper}" Foreground="{DynamicResource Ink}"
         FontFamily="{StaticResource Body}" FontSize="14" UseLayoutRounding="True">
@@ -186,14 +186,14 @@
                                 <Rectangle Fill="White" />
                             </UniformGrid>
                         </Border>
-                        <TextBlock Text="Тропа" FontFamily="{StaticResource Display}" FontSize="17" FontWeight="SemiBold"
+                        <TextBlock Text="{local:Tr 'Тропа'}" FontFamily="{StaticResource Display}" FontSize="17" FontWeight="SemiBold"
                                    Margin="10,0,0,1" VerticalAlignment="Center" />
                     </StackPanel>
 
                     <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
-                        <Button Style="{StaticResource CaptionButton}" Content="&#xE921;" Click="Minimize" ToolTip="Свернуть" />
-                        <Button x:Name="MaxButton" Style="{StaticResource CaptionButton}" Content="&#xE922;" Click="ToggleMaximize" ToolTip="Развернуть" />
-                        <Button Style="{StaticResource CloseButton}" Content="&#xE8BB;" Click="CloseClicked" ToolTip="Закрыть" />
+                        <Button Style="{StaticResource CaptionButton}" Content="&#xE921;" Click="Minimize" ToolTip="{local:Tr 'Свернуть'}" />
+                        <Button x:Name="MaxButton" Style="{StaticResource CaptionButton}" Content="&#xE922;" Click="ToggleMaximize" ToolTip="{local:Tr 'Развернуть'}" />
+                        <Button Style="{StaticResource CloseButton}" Content="&#xE8BB;" Click="CloseClicked" ToolTip="{local:Tr 'Закрыть'}" />
                     </StackPanel>
 
                     <!-- плашка: состояние защиты видно с любой страницы -->
@@ -218,19 +218,19 @@
                     </Border>
 
                     <StackPanel Orientation="Horizontal" VerticalAlignment="Stretch">
-                        <RadioButton Style="{StaticResource NavTab}" Content="Обзор" GroupName="Nav"
+                        <RadioButton Style="{StaticResource NavTab}" Content="{local:Tr 'Обзор'}" GroupName="Nav"
                                      IsChecked="{Binding Page, Mode=OneWay, Converter={StaticResource Is}, ConverterParameter=Overview}"
                                      Command="{Binding NavigateCommand}" CommandParameter="Overview" />
-                        <RadioButton Style="{StaticResource NavTab}" Content="Приложения" GroupName="Nav"
+                        <RadioButton Style="{StaticResource NavTab}" Content="{local:Tr 'Приложения'}" GroupName="Nav"
                                      IsChecked="{Binding Page, Mode=OneWay, Converter={StaticResource Is}, ConverterParameter=Apps}"
                                      Command="{Binding NavigateCommand}" CommandParameter="Apps" />
                         <RadioButton Style="{StaticResource NavTab}" Content="Telegram" GroupName="Nav"
                                      IsChecked="{Binding Page, Mode=OneWay, Converter={StaticResource Is}, ConverterParameter=Telegram}"
                                      Command="{Binding NavigateCommand}" CommandParameter="Telegram" />
-                        <RadioButton Style="{StaticResource NavTab}" Content="Журнал" GroupName="Nav"
+                        <RadioButton Style="{StaticResource NavTab}" Content="{local:Tr 'Журнал'}" GroupName="Nav"
                                      IsChecked="{Binding Page, Mode=OneWay, Converter={StaticResource Is}, ConverterParameter=Log}"
                                      Command="{Binding NavigateCommand}" CommandParameter="Log" />
-                        <RadioButton Style="{StaticResource NavTab}" Content="Настройки" GroupName="Nav"
+                        <RadioButton Style="{StaticResource NavTab}" Content="{local:Tr 'Настройки'}" GroupName="Nav"
                                      IsChecked="{Binding Page, Mode=OneWay, Converter={StaticResource Is}, ConverterParameter=Settings}"
                                      Command="{Binding NavigateCommand}" CommandParameter="Settings" />
                     </StackPanel>
@@ -242,9 +242,9 @@
                     Padding="48,10" Visibility="{Binding HasBanner, Converter={StaticResource Visible}}">
                 <DockPanel>
                     <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
-                        <Button Content="Что нового" Style="{StaticResource QuietButton}" Padding="14,6" FontSize="13" Margin="0,0,8,0"
+                        <Button Content="{local:Tr 'Что нового'}" Style="{StaticResource QuietButton}" Padding="14,6" FontSize="13" Margin="0,0,8,0"
                                 Command="{Binding ReleaseNotesCommand}" Visibility="{Binding BannerIsUpdate, Converter={StaticResource Visible}}" />
-                        <Button Content="Позже" Style="{StaticResource QuietButton}" Padding="14,6" FontSize="13" Margin="0,0,8,0"
+                        <Button Content="{local:Tr 'Позже'}" Style="{StaticResource QuietButton}" Padding="14,6" FontSize="13" Margin="0,0,8,0"
                                 Command="{Binding BannerLaterCommand}" />
                         <Button Content="{Binding BannerAction}" Style="{StaticResource PrimaryButton}" Padding="16,6" FontSize="13"
                                 Command="{Binding BannerPrimaryCommand}" />
@@ -283,10 +283,10 @@
                                 </Grid.ColumnDefinitions>
                                 <local:PowerOrb Diameter="148" State="{Binding ZapretOrb}" Command="{Binding ZapretToggleCommand}"
                                                 VerticalAlignment="Top" Margin="-8,-8,0,0"
-                                                AutomationProperties.Name="Включить или выключить обход блокировок"
-                                                ToolTip="Включить или выключить обход блокировок" />
+                                                AutomationProperties.Name="{local:Tr 'Включить или выключить обход блокировок'}"
+                                                ToolTip="{local:Tr 'Включить или выключить обход блокировок'}" />
                                 <StackPanel Grid.Column="1" Margin="18,10,0,0">
-                                    <TextBlock Text="ОБХОД БЛОКИРОВОК" Style="{StaticResource CardLabel}" />
+                                    <TextBlock Text="{local:Tr 'ОБХОД БЛОКИРОВОК'}" Style="{StaticResource CardLabel}" />
                                     <TextBlock Text="{Binding ZapretStatus}" Tag="{Binding ZapretOrb}" Style="{StaticResource OrbStatus}" />
                                     <TextBlock Text="{Binding ZapretDetail}" Style="{StaticResource Soft}" TextWrapping="Wrap" Margin="0,6,0,8" />
                                     <TextBlock Text="{Binding SpeedText}" FontFamily="{StaticResource Display}" FontSize="17" FontWeight="SemiBold"
@@ -325,13 +325,13 @@
                                         </ItemsControl.ItemTemplate>
                                     </ItemsControl>
                                     <WrapPanel>
-                                        <Button Content="Подобрать заново" Command="{Binding TuneCommand}" Style="{StaticResource QuietButton}"
+                                        <Button Content="{local:Tr 'Подобрать заново'}" Command="{Binding TuneCommand}" Style="{StaticResource QuietButton}"
                                                 HorizontalAlignment="Left" Padding="14,6" FontSize="13" Margin="0,8,8,0"
                                                 Visibility="{Binding CanRetune, Converter={StaticResource Visible}}" />
-                                        <Button Content="Замерить скорость YouTube" Command="{Binding MeasureSpeedCommand}" Style="{StaticResource QuietButton}"
+                                        <Button Content="{local:Tr 'Замерить скорость YouTube'}" Command="{Binding MeasureSpeedCommand}" Style="{StaticResource QuietButton}"
                                                 HorizontalAlignment="Left" Padding="14,6" FontSize="13" Margin="0,8,8,0"
                                                 Visibility="{Binding HasService, Converter={StaticResource Visible}}" />
-                                        <Button Content="Подобрать голос" Command="{Binding TuneVoiceCommand}" Style="{StaticResource PrimaryButton}"
+                                        <Button Content="{local:Tr 'Подобрать голос'}" Command="{Binding TuneVoiceCommand}" Style="{StaticResource PrimaryButton}"
                                                 HorizontalAlignment="Left" Padding="14,6" FontSize="13" Margin="0,8,8,0"
                                                 Visibility="{Binding VoiceBroken, Converter={StaticResource Visible}}" />
                                     </WrapPanel>
@@ -351,18 +351,18 @@
                                 </Grid.ColumnDefinitions>
                                 <local:PowerOrb Diameter="148" State="{Binding TgOrb}" Command="{Binding TgToggleCommand}"
                                                 VerticalAlignment="Top" Margin="-8,-8,0,0"
-                                                AutomationProperties.Name="Включить или выключить прокси Telegram"
-                                                ToolTip="Включить или выключить прокси Telegram" />
+                                                AutomationProperties.Name="{local:Tr 'Включить или выключить прокси Telegram'}"
+                                                ToolTip="{local:Tr 'Включить или выключить прокси Telegram'}" />
                                 <StackPanel Grid.Column="1" Margin="18,10,0,0">
                                     <TextBlock Text="TELEGRAM" Style="{StaticResource CardLabel}" />
                                     <TextBlock Text="{Binding TgStatus}" Tag="{Binding TgOrb}" Style="{StaticResource OrbStatus}" />
                                     <TextBlock Text="{Binding TgDetail}" Style="{StaticResource Soft}" TextWrapping="Wrap" Margin="0,6,0,14" />
                                 </StackPanel>
                                 <WrapPanel Grid.Row="1" Grid.ColumnSpan="2" Margin="0,8,0,0">
-                                    <Button Content="Подключить в Telegram" Command="{Binding TgPrimaryCommand}" Style="{StaticResource QuietButton}"
+                                    <Button Content="{local:Tr 'Подключить в Telegram'}" Command="{Binding TgPrimaryCommand}" Style="{StaticResource QuietButton}"
                                             Padding="14,6" FontSize="13" Margin="0,0,8,8"
                                             Visibility="{Binding TgConnectVisible, Converter={StaticResource Visible}}" />
-                                    <Button Content="Дата-центры и счётчики" Command="{Binding NavigateCommand}" CommandParameter="Telegram"
+                                    <Button Content="{local:Tr 'Дата-центры и счётчики'}" Command="{Binding NavigateCommand}" CommandParameter="Telegram"
                                             Style="{StaticResource QuietButton}" Padding="14,6" FontSize="13" Margin="0,0,8,8" />
                                 </WrapPanel>
                             </Grid>
@@ -375,9 +375,9 @@
                         <DockPanel>
                             <ToggleButton DockPanel.Dock="Right" Style="{StaticResource Switch}" VerticalAlignment="Center" Margin="20,0,0,0"
                                           IsChecked="{Binding DnsOn, Mode=OneWay}" Command="{Binding DnsToggleCommand}"
-                                          AutomationProperties.Name="Защищённый DNS" />
+                                          AutomationProperties.Name="{local:Tr 'Защищённый DNS'}" />
                             <StackPanel>
-                                <TextBlock Text="ЗАЩИЩЁННЫЙ DNS" Style="{StaticResource CardLabel}" />
+                                <TextBlock Text="{local:Tr 'ЗАЩИЩЁННЫЙ DNS'}" Style="{StaticResource CardLabel}" />
                                 <TextBlock Text="{Binding DnsText}" Style="{StaticResource Soft}" TextWrapping="Wrap" />
                             </StackPanel>
                         </DockPanel>
@@ -388,17 +388,17 @@
                     <StackPanel>
                     <!-- «Почему не открывается?»: любой сайт по тем же этапам, вердикт и обход одной кнопкой -->
                     <DockPanel Margin="0,20,0,0" Width="760" HorizontalAlignment="Left">
-                        <Button DockPanel.Dock="Right" Content="Проверить" Style="{StaticResource QuietButton}"
+                        <Button DockPanel.Dock="Right" Content="{local:Tr 'Проверить'}" Style="{StaticResource QuietButton}"
                                 Command="{Binding CheckSiteCommand}" Margin="10,0,0,0" Padding="20,8" />
                         <Grid>
                             <TextBox x:Name="SiteBox" Text="{Binding SiteInput, UpdateSourceTrigger=PropertyChanged}"
                                      Style="{StaticResource FieldBox}" FontSize="15" Padding="10,6"
-                                     AutomationProperties.Name="Адрес сайта для проверки">
+                                     AutomationProperties.Name="{local:Tr 'Адрес сайта для проверки'}">
                                 <TextBox.InputBindings>
                                     <KeyBinding Key="Enter" Command="{Binding CheckSiteCommand}" />
                                 </TextBox.InputBindings>
                             </TextBox>
-                            <TextBlock Text="Почему не открывается? Вставьте адрес сайта, например rutracker.org"
+                            <TextBlock Text="{local:Tr 'Почему не открывается? Вставьте адрес сайта, например rutracker.org'}"
                                        Foreground="{DynamicResource Fog}" FontSize="15" Margin="17,0,0,0" VerticalAlignment="Center"
                                        IsHitTestVisible="False">
                                 <TextBlock.Style>
@@ -433,7 +433,7 @@
                                 <TextBlock Grid.Column="2" Text="{Binding SiteHeadline}" FontFamily="{StaticResource Display}" FontSize="15"
                                            Margin="20,0,10,0" VerticalAlignment="Center" TextWrapping="Wrap" />
                                 <Button Grid.Column="3" Content="&#xE711;" FontFamily="{StaticResource Icons}" FontSize="10"
-                                        Style="{StaticResource QuietButton}" Padding="9,7" ToolTip="Закрыть"
+                                        Style="{StaticResource QuietButton}" Padding="9,7" ToolTip="{local:Tr 'Закрыть'}"
                                         Command="{Binding CloseSiteCommand}" VerticalAlignment="Center" />
                             </Grid>
                             <TextBlock Text="{Binding SiteExplain}" Style="{StaticResource Soft}" Margin="0,10,0,0" MaxWidth="760"
@@ -441,7 +441,7 @@
                             <Button Content="{Binding SiteBypassLabel}" Style="{StaticResource PrimaryButton}" HorizontalAlignment="Left"
                                     Command="{Binding BypassSiteCommand}" Margin="0,12,0,0"
                                     Visibility="{Binding SiteCanBypass, Converter={StaticResource Visible}}" />
-                            <Button Content="Включить защищённый DNS" Style="{StaticResource PrimaryButton}" HorizontalAlignment="Left"
+                            <Button Content="{local:Tr 'Включить защищённый DNS'}" Style="{StaticResource PrimaryButton}" HorizontalAlignment="Left"
                                     Command="{Binding FixSiteDnsCommand}" Margin="0,12,0,0"
                                     Visibility="{Binding SiteCanFixDns, Converter={StaticResource Visible}}" />
                         </StackPanel>
@@ -449,7 +449,7 @@
                     </StackPanel>
 
                     <DockPanel Margin="0,26,0,0">
-                        <Button DockPanel.Dock="Right" Content="Подробная проверка" Command="{Binding OpenDiagnosticsCommand}"
+                        <Button DockPanel.Dock="Right" Content="{local:Tr 'Подробная проверка'}" Command="{Binding OpenDiagnosticsCommand}"
                                 Style="{StaticResource QuietButton}" Padding="14,6" FontSize="13" />
                         <Button DockPanel.Dock="Right" Content="{Binding CheckLabel}" Command="{Binding CheckCommand}"
                                 Style="{StaticResource QuietButton}" Padding="14,6" FontSize="13" Margin="0,0,8,0" />
@@ -468,7 +468,7 @@
                 </Grid.RowDefinitions>
 
                 <StackPanel>
-                    <Button Content="← Обзор" Style="{StaticResource QuietButton}" HorizontalAlignment="Left" Padding="14,6" FontSize="13"
+                    <Button Content="{local:Tr '← Обзор'}" Style="{StaticResource QuietButton}" HorizontalAlignment="Left" Padding="14,6" FontSize="13"
                             Margin="0,0,0,16" Command="{Binding NavigateCommand}" CommandParameter="Overview" />
                     <TextBlock Text="{Binding Headline}" FontFamily="{StaticResource Display}" FontSize="36" FontWeight="SemiBold"
                                TextWrapping="Wrap" Margin="0,0,0,6" />
@@ -486,11 +486,11 @@
                     </Grid.ColumnDefinitions>
                     <UniformGrid Grid.Column="1" Columns="5" TextElement.Foreground="{DynamicResource InkSoft}"
                                  TextElement.FontFamily="{StaticResource DisplayNarrow}" TextElement.FontSize="12.5">
-                        <TextBlock Text="DNS" HorizontalAlignment="Center" ToolTip="Поиск адреса сайта" />
-                        <TextBlock Text="TCP" HorizontalAlignment="Center" ToolTip="Подключение к серверу" />
-                        <TextBlock Text="TLS" HorizontalAlignment="Center" ToolTip="Защищённое соединение: здесь DPI видит имя сайта" />
-                        <TextBlock Text="HTTP" HorizontalAlignment="Center" ToolTip="Запрос и ответ сервера" />
-                        <TextBlock Text="передача" HorizontalAlignment="Center" ToolTip="Загрузка данных" />
+                        <TextBlock Text="DNS" HorizontalAlignment="Center" ToolTip="{local:Tr 'Поиск адреса сайта'}" />
+                        <TextBlock Text="TCP" HorizontalAlignment="Center" ToolTip="{local:Tr 'Подключение к серверу'}" />
+                        <TextBlock Text="TLS" HorizontalAlignment="Center" ToolTip="{local:Tr 'Защищённое соединение: здесь DPI видит имя сайта'}" />
+                        <TextBlock Text="HTTP" HorizontalAlignment="Center" ToolTip="{local:Tr 'Запрос и ответ сервера'}" />
+                        <TextBlock Text="{local:Tr 'передача'}" HorizontalAlignment="Center" ToolTip="{local:Tr 'Загрузка данных'}" />
                     </UniformGrid>
                 </Grid>
 
@@ -507,10 +507,10 @@
                             Style="{StaticResource QuietButton}"
                             Visibility="{Binding TuneVisible, Converter={StaticResource Visible}}" />
                     <!-- «Подобрать обход» зелёная, только когда что-то сломано; когда всё работает, она спокойная -->
-                    <Button DockPanel.Dock="Right" Content="Подобрать обход" Command="{Binding TuneCommand}" Margin="0,0,10,0"
+                    <Button DockPanel.Dock="Right" Content="{local:Tr 'Подобрать обход'}" Command="{Binding TuneCommand}" Margin="0,0,10,0"
                             Style="{StaticResource PrimaryButton}" IsDefault="True"
                             Visibility="{Binding TuneIsPrimary, Converter={StaticResource Visible}}" />
-                    <Button DockPanel.Dock="Right" Content="Подобрать обход" Command="{Binding TuneCommand}" Margin="0,0,10,0"
+                    <Button DockPanel.Dock="Right" Content="{local:Tr 'Подобрать обход'}" Command="{Binding TuneCommand}" Margin="0,0,10,0"
                             Style="{StaticResource QuietButton}"
                             Visibility="{Binding TuneIsSecondary, Converter={StaticResource Visible}}" />
                     <Button DockPanel.Dock="Right" Content="{Binding ProtectLabel}" Command="{Binding ProtectCommand}" Margin="0,0,10,0"
@@ -540,9 +540,9 @@
                 </Grid.RowDefinitions>
 
                 <StackPanel Grid.ColumnSpan="3" Margin="0,0,0,22">
-                    <TextBlock Text="Приложения" Style="{StaticResource PageTitle}" />
+                    <TextBlock Text="{local:Tr 'Приложения'}" Style="{StaticResource PageTitle}" />
                     <TextBlock Style="{StaticResource Soft}" FontSize="15" MaxWidth="700" HorizontalAlignment="Left" Margin="0,6,0,0"
-                               Text="Тропа обходит блокировки для этих сервисов. Если игра или сайт работает плохо, добавьте его: Тропа подберёт стратегию и будет держать её." />
+                               Text="{local:Tr 'Тропа обходит блокировки для этих сервисов. Если игра или сайт работает плохо, добавьте его: Тропа подберёт стратегию и будет держать её.'}" />
                 </StackPanel>
 
                 <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Focusable="False">
@@ -551,7 +551,7 @@
                             <DataTemplate DataType="{x:Type local:AppRowVm}">
                                 <StackPanel>
                                     <DockPanel Margin="0,4">
-                                        <Button DockPanel.Dock="Right" Content="Удалить" Style="{StaticResource QuietButton}" Padding="14,6"
+                                        <Button DockPanel.Dock="Right" Content="{local:Tr 'Удалить'}" Style="{StaticResource QuietButton}" Padding="14,6"
                                                 FontSize="13" VerticalAlignment="Center"
                                                 Command="{Binding DataContext.RemoveAppCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                                                 CommandParameter="{Binding Key}"
@@ -578,8 +578,8 @@
                         <StackPanel Visibility="{Binding PickerVisible, Converter={StaticResource Visible}}" Margin="0,0,0,10">
                             <DockPanel>
                                 <Button DockPanel.Dock="Right" Content="&#xE711;" FontFamily="{StaticResource Icons}" FontSize="10"
-                                        Style="{StaticResource QuietButton}" Padding="9,7" ToolTip="Закрыть" Command="{Binding ClosePickerCommand}" />
-                                <TextBlock Text="Запущенные программы" Style="{StaticResource SectionTitle}" />
+                                        Style="{StaticResource QuietButton}" Padding="9,7" ToolTip="{local:Tr 'Закрыть'}" Command="{Binding ClosePickerCommand}" />
+                                <TextBlock Text="{local:Tr 'Запущенные программы'}" Style="{StaticResource SectionTitle}" />
                             </DockPanel>
                             <TextBlock Text="{Binding ObserveText}" Style="{StaticResource Soft}" TextWrapping="Wrap" Margin="0,0,0,12" />
                             <ProgressBar IsIndeterminate="True" Height="3" Margin="0,0,0,12" Foreground="{DynamicResource Pine}"
@@ -605,14 +605,14 @@
                         </StackPanel>
 
                         <StackPanel Visibility="{Binding FormVisible, Converter={StaticResource IsVisible}, ConverterParameter=False}">
-                            <TextBlock Text="Добавить" Style="{StaticResource SectionTitle}" />
+                            <TextBlock Text="{local:Tr 'Добавить'}" Style="{StaticResource SectionTitle}" />
                             <Button Style="{StaticResource PrimaryButton}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
                                     Padding="16,11" Margin="0,0,0,8" Command="{Binding OpenPickerCommand}"
                                     Visibility="{Binding PickerVisible, Converter={StaticResource IsVisible}, ConverterParameter=False}">
-                                <TextBlock Text="Выбрать запущенную программу" />
+                                <TextBlock Text="{local:Tr 'Выбрать запущенную программу'}" />
                             </Button>
                             <TextBlock Style="{StaticResource Soft}" Margin="0,4,0,14"
-                                       Text="Тропа сама подслушает, куда ходит игра, и соберёт домены и порты. Или начните с заготовки:" />
+                                       Text="{local:Tr 'Тропа сама подслушает, куда ходит игра, и соберёт домены и порты. Или начните с заготовки:'}" />
                             <ItemsControl ItemsSource="{Binding Templates}" Focusable="False">
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate DataType="{x:Type local:AppTemplate}">
@@ -628,17 +628,17 @@
                         </StackPanel>
 
                         <StackPanel Visibility="{Binding FormVisible, Converter={StaticResource Visible}}">
-                            <TextBlock Text="Новое приложение" Style="{StaticResource SectionTitle}" />
+                            <TextBlock Text="{local:Tr 'Новое приложение'}" Style="{StaticResource SectionTitle}" />
                             <TextBlock Text="{Binding FormNote}" Style="{StaticResource Soft}" />
 
-                            <TextBlock Text="Название" Style="{StaticResource FieldLabel}" />
+                            <TextBlock Text="{local:Tr 'Название'}" Style="{StaticResource FieldLabel}" />
                             <TextBox Text="{Binding FormTitle, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource FieldBox}" />
 
-                            <TextBlock Text="Домены, по одному в строке (поддомены обходятся сами)" Style="{StaticResource FieldLabel}" />
+                            <TextBlock Text="{local:Tr 'Домены, по одному в строке (поддомены обходятся сами)'}" Style="{StaticResource FieldLabel}" />
                             <TextBox Text="{Binding FormDomains, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource FieldBox}"
                                      AcceptsReturn="True" Height="118" VerticalScrollBarVisibility="Auto" TextWrapping="NoWrap" />
 
-                            <TextBlock Text="Хосты для проверки (если пусто, первые домены)" Style="{StaticResource FieldLabel}" />
+                            <TextBlock Text="{local:Tr 'Хосты для проверки (если пусто, первые домены)'}" Style="{StaticResource FieldLabel}" />
                             <TextBox Text="{Binding FormCheck, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource FieldBox}" />
 
                             <Grid>
@@ -648,27 +648,27 @@
                                     <ColumnDefinition Width="*" />
                                 </Grid.ColumnDefinitions>
                                 <StackPanel>
-                                    <TextBlock Text="Игровые UDP-порты" Style="{StaticResource FieldLabel}" />
+                                    <TextBlock Text="{local:Tr 'Игровые UDP-порты'}" Style="{StaticResource FieldLabel}" />
                                     <TextBox Text="{Binding FormUdp, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource FieldBox}" />
                                 </StackPanel>
                                 <StackPanel Grid.Column="2">
-                                    <TextBlock Text="Игровые TCP-порты" Style="{StaticResource FieldLabel}" />
+                                    <TextBlock Text="{local:Tr 'Игровые TCP-порты'}" Style="{StaticResource FieldLabel}" />
                                     <TextBox Text="{Binding FormTcp, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource FieldBox}" />
                                 </StackPanel>
                             </Grid>
                             <TextBlock Style="{StaticResource Soft}" FontSize="12.5" Margin="0,6,0,0"
-                                       Text="Например 7777 или 27000-27100. Обход на этих портах действует для любого адреса, поэтому не указывайте лишнего." />
+                                       Text="{local:Tr 'Например 7777 или 27000-27100. Обход на этих портах действует для любого адреса, поэтому не указывайте лишнего.'}" />
 
                             <ToggleButton Style="{StaticResource Switch}" IsChecked="{Binding FormAlways}" Margin="0,16,0,0">
-                                <TextBlock TextWrapping="Wrap" Text="Обходить всегда, даже если проверка проходит (для игр, которые тормозят, а не отваливаются)" />
+                                <TextBlock TextWrapping="Wrap" Text="{local:Tr 'Обходить всегда, даже если проверка проходит (для игр, которые тормозят, а не отваливаются)'}" />
                             </ToggleButton>
 
                             <TextBlock Text="{Binding FormError}" Foreground="{DynamicResource Signal}" TextWrapping="Wrap" Margin="0,14,0,0"
                                        Visibility="{Binding HasFormError, Converter={StaticResource Visible}}" />
 
                             <StackPanel Orientation="Horizontal" Margin="0,18,0,0">
-                                <Button Content="Добавить и подобрать" Style="{StaticResource PrimaryButton}" Command="{Binding SubmitAppCommand}" />
-                                <Button Content="Отмена" Style="{StaticResource QuietButton}" Command="{Binding CancelFormCommand}" Margin="10,0,0,0" />
+                                <Button Content="{local:Tr 'Добавить и подобрать'}" Style="{StaticResource PrimaryButton}" Command="{Binding SubmitAppCommand}" />
+                                <Button Content="{local:Tr 'Отмена'}" Style="{StaticResource QuietButton}" Command="{Binding CancelFormCommand}" Margin="10,0,0,0" />
                             </StackPanel>
                         </StackPanel>
                     </StackPanel>
@@ -690,7 +690,7 @@
                 <StackPanel Grid.ColumnSpan="3" Margin="0,0,0,26">
                     <TextBlock Text="Telegram" Style="{StaticResource PageTitle}" />
                     <TextBlock Style="{StaticResource Soft}" FontSize="15" MaxWidth="720" HorizontalAlignment="Left" Margin="0,6,0,0" TextWrapping="Wrap"
-                               Text="Тропа держит для Telegram локальный прокси: трафик уходит через WebSocket веб-версии Telegram, который режут реже, а если и его нет — через Cloudflare. Работает внутри службы, окно можно закрыть." />
+                               Text="{local:Tr 'Тропа держит для Telegram локальный прокси: трафик уходит через WebSocket веб-версии Telegram, который режут реже, а если и его нет — через Cloudflare. Работает внутри службы, окно можно закрыть.'}" />
                 </StackPanel>
 
                 <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Focusable="False">
@@ -717,9 +717,9 @@
                         <WrapPanel Margin="28,0,0,18">
                             <Button Content="{Binding TgPrimaryLabel}" Command="{Binding TgPrimaryCommand}" Style="{StaticResource PrimaryButton}"
                                     Margin="0,0,10,10" />
-                            <Button Content="Проверить дата-центры" Command="{Binding TgCheckCommand}" Style="{StaticResource QuietButton}"
+                            <Button Content="{local:Tr 'Проверить дата-центры'}" Command="{Binding TgCheckCommand}" Style="{StaticResource QuietButton}"
                                     Margin="0,0,10,10" Visibility="{Binding TgOn, Converter={StaticResource Visible}}" />
-                            <Button Content="Скопировать ссылку" Command="{Binding TgCopyCommand}" Style="{StaticResource QuietButton}"
+                            <Button Content="{local:Tr 'Скопировать ссылку'}" Command="{Binding TgCopyCommand}" Style="{StaticResource QuietButton}"
                                     Margin="0,0,10,10" Visibility="{Binding TgOn, Converter={StaticResource Visible}}" />
                         </WrapPanel>
 
@@ -727,36 +727,36 @@
                                 BorderBrush="{DynamicResource Line}" BorderThickness="1" HorizontalAlignment="Left" MaxWidth="640"
                                 Visibility="{Binding HasTgRival, Converter={StaticResource Visible}}">
                             <DockPanel>
-                                <Button DockPanel.Dock="Right" Content="Закрыть его" Command="{Binding TgCloseRivalCommand}"
+                                <Button DockPanel.Dock="Right" Content="{local:Tr 'Закрыть его'}" Command="{Binding TgCloseRivalCommand}"
                                         Style="{StaticResource QuietButton}" Padding="14,6" FontSize="13" VerticalAlignment="Center" Margin="16,0,0,0" />
                                 <TextBlock Text="{Binding TgRival}" TextWrapping="Wrap" FontSize="13.5" VerticalAlignment="Center" />
                             </DockPanel>
                         </Border>
 
                         <StackPanel Margin="28,6,0,0" Visibility="{Binding TgOn, Converter={StaticResource Visible}}">
-                            <TextBlock Text="Как это устроено" Style="{StaticResource SectionTitle}" />
+                            <TextBlock Text="{local:Tr 'Как это устроено'}" Style="{StaticResource SectionTitle}" />
                             <TextBlock Style="{StaticResource Soft}" TextWrapping="Wrap" MaxWidth="640" HorizontalAlignment="Left" Margin="0,0,0,6">
-                                <Run Text="Адрес прокси: " /><Run Text="{Binding TgAddress, Mode=OneWay}" FontWeight="SemiBold" Foreground="{DynamicResource Ink}" /><Run Text=". Telegram шифрует всё сам, Тропа лишь перекладывает его пакеты в WebSocket и не видит переписку." />
+                                <Run Text="{local:Tr 'Адрес прокси: '}" /><Run Text="{Binding TgAddress, Mode=OneWay}" FontWeight="SemiBold" Foreground="{DynamicResource Ink}" /><Run Text="{local:Tr '. Telegram шифрует всё сам, Тропа лишь перекладывает его пакеты в WebSocket и не видит переписку.'}" />
                             </TextBlock>
                             <TextBlock Style="{StaticResource Soft}" TextWrapping="Wrap" MaxWidth="640" HorizontalAlignment="Left" Margin="0,0,0,18"
-                                       Text="Чтобы Telegram снова ходил напрямую, отключите прокси в его настройках." />
-                            <TextBlock Text="Телефон" Style="{StaticResource SectionTitle}" />
+                                       Text="{local:Tr 'Чтобы Telegram снова ходил напрямую, отключите прокси в его настройках.'}" />
+                            <TextBlock Text="{local:Tr 'Телефон'}" Style="{StaticResource SectionTitle}" />
                             <ToggleButton Style="{StaticResource Switch}" IsChecked="{Binding TgLanOn, Mode=OneWay}" Command="{Binding TgLanCommand}" Margin="0,0,0,12">
                                 <TextBlock TextWrapping="Wrap" MaxWidth="560"
-                                           Text="Пускать телефоны из этой Wi-Fi сети: Тропа откроет прокси для домашней сети (брандмауэр — только частные сети). Без секрета из QR-кода к нему не подключиться." />
+                                           Text="{local:Tr 'Пускать телефоны из этой Wi-Fi сети: Тропа откроет прокси для домашней сети (брандмауэр — только частные сети). Без секрета из QR-кода к нему не подключиться.'}" />
                             </ToggleButton>
                             <StackPanel Orientation="Horizontal" Margin="0,0,0,20" Visibility="{Binding HasTgQr, Converter={StaticResource Visible}}">
                                 <Border CornerRadius="14" Background="White" Padding="6" BorderBrush="{DynamicResource Line}" BorderThickness="1">
                                     <Image Source="{Binding TgQr}" Width="190" Height="190" RenderOptions.BitmapScalingMode="NearestNeighbor" />
                                 </Border>
                                 <StackPanel Margin="20,6,0,0" MaxWidth="330">
-                                    <TextBlock Text="Наведите камеру телефона" FontFamily="{StaticResource Display}" FontSize="18" FontWeight="SemiBold" />
+                                    <TextBlock Text="{local:Tr 'Наведите камеру телефона'}" FontFamily="{StaticResource Display}" FontSize="18" FontWeight="SemiBold" />
                                     <TextBlock Style="{StaticResource Soft}" TextWrapping="Wrap" Margin="0,6,0,0"
-                                               Text="Ссылка откроется в Telegram, он спросит «Подключить прокси?». Работает, пока телефон в этой же Wi-Fi сети и компьютер включён." />
+                                               Text="{local:Tr 'Ссылка откроется в Telegram, он спросит «Подключить прокси?». Работает, пока телефон в этой же Wi-Fi сети и компьютер включён.'}" />
                                     <TextBlock Text="{Binding TgLanLink}" Style="{StaticResource Soft}" FontSize="11.5" TextWrapping="Wrap" Margin="0,10,0,0" />
                                 </StackPanel>
                             </StackPanel>
-                            <Button Content="Выключить прокси" Command="{Binding TgOffCommand}" Style="{StaticResource QuietButton}"
+                            <Button Content="{local:Tr 'Выключить прокси'}" Command="{Binding TgOffCommand}" Style="{StaticResource QuietButton}"
                                     Foreground="{DynamicResource Signal}" HorizontalAlignment="Left" />
                         </StackPanel>
                     </StackPanel>
@@ -765,7 +765,7 @@
                 <!-- правая колонка: дата-центры и счётчики -->
                 <ScrollViewer Grid.Row="1" Grid.Column="2" VerticalScrollBarVisibility="Auto" Focusable="False">
                     <StackPanel>
-                        <TextBlock Text="Дата-центры" Style="{StaticResource SectionTitle}" />
+                        <TextBlock Text="{local:Tr 'Дата-центры'}" Style="{StaticResource SectionTitle}" />
                         <ItemsControl ItemsSource="{Binding DcRows}" Focusable="False" Margin="0,0,0,22">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate DataType="{x:Type local:DcRowVm}">
@@ -782,12 +782,12 @@
                         </ItemsControl>
 
                         <StackPanel Visibility="{Binding HasTgStats, Converter={StaticResource Visible}}">
-                            <TextBlock Text="Что идёт через прокси" Style="{StaticResource SectionTitle}" />
+                            <TextBlock Text="{local:Tr 'Что идёт через прокси'}" Style="{StaticResource SectionTitle}" />
                             <TextBlock Text="{Binding TgStats}" Style="{StaticResource Soft}" LineHeight="22" TextWrapping="Wrap" />
                         </StackPanel>
 
                         <TextBlock Style="{StaticResource Soft}" FontSize="12.5" Margin="0,22,0,0" TextWrapping="Wrap"
-                                   Text="Порт tg-ws-proxy от Flowseal (MIT), переписан на C# и работает в службе Тропы без Python." />
+                                   Text="{local:Tr 'Порт tg-ws-proxy от Flowseal (MIT), переписан на C# и работает в службе Тропы без Python.'}" />
                     </StackPanel>
                 </ScrollViewer>
             </Grid>
@@ -799,17 +799,17 @@
                     <RowDefinition Height="*" />
                 </Grid.RowDefinitions>
                 <DockPanel Margin="0,0,0,18">
-                    <Button DockPanel.Dock="Right" Content="Открыть журнал службы" Style="{StaticResource QuietButton}"
+                    <Button DockPanel.Dock="Right" Content="{local:Tr 'Открыть журнал службы'}" Style="{StaticResource QuietButton}"
                             Command="{Binding OpenServiceLogCommand}" VerticalAlignment="Top" />
-                    <Button DockPanel.Dock="Right" Content="Сообщить о проблеме" Style="{StaticResource QuietButton}"
+                    <Button DockPanel.Dock="Right" Content="{local:Tr 'Сообщить о проблеме'}" Style="{StaticResource QuietButton}"
                             Command="{Binding ReportProblemCommand}" VerticalAlignment="Top" Margin="0,0,10,0" />
                     <StackPanel>
-                        <TextBlock Text="Журнал" Style="{StaticResource PageTitle}" />
+                        <TextBlock Text="{local:Tr 'Журнал'}" Style="{StaticResource PageTitle}" />
                         <TextBlock Style="{StaticResource Soft}" FontSize="15" Margin="0,6,0,0"
-                                   Text="Что Тропа делала с момента открытия окна: попытки подбора, перезапуски, обновления." />
+                                   Text="{local:Tr 'Что Тропа делала с момента открытия окна: попытки подбора, перезапуски, обновления.'}" />
                     </StackPanel>
                 </DockPanel>
-                <TextBlock Grid.Row="1" Style="{StaticResource Soft}" Text="Пока тихо. События появятся, когда служба что-нибудь сделает."
+                <TextBlock Grid.Row="1" Style="{StaticResource Soft}" Text="{local:Tr 'Пока тихо. События появятся, когда служба что-нибудь сделает.'}"
                            Visibility="{Binding LogLines.Count, Converter={StaticResource WhenEmpty}}" />
                 <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Focusable="False">
                     <ItemsControl ItemsSource="{Binding LogLines}" Focusable="False">
@@ -842,85 +842,97 @@
             <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto" Focusable="False"
                           Visibility="{Binding Page, Converter={StaticResource IsVisible}, ConverterParameter=Settings}">
                 <StackPanel Margin="48,26,48,26" MaxWidth="720" HorizontalAlignment="Left">
-                    <TextBlock Text="Настройки" Style="{StaticResource PageTitle}" Margin="0,0,0,24" />
+                    <TextBlock Text="{local:Tr 'Настройки'}" Style="{StaticResource PageTitle}" Margin="0,0,0,24" />
 
-                    <TextBlock Text="Защита" Style="{StaticResource SectionTitle}" />
+                    <TextBlock Text="{local:Tr 'Защита'}" Style="{StaticResource SectionTitle}" />
                     <TextBlock Style="{StaticResource Soft}" Text="{Binding ModeNote}" Margin="0,0,0,12"
                                Visibility="{Binding HasModeNote, Converter={StaticResource Visible}}" />
                     <StackPanel Orientation="Horizontal">
                         <Button Content="{Binding ProtectLabel}" Command="{Binding ProtectCommand}" Style="{StaticResource QuietButton}"
                                 Visibility="{Binding ProtectVisible, Converter={StaticResource Visible}}" Margin="0,0,10,0" />
-                        <Button Content="Подобрать обход заново" Command="{Binding TuneCommand}" Style="{StaticResource QuietButton}" />
+                        <Button Content="{local:Tr 'Подобрать обход заново'}" Command="{Binding TuneCommand}" Style="{StaticResource QuietButton}" />
                     </StackPanel>
                     <Rectangle Height="1" Fill="{DynamicResource Line}" Margin="0,26,0,24" />
 
-                    <TextBlock Text="Обновления Тропы" Style="{StaticResource SectionTitle}" />
+                    <TextBlock Text="{local:Tr 'Обновления Тропы'}" Style="{StaticResource SectionTitle}" />
                     <TextBlock Text="{Binding VersionText}" FontSize="15" Margin="0,0,0,4" />
                     <TextBlock Text="{Binding AppUpdateText}" Style="{StaticResource Soft}" Margin="0,0,0,14" />
                     <ToggleButton Style="{StaticResource Switch}" IsChecked="{Binding CheckAppUpdates}" Margin="0,0,0,14">
                         <TextBlock TextWrapping="Wrap"
-                                   Text="Проверять новые версии Тропы на github.com/xckrt/Tropa и предлагать обновиться (сама Тропа без спроса не обновляется)" />
+                                   Text="{local:Tr 'Проверять новые версии Тропы на github.com/xckrt/Tropa и предлагать обновиться (сама Тропа без спроса не обновляется)'}" />
                     </ToggleButton>
-                    <Button Content="Проверить сейчас" Command="{Binding CheckAppUpdateCommand}" Style="{StaticResource QuietButton}" HorizontalAlignment="Left" />
+                    <Button Content="{local:Tr 'Проверить сейчас'}" Command="{Binding CheckAppUpdateCommand}" Style="{StaticResource QuietButton}" HorizontalAlignment="Left" />
                     <Rectangle Height="1" Fill="{DynamicResource Line}" Margin="0,26,0,24" />
 
-                    <TextBlock Text="Обновления zapret" Style="{StaticResource SectionTitle}" />
+                    <TextBlock Text="{local:Tr 'Обновления zapret'}" Style="{StaticResource SectionTitle}" />
                     <TextBlock Text="{Binding EngineText}" FontSize="15" Margin="0,0,0,4" />
                     <TextBlock Text="{Binding UpdateText}" Style="{StaticResource Soft}" Margin="0,0,0,14" />
                     <ToggleButton Style="{StaticResource Switch}" IsChecked="{Binding AutoUpdate}" IsEnabled="{Binding HasService}" Margin="0,0,0,14">
                         <TextBlock TextWrapping="Wrap"
-                                   Text="Обновлять автоматически: раз в сутки Тропа ищет новый релиз bol-van/zapret, сверяет хеши и переходит на него, а если он не запустится, возвращается к прежнему" />
+                                   Text="{local:Tr 'Обновлять автоматически: раз в сутки Тропа ищет новый релиз bol-van/zapret, сверяет хеши и переходит на него, а если он не запустится, возвращается к прежнему'}" />
                     </ToggleButton>
-                    <Button Content="Проверить сейчас" Command="{Binding CheckUpdatesCommand}" Style="{StaticResource QuietButton}" HorizontalAlignment="Left" />
+                    <Button Content="{local:Tr 'Проверить сейчас'}" Command="{Binding CheckUpdatesCommand}" Style="{StaticResource QuietButton}" HorizontalAlignment="Left" />
                     <Rectangle Height="1" Fill="{DynamicResource Line}" Margin="0,26,0,24" />
 
                     <StackPanel Visibility="{Binding HasCommunity, Converter={StaticResource Visible}}">
-                        <TextBlock Text="Общая база стратегий" Style="{StaticResource SectionTitle}" />
+                        <TextBlock Text="{local:Tr 'Общая база стратегий'}" Style="{StaticResource SectionTitle}" />
                         <TextBlock Style="{StaticResource Soft}" TextWrapping="Wrap" Margin="0,0,0,14"
-                                   Text="Тропы делятся тем, что помогло: у вашего провайдера YouTube уже чинили — Тропа попробует эту стратегию первой, и подбор займёт секунды. Провайдера сервер узнаёт сам по соединению; Тропа отправляет только «сервис → стратегия → помогла или нет», без IP, адресов сайтов и идентификаторов." />
+                                   Text="{local:Tr 'Тропы делятся тем, что помогло: у вашего провайдера YouTube уже чинили — Тропа попробует эту стратегию первой, и подбор займёт секунды. Провайдера сервер узнаёт сам по соединению; Тропа отправляет только «сервис → стратегия → помогла или нет», без IP, адресов сайтов и идентификаторов.'}" />
                         <ToggleButton Style="{StaticResource Switch}" IsChecked="{Binding CommunityUse}" IsEnabled="{Binding HasService}" Margin="0,0,0,14">
-                            <TextBlock TextWrapping="Wrap" Text="Брать подсказки из общей базы перед подбором" />
+                            <TextBlock TextWrapping="Wrap" Text="{local:Tr 'Брать подсказки из общей базы перед подбором'}" />
                         </ToggleButton>
                         <ToggleButton Style="{StaticResource Switch}" IsChecked="{Binding CommunityShare}" IsEnabled="{Binding HasService}">
-                            <TextBlock TextWrapping="Wrap" Text="Делиться итогами своего подбора (помогает другим с тем же провайдером)" />
+                            <TextBlock TextWrapping="Wrap" Text="{local:Tr 'Делиться итогами своего подбора (помогает другим с тем же провайдером)'}" />
                         </ToggleButton>
                         <Rectangle Height="1" Fill="{DynamicResource Line}" Margin="0,26,0,24" />
                     </StackPanel>
 
-                    <TextBlock Text="Окно" Style="{StaticResource SectionTitle}" />
-                    <TextBlock Text="Тема" Style="{StaticResource FieldLabel}" Margin="0,0,0,8" />
+                    <TextBlock Text="{local:Tr 'Окно'}" Style="{StaticResource SectionTitle}" />
+                    <TextBlock Text="{local:Tr 'Тема'}" Style="{StaticResource FieldLabel}" Margin="0,0,0,8" />
                     <StackPanel Orientation="Horizontal" Margin="0,0,0,18">
-                        <RadioButton Style="{StaticResource Segment}" Content="Как в Windows" GroupName="Theme"
+                        <RadioButton Style="{StaticResource Segment}" Content="{local:Tr 'Как в Windows'}" GroupName="Theme"
                                      IsChecked="{Binding Theme, Mode=OneWay, Converter={StaticResource Is}, ConverterParameter=System}"
                                      Command="{Binding SetThemeCommand}" CommandParameter="System" />
-                        <RadioButton Style="{StaticResource Segment}" Content="Светлая" GroupName="Theme"
+                        <RadioButton Style="{StaticResource Segment}" Content="{local:Tr 'Светлая'}" GroupName="Theme"
                                      IsChecked="{Binding Theme, Mode=OneWay, Converter={StaticResource Is}, ConverterParameter=Light}"
                                      Command="{Binding SetThemeCommand}" CommandParameter="Light" />
-                        <RadioButton Style="{StaticResource Segment}" Content="Тёмная" GroupName="Theme"
+                        <RadioButton Style="{StaticResource Segment}" Content="{local:Tr 'Тёмная'}" GroupName="Theme"
                                      IsChecked="{Binding Theme, Mode=OneWay, Converter={StaticResource Is}, ConverterParameter=Dark}"
                                      Command="{Binding SetThemeCommand}" CommandParameter="Dark" />
                     </StackPanel>
+                    <TextBlock Text="Язык / Language" Style="{StaticResource FieldLabel}" Margin="0,0,0,8" />
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,18">
+                        <RadioButton Style="{StaticResource Segment}" Content="{local:Tr 'Как в Windows'}" GroupName="Lang"
+                                     IsChecked="{Binding Language, Mode=OneWay, Converter={StaticResource Is}, ConverterParameter=System}"
+                                     Command="{Binding SetLanguageCommand}" CommandParameter="System" />
+                        <RadioButton Style="{StaticResource Segment}" Content="Русский" GroupName="Lang"
+                                     IsChecked="{Binding Language, Mode=OneWay, Converter={StaticResource Is}, ConverterParameter=Russian}"
+                                     Command="{Binding SetLanguageCommand}" CommandParameter="Russian" />
+                        <RadioButton Style="{StaticResource Segment}" Content="English" GroupName="Lang"
+                                     IsChecked="{Binding Language, Mode=OneWay, Converter={StaticResource Is}, ConverterParameter=English}"
+                                     Command="{Binding SetLanguageCommand}" CommandParameter="English" />
+                    </StackPanel>
                     <ToggleButton Style="{StaticResource Switch}" IsChecked="{Binding Autostart}" Margin="0,0,0,14"
                                   Visibility="{Binding NotPortable, Converter={StaticResource Visible}}">
-                        <TextBlock TextWrapping="Wrap" Text="Запускать Тропу вместе с Windows (сразу в трей)" />
+                        <TextBlock TextWrapping="Wrap" Text="{local:Tr 'Запускать Тропу вместе с Windows (сразу в трей)'}" />
                     </ToggleButton>
                     <ToggleButton Style="{StaticResource Switch}" IsChecked="{Binding Notify}" Margin="0,0,0,14">
-                        <TextBlock TextWrapping="Wrap" Text="Уведомлять, когда служба сама что-то сделала: подобрала заново, обновила zapret, не смогла включить защиту" />
+                        <TextBlock TextWrapping="Wrap" Text="{local:Tr 'Уведомлять, когда служба сама что-то сделала: подобрала заново, обновила zapret, не смогла включить защиту'}" />
                     </ToggleButton>
                     <ToggleButton Style="{StaticResource Switch}" IsChecked="{Binding MinimizeToTray}">
-                        <TextBlock TextWrapping="Wrap" Text="Закрывать в трей: защиту держит служба, окно можно открыть значком у часов" />
+                        <TextBlock TextWrapping="Wrap" Text="{local:Tr 'Закрывать в трей: защиту держит служба, окно можно открыть значком у часов'}" />
                     </ToggleButton>
                     <Rectangle Height="1" Fill="{DynamicResource Line}" Margin="0,26,0,24" />
 
-                    <TextBlock Text="О программе" Style="{StaticResource SectionTitle}" />
+                    <TextBlock Text="{local:Tr 'О программе'}" Style="{StaticResource SectionTitle}" />
                     <TextBlock Text="{Binding BuildText}" Style="{StaticResource Soft}" />
                     <TextBlock Style="{StaticResource Soft}" Margin="0,4,0,14"
-                               Text="Движок: zapret от bol-van, стратегии и шаблоны Flowseal/zapret-discord-youtube (MIT)." />
-                    <Button Content="Сообщить о проблеме" Command="{Binding ReportProblemCommand}" Style="{StaticResource QuietButton}"
+                               Text="{local:Tr 'Движок: zapret от bol-van, стратегии и шаблоны Flowseal/zapret-discord-youtube (MIT).'}" />
+                    <Button Content="{local:Tr 'Сообщить о проблеме'}" Command="{Binding ReportProblemCommand}" Style="{StaticResource QuietButton}"
                             HorizontalAlignment="Left" Margin="0,0,0,10" />
                     <TextBlock Style="{StaticResource Soft}" FontSize="12.5" Margin="0,0,0,14"
-                               Text="Откроется черновик issue на GitHub с версиями и журналами. Вы увидите весь текст до отправки; без вашего нажатия Тропа ничего никуда не шлёт." />
-                    <Button Content="Удалить службу Тропы" Command="{Binding UninstallServiceCommand}" Style="{StaticResource QuietButton}"
+                               Text="{local:Tr 'Откроется черновик issue на GitHub с версиями и журналами. Вы увидите весь текст до отправки; без вашего нажатия Тропа ничего никуда не шлёт.'}" />
+                    <Button Content="{local:Tr 'Удалить службу Тропы'}" Command="{Binding UninstallServiceCommand}" Style="{StaticResource QuietButton}"
                             Foreground="{DynamicResource Signal}" HorizontalAlignment="Left"
                             Visibility="{Binding CanUninstall, Converter={StaticResource Visible}}" />
                 </StackPanel>

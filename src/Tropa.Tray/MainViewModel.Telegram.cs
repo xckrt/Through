@@ -12,7 +12,7 @@ namespace Tropa.Tray;
 /// <summary>Строка дата-центра на странице Telegram.</summary>
 public sealed class DcRowVm(int dc, string place) : Observable
 {
-    private string _summary = "не проверялся";
+    private string _summary = Loc.T("не проверялся");
     private Health _health = Health.Pending;
 
     public int Dc => dc;
@@ -28,7 +28,7 @@ public sealed partial class MainViewModel
     private TelegramReport? _tg;
     private DispatcherTimer? _tgTimer;
     private bool _tgBusy;
-    private string _tgHeadline = "Прокси для Telegram";
+    private string _tgHeadline = Loc.T("Прокси для Telegram");
     private string _tgSubline = "";
     private Health _tgHealth = Health.Pending;
     private string _tgStats = "";
@@ -36,16 +36,16 @@ public sealed partial class MainViewModel
 
     public ObservableCollection<DcRowVm> DcRows { get; } =
     [
-        new(1, "Майами"), new(2, "Амстердам"), new(3, "Майами"), new(4, "Амстердам"), new(5, "Сингапур"),
+        new(1, Loc.T("Майами")), new(2, Loc.T("Амстердам")), new(3, Loc.T("Майами")), new(4, Loc.T("Амстердам")), new(5, Loc.T("Сингапур")),
     ];
 
     public string TgHeadline { get => _tgHeadline; private set => Set(ref _tgHeadline, value); }
-    public string TgSubline { get => _tgSubline; private set => Set(ref _tgSubline, value); }
+    public string TgSubline { get => _tgSubline; private set => Set(ref _tgSubline, Loc.Msg(value)); }
     public Health TgHealth { get => _tgHealth; private set => Set(ref _tgHealth, value); }
     public string TgStats { get => _tgStats; private set { if (Set(ref _tgStats, value)) Raise(nameof(HasTgStats)); } }
     public bool HasTgStats => TgStats.Length > 0;
     public bool TgOn => _tg is { Running: true };
-    public string TgPrimaryLabel => TgOn ? "Подключить Telegram" : _tg is { Enabled: true } ? "Запустить снова" : "Включить";
+    public string TgPrimaryLabel => TgOn ? Loc.T("Подключить Telegram") : _tg is { Enabled: true } ? Loc.T("Запустить снова") : Loc.T("Включить");
     public string? TgLink => _tg?.Link;
     public string TgAddress => _tg is { } t ? $"127.0.0.1:{t.Port}" : "";
 
@@ -68,7 +68,7 @@ public sealed partial class MainViewModel
         if (TgLink is { } link)
         {
             Clipboard.SetText(link);
-            TgSubline = "Ссылка скопирована. Её можно открыть на этом компьютере или вставить в Telegram: Настройки → Продвинутые → Тип соединения.";
+            TgSubline = Loc.T("Ссылка скопирована. Её можно открыть на этом компьютере или вставить в Telegram: Настройки → Продвинутые → Тип соединения.");
         }
         return Task.CompletedTask;
     }, () => TgLink is not null);
@@ -78,7 +78,7 @@ public sealed partial class MainViewModel
     {
         if (_client is null) return;
         await TelegramCallAsync("telegram", new { on = false });
-        Log("прокси Telegram выключен; если Telegram был подключён к нему, отключите прокси и в самом Telegram");
+        Log(Loc.T("прокси Telegram выключен; если Telegram был подключён к нему, отключите прокси и в самом Telegram"));
     }, () => !_tgBusy && _tg is { Enabled: true } && _client is not null);
     private ICommand? _tgOff;
 
@@ -88,7 +88,7 @@ public sealed partial class MainViewModel
             using (p)
             {
                 try { p.Kill(entireProcessTree: true); }
-                catch (Exception ex) when (ex is Win32Exception or InvalidOperationException) { Log($"не удалось закрыть {p.ProcessName}: {ex.Message}", error: true); }
+                catch (Exception ex) when (ex is Win32Exception or InvalidOperationException) { Log(Loc.F("не удалось закрыть {0}: {1}", p.ProcessName, ex.Message), error: true); }
             }
         DetectRival();
         return Task.CompletedTask;
@@ -102,14 +102,14 @@ public sealed partial class MainViewModel
         IsRunning = true;
         try
         {
-            TgHeadline = "Включаю прокси";
-            TgSubline = "Прокси работает внутри службы Тропы, поэтому Telegram будет ходить через него и при закрытом окне.";
+            TgHeadline = Loc.T("Включаю прокси");
+            TgSubline = Loc.T("Прокси работает внутри службы Тропы, поэтому Telegram будет ходить через него и при закрытом окне.");
             await EnsureServiceAsync();
             var s = await _client!.CallAsync<StatusReport>("telegram", new { on = true }, _cts.Token);
             ApplyTelegram(s.Telegram);
             if (s.Telegram is { Running: true })
             {
-                Log($"прокси Telegram работает на 127.0.0.1:{s.Telegram.Port}");
+                Log(Loc.F("прокси Telegram работает на 127.0.0.1:{0}", s.Telegram.Port));
                 OpenTelegramLink();
                 _ = CheckTelegramAsync();
             }
@@ -117,9 +117,9 @@ public sealed partial class MainViewModel
         catch (Exception ex) when (ex is InvalidOperationException or IOException)
         {
             TgHealth = Health.Blocked;
-            TgHeadline = "Прокси не включился";
+            TgHeadline = Loc.T("Прокси не включился");
             TgSubline = ex.Message;
-            Log($"прокси Telegram: {ex.Message}", error: true);
+            Log(Loc.F("прокси Telegram: {0}", ex.Message), error: true);
         }
         finally
         {
@@ -138,14 +138,14 @@ public sealed partial class MainViewModel
         foreach (var row in DcRows)
         {
             row.Health = Health.Pending;
-            row.Summary = "проверяю…";
+            row.Summary = Loc.T("проверяю…");
         }
         try
         {
             var s = await _client.CallAsync<StatusReport>("telegram.check", ct: _cts.Token);
             ApplyTelegram(s.Telegram);
             var bad = s.Telegram?.Checks.Count(c => !c.Ok) ?? 0;
-            Log(bad == 0 ? "Telegram: все дата-центры отвечают через прокси" : $"Telegram: не отвечают дата-центры ({bad} из 5)", error: bad > 0);
+            Log(bad == 0 ? Loc.T("Telegram: все дата-центры отвечают через прокси") : Loc.F("Telegram: не отвечают дата-центры ({0} из 5)", bad), error: bad > 0);
         }
         catch (Exception ex) when (ex is InvalidOperationException or IOException)
         {
@@ -186,12 +186,12 @@ public sealed partial class MainViewModel
         try
         {
             Process.Start(new ProcessStartInfo(link) { UseShellExecute = true })?.Dispose();
-            TgSubline = "Telegram спросит, подключить ли прокси, — нажмите «Подключить». Дальше он будет ходить через Тропу сам.";
+            TgSubline = Loc.T("Telegram спросит, подключить ли прокси, — нажмите «Подключить». Дальше он будет ходить через Тропу сам.");
         }
         catch (Win32Exception)
         {
             Clipboard.SetText(link);
-            TgSubline = "Telegram Desktop не нашёлся. Ссылка скопирована: вставьте её в Telegram (Настройки → Продвинутые → Тип соединения) или установите Telegram Desktop и нажмите «Подключить» ещё раз.";
+            TgSubline = Loc.T("Telegram Desktop не нашёлся. Ссылка скопирована: вставьте её в Telegram (Настройки → Продвинутые → Тип соединения) или установите Telegram Desktop и нажмите «Подключить» ещё раз.");
         }
     }
 
@@ -209,19 +209,19 @@ public sealed partial class MainViewModel
         if (t is null || !t.Enabled)
         {
             TgHealth = Health.Pending;
-            TgHeadline = "Прокси для Telegram";
+            TgHeadline = Loc.T("Прокси для Telegram");
             TgSubline = _client is null
-                ? "Нажмите «Включить»: Тропа поставит службу (Windows один раз спросит разрешение) и поднимет в ней прокси."
-                : "Нажмите «Включить»: Тропа поднимет прокси в своей службе и сама добавит его в Telegram.";
+                ? Loc.T("Нажмите «Включить»: Тропа поставит службу (Windows один раз спросит разрешение) и поднимет в ней прокси.")
+                : Loc.T("Нажмите «Включить»: Тропа поднимет прокси в своей службе и сама добавит его в Telegram.");
             TgStats = "";
-            foreach (var row in DcRows) { row.Health = Health.Pending; row.Summary = "не проверялся"; }
+            foreach (var row in DcRows) { row.Health = Health.Pending; row.Summary = Loc.T("не проверялся"); }
             return;
         }
         if (!t.Running)
         {
             TgHealth = Health.Blocked;
-            TgHeadline = "Прокси не запустился";
-            TgSubline = t.Error ?? "Служба не смогла открыть порт. Нажмите «Запустить снова».";
+            TgHeadline = Loc.T("Прокси не запустился");
+            TgSubline = t.Error ?? Loc.T("Служба не смогла открыть порт. Нажмите «Запустить снова».");
             TgStats = "";
             return;
         }
@@ -230,49 +230,49 @@ public sealed partial class MainViewModel
         {
             var c = t.Checks.FirstOrDefault(x => x.Dc == row.Dc);
             row.Health = c is null ? Health.Pending : c.Ok ? (c.ElapsedMs > 3000 ? Health.Slow : Health.Ok) : Health.Blocked;
-            row.Summary = c is null ? "не проверялся" : c.Ok ? $"{c.ElapsedMs} мс" : "не отвечает";
+            row.Summary = c is null ? Loc.T("не проверялся") : c.Ok ? Loc.F("{0} мс", c.ElapsedMs) : Loc.T("не отвечает");
         }
 
         var failed = t.Checks.Count(c => !c.Ok);
-        (TgHealth, TgHeadline) = t.Checks.Length == 0 ? (Health.Ok, "Прокси работает")
-            : failed == 0 ? (Health.Ok, "Telegram работает через Тропу")
-            : failed == t.Checks.Length ? (Health.Blocked, "Дата-центры Telegram не отвечают")
-            : (Health.Partial, "Часть дата-центров не отвечает");
+        (TgHealth, TgHeadline) = t.Checks.Length == 0 ? (Health.Ok, Loc.T("Прокси работает"))
+            : failed == 0 ? (Health.Ok, Loc.T("Telegram работает через Тропу"))
+            : failed == t.Checks.Length ? (Health.Blocked, Loc.T("Дата-центры Telegram не отвечают"))
+            : (Health.Partial, Loc.T("Часть дата-центров не отвечает"));
 
         var st = t.Stats;
         TgSubline = failed > 0
-            ? "Прокси перебрал все пути: WebSocket, Cloudflare и прямой. Попробуйте проверить позже или подобрать обход на «Обзоре»."
+            ? Loc.T("Прокси перебрал все пути: WebSocket, Cloudflare и прямой. Попробуйте проверить позже или подобрать обход на «Обзоре».")
             : st is not { Total: > 0 }
-                ? "Telegram к нему ещё не подключался. Нажмите «Подключить Telegram» — он спросит, добавить ли прокси."
+                ? Loc.T("Telegram к нему ещё не подключался. Нажмите «Подключить Telegram» — он спросит, добавить ли прокси.")
                 : st.Active > 0
-                    ? $"Telegram подключён: соединений сейчас {st.Active}."
-                    : $"Telegram подключался {Ago(st.LastConnectionAt)}. Сейчас открытых соединений нет.";
+                    ? Loc.F("Telegram подключён: соединений сейчас {0}.", st.Active)
+                    : Loc.F("Telegram подключался {0}. Сейчас открытых соединений нет.", Ago(st.LastConnectionAt));
         if (st is { BadSecret: > 0 } && st.Total == st.BadSecret)
-            TgSubline = "Telegram стучится со старой ссылкой (другой секрет). Нажмите «Подключить Telegram», чтобы обновить её.";
+            TgSubline = Loc.T("Telegram стучится со старой ссылкой (другой секрет). Нажмите «Подключить Telegram», чтобы обновить её.");
 
         TgStats = st is not { Total: > 0 } ? "" : string.Join(Environment.NewLine, new[]
         {
-            $"Соединений всего: {st.Total}, сейчас: {st.Active}",
-            $"Через WebSocket: {st.ViaWebSocket} · Cloudflare: {st.ViaCloudflare} · напрямую: {st.ViaTcp}",
-            st.Failed > 0 ? $"Не дошли: {st.Failed}" : null,
-            $"Трафик: ↑ {Bytes(st.BytesUp)} · ↓ {Bytes(st.BytesDown)}",
-            st.LastRoute is { } r ? $"Последнее: {r}" : null,
+            Loc.F("Соединений всего: {0}, сейчас: {1}", st.Total, st.Active),
+            Loc.F("Через WebSocket: {0} · Cloudflare: {1} · напрямую: {2}", st.ViaWebSocket, st.ViaCloudflare, st.ViaTcp),
+            st.Failed > 0 ? Loc.F("Не дошли: {0}", st.Failed) : null,
+            Loc.F("Трафик: ↑ {0} · ↓ {1}", Bytes(st.BytesUp), Bytes(st.BytesDown)),
+            st.LastRoute is { } r ? Loc.F("Последнее: {0}", Loc.Msg(r)) : null,
         }.Where(x => x is not null));
     }
 
     private static string Ago(DateTimeOffset? at)
     {
-        if (at is not { } a) return "давно";
+        if (at is not { } a) return Loc.T("давно");
         var d = DateTimeOffset.Now - a;
-        return d.TotalMinutes < 1 ? "только что" : d.TotalHours < 1 ? $"{(int)d.TotalMinutes} мин назад" : $"в {a.LocalDateTime:HH:mm}";
+        return d.TotalMinutes < 1 ? Loc.T("только что") : d.TotalHours < 1 ? Loc.F("{0} мин назад", (int)d.TotalMinutes) : Loc.F("в {0:HH:mm}", a.LocalDateTime);
     }
 
     private static string Bytes(long n) => n switch
     {
-        < 1024 => $"{n} Б",
-        < 1024 * 1024 => $"{n / 1024.0:0.#} КБ",
-        < 1024L * 1024 * 1024 => $"{n / 1024.0 / 1024:0.#} МБ",
-        _ => $"{n / 1024.0 / 1024 / 1024:0.##} ГБ",
+        < 1024 => Loc.F("{0} Б", n),
+        < 1024 * 1024 => Loc.F("{0:0.#} КБ", n / 1024.0),
+        < 1024L * 1024 * 1024 => Loc.F("{0:0.#} МБ", n / 1024.0 / 1024),
+        _ => Loc.F("{0:0.##} ГБ", n / 1024.0 / 1024 / 1024),
     };
 
     private static Process[] RivalProcesses() =>
@@ -290,7 +290,7 @@ public sealed partial class MainViewModel
     {
         var found = RivalProcesses();
         TgRival = found.Length == 0 ? null
-            : $"Запущен {found[0].ProcessName}. Тропа делает то же самое внутри службы, держать обе программы незачем: закройте его и уберите из автозапуска.";
+            : Loc.F("Запущен {0}. Тропа делает то же самое внутри службы, держать обе программы незачем: закройте его и уберите из автозапуска.", found[0].ProcessName);
         foreach (var p in found) p.Dispose();
     }
 

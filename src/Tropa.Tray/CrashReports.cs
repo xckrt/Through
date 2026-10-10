@@ -22,7 +22,7 @@ public static class CrashReports
         {
             Directory.CreateDirectory(Dir);
             var path = Path.Combine(Dir, $"crash-{DateTime.Now:yyyyMMdd-HHmmss}.txt");
-            File.WriteAllText(path, $"где: {where}\n{ex}");
+            File.WriteAllText(path, Loc.F("где: {0}\n{1}", where, ex));
         }
         catch (IOException)
         {
@@ -46,18 +46,18 @@ public static class CrashReports
     public static string Build(string summary, IEnumerable<string> windowLog, string? status)
     {
         var sb = new StringBuilder();
-        sb.AppendLine("### Что случилось");
+        sb.AppendLine(Loc.T("### Что случилось"));
         sb.AppendLine(summary);
         sb.AppendLine();
-        sb.AppendLine("### Окружение");
-        sb.AppendLine($"- Тропа {TropaBuild.VersionText} (сборка {TropaBuild.Id})");
+        sb.AppendLine(Loc.T("### Окружение"));
+        sb.AppendLine(Loc.F("- Тропа {0} (сборка {1})", TropaBuild.VersionText, TropaBuild.Id));
         sb.AppendLine($"- {RuntimeInformation.OSDescription}, {RuntimeInformation.OSArchitecture}, .NET {Environment.Version}");
-        if (status is not null) sb.AppendLine($"- служба: {status}");
+        if (status is not null) sb.AppendLine(Loc.F("- служба: {0}", status));
 
         foreach (var crash in Pending())
         {
             sb.AppendLine();
-            sb.AppendLine($"### Падение окна ({Path.GetFileNameWithoutExtension(crash)})");
+            sb.AppendLine(Loc.F("### Падение окна ({0})", Path.GetFileNameWithoutExtension(crash)));
             sb.AppendLine("```");
             sb.AppendLine(Tail(File.ReadAllText(crash), 4000));
             sb.AppendLine("```");
@@ -67,7 +67,7 @@ public static class CrashReports
         if (lines.Count > 0)
         {
             sb.AppendLine();
-            sb.AppendLine("### Журнал окна (новые сверху)");
+            sb.AppendLine(Loc.T("### Журнал окна (новые сверху)"));
             sb.AppendLine("```");
             foreach (var l in lines) sb.AppendLine(l);
             sb.AppendLine("```");
@@ -79,7 +79,7 @@ public static class CrashReports
             if (File.Exists(serviceLog))
             {
                 sb.AppendLine();
-                sb.AppendLine("### Журнал службы (последние строки)");
+                sb.AppendLine(Loc.T("### Журнал службы (последние строки)"));
                 sb.AppendLine("```");
                 foreach (var l in File.ReadLines(serviceLog).TakeLast(60)) sb.AppendLine(l);
                 sb.AppendLine("```");
@@ -98,7 +98,7 @@ public static class CrashReports
         const int limit = 6000;
         var cut = report.Length > limit;
         var body = cut
-            ? report[..limit] + "\n\n…отчёт сокращён: полный текст Тропа скопировала в буфер обмена, вставьте его сюда."
+            ? report[..limit] + Loc.T("\n\n…отчёт сокращён: полный текст Тропа скопировала в буфер обмена, вставьте его сюда.")
             : report;
         var url = $"https://github.com/{TropaBuild.Repo}/issues/new?labels=bug" +
                   $"&title={Uri.EscapeDataString(title)}&body={Uri.EscapeDataString(body)}";
