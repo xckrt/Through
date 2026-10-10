@@ -47,6 +47,9 @@ public sealed record ControllerOptions
     /// <summary>Остальные параметры прокси (адреса DC, пул). Тесты подменяют их на локальные.</summary>
     public TelegramProxyOptions? TelegramTemplate { get; init; }
 
+    /// <summary>Открыть/закрыть входящий TCP-порт в брандмауэре (только частные сети). null — не трогать (тесты).</summary>
+    public Func<int, bool, CancellationToken, Task>? Firewall { get; init; }
+
     /// <summary>Как переключать DNS системы на локальный сервер. null — только сервер, без переключения (тесты, CLI).</summary>
     public IDnsSwitch? DnsSwitch { get; init; }
 
@@ -96,6 +99,9 @@ public sealed record TelegramSettings
 
     /// <summary>32 hex-символа. Создаётся при первом включении и дальше не меняется, чтобы ссылка в Telegram жила.</summary>
     public string? Secret { get; init; }
+
+    /// <summary>Пускать телефоны из домашней сети: прокси слушает не только 127.0.0.1, порт открыт в брандмауэре (частные сети).</summary>
+    public bool Lan { get; init; }
 }
 
 /// <summary>
@@ -184,8 +190,12 @@ public sealed class TropaController(ControllerOptions o) : IAsyncDisposable
         var tg = _tg;
         var t = _settings.Telegram;
         var port = tg?.Port ?? t.Port ?? o.TelegramPort;
+        var lanIp = t.Lan && tg is not null ? LanAddress() : null;
         return new TelegramReport
         {
+            Lan = t.Lan,
+            LanLink = lanIp is null || t.Secret is null ? null
+                : $"https://t.me/proxy?server={lanIp}&port={port}&secret=dd{t.Secret}",
             Enabled = t.Enabled,
             Running = tg is not null,
             Port = port,
@@ -955,6 +965,12 @@ public sealed class TropaController(ControllerOptions o) : IAsyncDisposable
                 }
                 _tgError = null;
                 _tgChecks = [];
+                // выключили прокси — закрыть и порт в брандмауэре, если пускали телефоны
+                if (_settings.Telegram.Lan && o.Firewall is { } fw)
+                {
+                    try { await fw(_settings.Telegram.Port ?? o.TelegramPort, false, ct); }
+                    catch (Exception ex) when (ex is InvalidOperationException or IOException) { }
+                }
                 SaveSettings(_settings with { Telegram = _settings.Telegram with { Enabled = false } });
                 _message = "прокси Telegram выключен";
                 return Status();
@@ -987,9 +1003,56 @@ public sealed class TropaController(ControllerOptions o) : IAsyncDisposable
         }
     }
 
+    /// <summary>Адрес компьютера в домашней сети (тот, через который он ходит наружу), только частный.</summary>
+    public static string? LanAddress()
+    {
+        try
+        {
+            using var s = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+            s.Connect("8.8.8.8", 53); // без отправки: просто спросить систему, каким адресом она пошла бы наружу
+            if (s.LocalEndPoint is not System.Net.IPEndPoint { Address: var a }) return null;
+            var b = a.GetAddressBytes();
+            var isPrivate = b[0] == 10 || (b[0] == 172 && b[1] is >= 16 and <= 31) || (b[0] == 192 && b[1] == 168);
+            return isPrivate ? a.ToString() : null;
+        }
+        catch (SocketException) { return null; }
+    }
+
+    /// <summary>Пускать телефоны: прокси перезапускается на всех адресах (секрет и порт те же), порт — в брандмауэр.</summary>
+    public async Task<StatusReport> SetTelegramLanAsync(bool on, CancellationToken ct = default)
+    {
+        if (!_settings.Telegram.Enabled) throw new InvalidOperationException("сначала включите прокси Telegram");
+        await _tgLock.WaitAsync(ct);
+        try
+        {
+            SaveSettings(_settings with { Telegram = _settings.Telegram with { Lan = on } });
+            if (_tg is { } old)
+            {
+                _tg = null;
+                await old.DisposeAsync();
+            }
+        }
+        finally
+        {
+            _tgLock.Release();
+        }
+        await SetTelegramAsync(true, ct);
+        var port = _tg?.Port ?? _settings.Telegram.Port ?? o.TelegramPort;
+        if (o.Firewall is { } fw)
+        {
+            try { await fw(port, on, ct); }
+            catch (Exception ex) when (ex is InvalidOperationException or IOException) { _message = $"брандмауэр: {ex.Message}"; }
+        }
+        if (on && LanAddress() is null) _message = "телефон подключить не выйдет: компьютер не в домашней сети (нет частного адреса)";
+        else _message = on ? $"прокси Telegram открыт для домашней сети: телефон подключается по QR-коду" : "прокси Telegram снова только для этого компьютера";
+        Changed();
+        return Status();
+    }
+
     private (TelegramProxy? Proxy, string? Error) StartTelegramProxy(byte[] secret, int port)
     {
         var template = o.TelegramTemplate ?? new TelegramProxyOptions { Secret = secret };
+        if (_settings.Telegram.Lan) template = template with { ListenAddress = "0.0.0.0" };
         string? error = null;
         // занятый порт не повод оставить человека без Telegram: пробуем следующие
         foreach (var p in port == 0 ? [0] : Enumerable.Range(port, 20))

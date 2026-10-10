@@ -199,6 +199,7 @@ public sealed partial class MainViewModel
     private void ApplyTelegram(TelegramReport? t)
     {
         _tg = t;
+        RaisePhone();
         Raise(nameof(TgOn));
         Raise(nameof(TgPrimaryLabel));
         Raise(nameof(TgLink));

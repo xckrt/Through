@@ -102,7 +102,7 @@ public sealed class TelegramProxy : IAsyncDisposable
     public int Port => (_listener?.LocalEndpoint as IPEndPoint)?.Port ?? _o.Port;
 
     /// <summary>Ссылка, которую Telegram понимает как «добавить прокси».</summary>
-    public string Link => LinkFor(_o.ListenAddress, Port, _o.Secret);
+    public string Link => LinkFor(_o.ListenAddress == "0.0.0.0" ? "127.0.0.1" : _o.ListenAddress, Port, _o.Secret);
 
     public static string LinkFor(string host, int port, byte[] secret) =>
         $"tg://proxy?server={host}&port={port}&secret=dd{Convert.ToHexString(secret).ToLowerInvariant()}";

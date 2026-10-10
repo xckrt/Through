@@ -175,6 +175,55 @@ internal static class TelegramTests
             }
         }),
 
+        ("QR: матрицы совпадают с эталоном, проверенным декодером zxing (байтовый режим, M)", () =>
+        {
+            static string Flat(bool[,] m) { var sb = new StringBuilder(); foreach (var x in m) sb.Append(x ? '1' : '0'); return sb.ToString(); }
+            static string Hash(string s) => Convert.ToHexString(SHA256.HashData(Encoding.ASCII.GetBytes(s))).ToLowerInvariant();
+            var hello = QrCode.Encode("hello", 0);
+            Assert(hello.GetLength(0) == 21 && Hash(Flat(hello)) == "99ccedcf0d82e92a63894c8b42e405a3ac50eafa33ee2ce68fa895813fdcb386", "hello, маска 0");
+            var link = QrCode.Encode("https://t.me/proxy?server=192.168.1.42&port=1443&secret=dd0123456789abcdef0123456789abcdef");
+            Assert(link.GetLength(0) == 41 && Hash(Flat(link)) == "6e744202499893db34800104a46986b65420efcb5c42d29fbe2c5f60ede96f26", $"ссылка: {link.GetLength(0)}");
+            return Task.CompletedTask;
+        }),
+
+        ("Телефон: прокси слушает домашнюю сеть, порт открывается и закрывается в брандмауэре", async () =>
+        {
+            var calls = new List<(int, bool)>();
+            var dir = Path.Combine(Path.GetTempPath(), $"tropa-lan-{Guid.NewGuid():N}");
+            try
+            {
+                await using var c = new TropaController(new ControllerOptions
+                {
+                    Targets = new TargetCatalog { Services = [] },
+                    Presets = new PresetCatalog { Presets = [] },
+                    Engine = _ => throw new InvalidOperationException(),
+                    DataDir = dir,
+                    TelegramPort = 0,
+                    TelegramTemplate = Local(null) with { Secret = new byte[16], TcpFallback = false },
+                    Firewall = (port, open, _) => { lock (calls) calls.Add((port, open)); return Task.CompletedTask; },
+                });
+                await c.StartAsync();
+                await c.SetTelegramAsync(true);
+                var s = await c.SetTelegramLanAsync(true);
+                var port = s.Telegram!.Port;
+                Assert(s.Telegram.Lan && calls.Contains((port, true)), $"порт {port} в брандмауэр: {string.Join(",", calls)}");
+                var lan = TropaController.LanAddress();
+                Assert(lan is null ? s.Telegram.LanLink is null : s.Telegram.LanLink!.StartsWith($"https://t.me/proxy?server={lan}&port={port}&secret=dd"), s.Telegram.LanLink ?? "нет ссылки");
+                if (lan is not null)
+                {
+                    using var probe = new TcpClient();
+                    await probe.ConnectAsync(lan, port);
+                    Assert(probe.Connected, "прокси должен принимать соединения из сети");
+                }
+                await c.SetTelegramAsync(false);
+                Assert(calls[^1] == (port, false), "выключение закрывает порт");
+            }
+            finally
+            {
+                if (Directory.Exists(dir)) Directory.Delete(dir, true);
+            }
+        }),
+
         ("CloudflareDomains: расшифровка как в tg-ws-proxy, мусорные имена отсеиваются", () =>
         {
             Assert(CloudflareDomains.Decode("abc.com") == "xyz.co.uk", CloudflareDomains.Decode("abc.com"));

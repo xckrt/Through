@@ -160,6 +160,7 @@ public sealed class ControlServer(TropaController controller, string pipeName, F
                     "telegram" => await controller.SetTelegramAsync(On(request.Data), ct),
                     "telegram.check" => await controller.CheckTelegramAsync(ct),
                     "dns" => await controller.SetSecureDnsAsync(On(request.Data), ct),
+                    "telegram.lan" => await controller.SetTelegramLanAsync(On(request.Data), ct),
                     "tune.voice" => await controller.TuneVoiceAsync(ct),
                     "speed" => await controller.MeasureSpeedAsync(ct),
                     "settings.community" => await controller.SetCommunityAsync(Bool(request.Data, "use"), Bool(request.Data, "share"), ct),

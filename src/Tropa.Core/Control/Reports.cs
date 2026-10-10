@@ -158,6 +158,12 @@ public sealed record TelegramReport
 
     /// <summary>tg://proxy?… — открыть в Telegram, чтобы добавить прокси.</summary>
     public string? Link { get; init; }
+
+    /// <summary>Пускаем телефоны из домашней сети.</summary>
+    public bool Lan { get; init; }
+
+    /// <summary>https://t.me/proxy?server=адрес-в-сети… — для QR-кода: камера телефона откроет его в Telegram.</summary>
+    public string? LanLink { get; init; }
     public string? Error { get; init; }
     public TelegramProxyStats? Stats { get; init; }
     public TelegramDcCheck[] Checks { get; init; } = [];

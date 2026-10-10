@@ -35,6 +35,7 @@ internal sealed class ServiceHost(string? dataDir = null)
             EngineAccepted = AcceptEngine,
             DataDir = DataDir,
             DnsSwitch = new WindowsDnsSwitch(DataDir, _log),
+            Firewall = Firewall,
             Network = WindowsNetworkIdentity.CurrentAsync,
             ObserveApp = EtwAppObserver.ObserveAsync,
             MeasureSpeed = ct => YouTubeSpeed.MeasureAsync(ct),
@@ -181,6 +182,26 @@ internal sealed class ServiceHost(string? dataDir = null)
         var http = new HttpClient { Timeout = TimeSpan.FromMinutes(5) };
         http.DefaultRequestHeaders.UserAgent.ParseAdd("Tropa/0.1");
         return http;
+    }
+
+    /// <summary>Правило «Tropa Telegram proxy»: входящий TCP на порт прокси, только профиль «частная сеть».</summary>
+    private static async Task Firewall(int port, bool open, CancellationToken ct)
+    {
+        const string rule = "Tropa Telegram proxy";
+        await Netsh($"advfirewall firewall delete rule name=\"{rule}\"", ct, ignoreErrors: true);
+        if (open)
+            await Netsh($"advfirewall firewall add rule name=\"{rule}\" dir=in action=allow protocol=TCP localport={port} profile=private", ct);
+    }
+
+    private static async Task Netsh(string args, CancellationToken ct, bool ignoreErrors = false)
+    {
+        using var p = Process.Start(new ProcessStartInfo("netsh.exe", args)
+        {
+            UseShellExecute = false, CreateNoWindow = true, RedirectStandardOutput = true,
+        })!;
+        var output = await p.StandardOutput.ReadToEndAsync(ct);
+        await p.WaitForExitAsync(ct);
+        if (p.ExitCode != 0 && !ignoreErrors) throw new InvalidOperationException($"netsh {args}: {output.Trim()}");
     }
 
     /// <summary>Чужой winws (zapret, запущенный вручную) делит с нами WinDivert и путает диагноз: не стартуем рядом.</summary>
