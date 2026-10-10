@@ -1,13 +1,13 @@
 {
-  "version": "1.2.1",
+  "version": "1.2.2",
   "description": "Сама находит, как провайдер режет YouTube, Discord и Telegram, и настраивает обход (переносная версия)",
   "homepage": "https://xckrt.github.io/Tropa/",
   "license": "MIT",
   "notes": "Обход работает, пока открыта Тропа. Чтобы он держался всегда, поставьте обычную версию: winget install xckrt.Tropa",
   "architecture": {
     "64bit": {
-      "url": "https://github.com/xckrt/Tropa/releases/download/v1.2.1/Tropa-Portable-1.2.1.zip",
-      "hash": "fa84833b698b179869738a7429e91712f8f8cd5dba7715768b1d8ca4531945fd"
+      "url": "https://github.com/xckrt/Tropa/releases/download/v1.2.2/Tropa-Portable-1.2.2.zip",
+      "hash": "7ba21a731b9546c335d54815c7a541181c77856e790faec97053fbda0f1e84d7"
     }
   },
   "shortcuts": [
