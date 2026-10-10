@@ -561,10 +561,45 @@
                 <!-- правая колонка: заготовки или форма -->
                 <ScrollViewer Grid.Row="1" Grid.Column="2" VerticalScrollBarVisibility="Auto" Focusable="False">
                     <StackPanel>
+                        <!-- запущенная программа: служба слушает её полминуты и заполняет форму -->
+                        <StackPanel Visibility="{Binding PickerVisible, Converter={StaticResource Visible}}" Margin="0,0,0,10">
+                            <DockPanel>
+                                <Button DockPanel.Dock="Right" Content="&#xE711;" FontFamily="{StaticResource Icons}" FontSize="10"
+                                        Style="{StaticResource QuietButton}" Padding="9,7" ToolTip="Закрыть" Command="{Binding ClosePickerCommand}" />
+                                <TextBlock Text="Запущенные программы" Style="{StaticResource SectionTitle}" />
+                            </DockPanel>
+                            <TextBlock Text="{Binding ObserveText}" Style="{StaticResource Soft}" TextWrapping="Wrap" Margin="0,0,0,12" />
+                            <ProgressBar IsIndeterminate="True" Height="3" Margin="0,0,0,12" Foreground="{DynamicResource Pine}"
+                                         Background="Transparent" BorderThickness="0"
+                                         Visibility="{Binding Observing, Converter={StaticResource Visible}}" />
+                            <ItemsControl ItemsSource="{Binding RunningApps}" Focusable="False">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate DataType="{x:Type local:RunningAppVm}">
+                                        <Button Style="{StaticResource QuietButton}" HorizontalContentAlignment="Left" Margin="0,0,0,6" Padding="12,8"
+                                                Command="{Binding DataContext.ObserveCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                CommandParameter="{Binding}">
+                                            <StackPanel Orientation="Horizontal">
+                                                <Image Source="{Binding Icon}" Width="22" Height="22" Margin="0,0,12,0" />
+                                                <StackPanel>
+                                                    <TextBlock Text="{Binding Title}" FontSize="14.5" />
+                                                    <TextBlock Text="{Binding Process}" Foreground="{DynamicResource InkSoft}" FontSize="12" />
+                                                </StackPanel>
+                                            </StackPanel>
+                                        </Button>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+
                         <StackPanel Visibility="{Binding FormVisible, Converter={StaticResource IsVisible}, ConverterParameter=False}">
                             <TextBlock Text="Добавить" Style="{StaticResource SectionTitle}" />
-                            <TextBlock Style="{StaticResource Soft}" Margin="0,0,0,14"
-                                       Text="Начните с заготовки: домены уже собраны, их можно поправить." />
+                            <Button Style="{StaticResource PrimaryButton}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
+                                    Padding="16,11" Margin="0,0,0,8" Command="{Binding OpenPickerCommand}"
+                                    Visibility="{Binding PickerVisible, Converter={StaticResource IsVisible}, ConverterParameter=False}">
+                                <TextBlock Text="Выбрать запущенную программу" />
+                            </Button>
+                            <TextBlock Style="{StaticResource Soft}" Margin="0,4,0,14"
+                                       Text="Тропа сама подслушает, куда ходит игра, и соберёт домены и порты. Или начните с заготовки:" />
                             <ItemsControl ItemsSource="{Binding Templates}" Focusable="False">
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate DataType="{x:Type local:AppTemplate}">

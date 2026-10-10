@@ -17,6 +17,8 @@
   <ItemGroup>
     <!-- ServiceBase: пакет Microsoft, в .NET 8 вынесен из общей библиотеки -->
     <PackageReference Include="System.ServiceProcess.ServiceController" Version="8.0.1" />
+    <!-- ETW: подслушать, куда ходит выбранная программа (DNS-Client и Kernel-Network), для «добавить приложение» -->
+    <PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent" Version="3.2.6" />
   </ItemGroup>
 
   <ItemGroup>

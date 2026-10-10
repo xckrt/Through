@@ -53,6 +53,9 @@ public sealed record ControllerOptions
     /// <summary>Адрес, порт и DoH-серверы защищённого DNS. Тесты подменяют.</summary>
     public SecureDnsOptions? Dns { get; init; }
 
+    /// <summary>Подслушать, куда ходит программа (имя процесса, сколько слушать). null — не умеем (не Windows, тесты).</summary>
+    public Func<string, TimeSpan, CancellationToken, Task<ObservedTraffic>>? ObserveApp { get; init; }
+
     /// <summary>Узнать текущую сеть. null целиком — один профиль на все сети; null в ответе — сеть не опознана.</summary>
     public Func<CancellationToken, Task<NetworkId?>>? Network { get; init; }
 }
@@ -450,6 +453,26 @@ public sealed class TropaController(ControllerOptions o) : IAsyncDisposable
         // без службы локального DNS нет: системе возвращаем прежний, при старте снова переключим
         await StopDnsAsync(restore: true);
         _busy.Dispose();
+    }
+
+    // ---------- «добавить запущенную программу»
+
+    private readonly SemaphoreSlim _observeLock = new(1, 1);
+
+    /// <summary>Послушать программу 5–90 секунд. Принимается только имя процесса; одно наблюдение за раз.</summary>
+    public async Task<ObservedTraffic> ObserveAppAsync(string process, int seconds, CancellationToken ct = default)
+    {
+        var name = AppSuggester.NormalizeProcess(process);
+        var observe = o.ObserveApp ?? throw new InvalidOperationException("эта служба не умеет слушать программы");
+        if (!await _observeLock.WaitAsync(0, ct)) throw new InvalidOperationException("уже слушаю другую программу");
+        try
+        {
+            return await observe(name, TimeSpan.FromSeconds(Math.Clamp(seconds, 5, 90)), ct);
+        }
+        finally
+        {
+            _observeLock.Release();
+        }
     }
 
     // ---------- профили сетей

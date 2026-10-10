@@ -26,6 +26,21 @@ try
             if (!Environment.IsPrivilegedProcess) return Fail("нужны права администратора");
             return Installer.Uninstall();
 
+        case "observe":
+            // отладка «добавить приложение»: Tropa.Service.exe observe Discord 20 (от администратора)
+            if (!Environment.IsPrivilegedProcess) return Fail("нужны права администратора: ETW-сессия");
+            {
+                var t = await EtwAppObserver.ObserveAsync(Tropa.Core.Control.AppSuggester.NormalizeProcess(args[1]),
+                    TimeSpan.FromSeconds(args.Length > 2 ? int.Parse(args[2]) : 20), CancellationToken.None);
+                Console.WriteLine($"процесс найден: {t.ProcessFound}, имён {t.Hosts.Length}, адресов {t.Endpoints.Length}");
+                foreach (var h in t.Hosts.Order()) Console.WriteLine($"  dns {h}");
+                foreach (var e in t.Endpoints.OrderBy(e => e.Port)) Console.WriteLine($"  {e.Protocol} {e.Address}:{e.Port} {e.Host}");
+                var app = Tropa.Core.Control.AppSuggester.Suggest(args[1], t);
+                Console.WriteLine($"домены: {string.Join(", ", app.Domains)}");
+                Console.WriteLine($"udp: {string.Join(", ", app.UdpPorts)}  tcp: {string.Join(", ", app.TcpPorts)}");
+            }
+            return 0;
+
         case "network":
             // какую сеть видит служба: ключ профиля и имя
             Console.WriteLine(await WindowsNetworkIdentity.CurrentAsync(CancellationToken.None) is { } id ? $"{id.Name}  ({id.Key})" : "сеть не опознана");

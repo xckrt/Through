@@ -69,7 +69,7 @@ internal sealed class LineReader(Stream stream)
 /// <summary>
 /// Сервер канала службы. Методы: status, check, tune {services?}, protect {on},
 /// apps, apps.add {AppDefinition}, apps.remove {key}, engine.update, settings.autoUpdate {on},
-/// telegram {on}, telegram.check, dns {on}.
+/// telegram {on}, telegram.check, dns {on}, apps.observe {process, seconds}.
 /// По каналу принимаются только имена сервисов и действия: аргументы winws и пути
 /// приходят из файлов рядом со службой, а не от клиента.
 /// </summary>
@@ -160,6 +160,8 @@ public sealed class ControlServer(TropaController controller, string pipeName, F
                     "telegram" => await controller.SetTelegramAsync(On(request.Data), ct),
                     "telegram.check" => await controller.CheckTelegramAsync(ct),
                     "dns" => await controller.SetSecureDnsAsync(On(request.Data), ct),
+                    // только имя процесса и число секунд; ответ — адреса и имена, которые программа запрашивала
+                    "apps.observe" => await controller.ObserveAppAsync(Str(request.Data, "process"), Int(request.Data, "seconds", 20), ct),
                     // только данные (имя, домены, порты): Normalize в контроллере проверяет каждое поле
                     "apps.add" => await controller.AddAppAsync(request.Data is { } d
                         ? ControlProtocol.FromData<AppDefinition>(d)
@@ -185,6 +187,14 @@ public sealed class ControlServer(TropaController controller, string pipeName, F
             data is { ValueKind: JsonValueKind.Object } d && d.TryGetProperty("key", out var k) && k.ValueKind == JsonValueKind.String
                 ? k.GetString()!
                 : throw new InvalidOperationException("apps.remove: нужен параметр key");
+
+        private static string Str(JsonElement? data, string name) =>
+            data is { ValueKind: JsonValueKind.Object } d && d.TryGetProperty(name, out var v) && v.ValueKind == JsonValueKind.String
+                ? v.GetString()!
+                : throw new InvalidOperationException($"нужен параметр {name}");
+
+        private static int Int(JsonElement? data, string name, int fallback) =>
+            data is { ValueKind: JsonValueKind.Object } d && d.TryGetProperty(name, out var v) && v.TryGetInt32(out var i) ? i : fallback;
 
         private static bool On(JsonElement? data) =>
             data is { ValueKind: JsonValueKind.Object } d && d.TryGetProperty("on", out var on)

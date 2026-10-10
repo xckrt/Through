@@ -32,6 +32,7 @@ internal sealed class ServiceHost
             DataDir = DataDir,
             DnsSwitch = new WindowsDnsSwitch(DataDir, _log),
             Network = WindowsNetworkIdentity.CurrentAsync,
+            ObserveApp = EtwAppObserver.ObserveAsync,
         });
 
         // смена сети (другой Wi-Fi, телефон вместо роутера): через 5 секунд тишины смотрим, что за сеть
