@@ -63,6 +63,9 @@ public sealed record ControllerOptions
     /// <summary>Адрес, порт и DoH-серверы защищённого DNS. Тесты подменяют.</summary>
     public SecureDnsOptions? Dns { get; init; }
 
+    /// <summary>Отправить сводку об ошибке службы (вызывается, только если человек разрешил).</summary>
+    public Action<Exception, string>? ReportCrash { get; init; }
+
     /// <summary>Общая база стратегий (community.json). null — выключена.</summary>
     public StrategyBase? Community { get; init; }
 
@@ -97,6 +100,9 @@ public sealed record ServiceSettings
 
     /// <summary>Брать подсказки из общей базы: что чинило сервисы у этого провайдера.</summary>
     public bool UseCommunity { get; init; } = true;
+
+    /// <summary>Отправлять обезличенные сводки об ошибках (тип и имена методов). По умолчанию выключено.</summary>
+    public bool ShareCrashes { get; init; }
 
     /// <summary>Версия zapret, которая сломала работавшие сервисы: сама служба на неё больше не переходит.</summary>
     public string? RejectedEngine { get; init; }
@@ -190,6 +196,7 @@ public sealed class TropaController(ControllerOptions o) : IAsyncDisposable
         Network = _network?.Name,
         Speed = _speed,
         Excluded = _settings.Excluded,
+        ShareCrashes = _settings.ShareCrashes,
         Home = HomeStatus(),
         Week = _week is null ? null : new WeeklyReport(_week, _prevWeek),
         Community = o.Community is null ? null : new CommunityReport(_settings.UseCommunity, _settings.ShareResults),
@@ -384,6 +391,14 @@ public sealed class TropaController(ControllerOptions o) : IAsyncDisposable
         return Task.FromResult(Status());
     }
 
+    public Task<StatusReport> SetShareCrashesAsync(bool on, CancellationToken ct = default)
+    {
+        SaveSettings(_settings with { ShareCrashes = on });
+        _message = on ? "сводки об ошибках будут отправляться (без сообщений, путей и данных)" : "сводки об ошибках не отправляются";
+        Changed();
+        return Task.FromResult(Status());
+    }
+
     public Task<StatusReport> SetAutoUpdateAsync(bool on, CancellationToken ct = default) => Exclusive(() =>
     {
         SaveSettings(_settings with { AutoUpdate = on });
@@ -495,6 +510,7 @@ public sealed class TropaController(ControllerOptions o) : IAsyncDisposable
             catch (Exception ex)
             {
                 _message = $"сторож: {ex.Message}";
+                if (_settings.ShareCrashes) o.ReportCrash?.Invoke(ex, "watchdog");
                 Changed();
             }
         }

@@ -355,6 +355,20 @@ public sealed partial class MainViewModel
     });
     private ICommand? _setLanguage;
 
+    /// <summary>Сводки об ошибках: и окна (ui.json), и службы (её settings.json).</summary>
+    public bool ShareCrashes
+    {
+        get => _ui.ShareCrashes;
+        set
+        {
+            if (_ui.ShareCrashes == value) return;
+            _ui.ShareCrashes = value;
+            _ui.Save();
+            Raise(nameof(ShareCrashes));
+            if (_client is not null && !_syncingSettings) _ = CallQuietly("settings.crashes", new { on = value });
+        }
+    }
+
     public bool Autostart
     {
         get => _autostart;
@@ -531,6 +545,9 @@ public sealed class UiSettings
     public bool CheckAppUpdates { get; set; } = true;
     /// <summary>Версия, которую человек отложил кнопкой «Позже»: про неё больше не напоминаем.</summary>
     public string? SkippedVersion { get; set; }
+
+    /// <summary>Отправлять обезличенные сводки об ошибках окна.</summary>
+    public bool ShareCrashes { get; set; }
 
     /// <summary>Начало недели, сводку которой уже показали уведомлением.</summary>
     public string? LastWeekNotified { get; set; }

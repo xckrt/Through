@@ -996,6 +996,10 @@
                     <TextBlock Text="{Binding BuildText}" Style="{StaticResource Soft}" />
                     <TextBlock Style="{StaticResource Soft}" Margin="0,4,0,14"
                                Text="{local:Tr 'Движок: zapret от bol-van, стратегии и шаблоны Flowseal/zapret-discord-youtube (MIT).'}" />
+                    <ToggleButton Style="{StaticResource Switch}" IsChecked="{Binding ShareCrashes}" Margin="0,0,0,14">
+                        <TextBlock TextWrapping="Wrap" MaxWidth="640"
+                                   Text="{local:Tr 'Отправлять сводки об ошибках: тип ошибки и имена методов Тропы, версии Тропы и Windows. Без текста ошибок, путей, адресов сайтов и имён — помогает чинить то, что ломается у многих.'}" />
+                    </ToggleButton>
                     <Button Content="{local:Tr 'Сообщить о проблеме'}" Command="{Binding ReportProblemCommand}" Style="{StaticResource QuietButton}"
                             HorizontalAlignment="Left" Margin="0,0,0,10" />
                     <TextBlock Style="{StaticResource Soft}" FontSize="12.5" Margin="0,0,0,14"

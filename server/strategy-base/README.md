@@ -18,7 +18,10 @@ cd server/strategy-base
 npx wrangler login
 npx wrangler d1 create tropa-strategies        # скопируйте database_id в wrangler.toml
 npx wrangler d1 execute tropa-strategies --remote --file=schema.sql
+npx wrangler d1 execute tropa-strategies --remote --file=migrations/0002_status.sql
+npx wrangler d1 execute tropa-strategies --remote --file=migrations/0003_crashes.sql
 npx wrangler secret put SALT                   # любая длинная случайная строка
+npx wrangler secret put ADMIN_KEY              # ключ для чтения сводок об ошибках (GET /v1/crashes)
 npx wrangler deploy                            # выведет адрес https://tropa-strategy-base.<аккаунт>.workers.dev
 ```
 
@@ -31,4 +34,11 @@ npx wrangler deploy                            # выведет адрес https
 | --- | --- |
 | `GET /v1/strategies` | Стратегии для провайдера спрашивающего: `{asn, org, services: {youtube: [{preset, ok, fail, users, score}]}}` |
 | `POST /v1/report` | `{tropa, engine, results: [{service, preset, ok}]}` |
-| `GET /v1/map` | Сводка по провайдерам и сервисам за 60 дней (для карты блокировок) |
+| `GET /v1/alerts` | Ранний сигнал: что у провайдера массово сломалось за 3 часа и что помогло другим |
+| `GET /v1/map` | Провайдеры × сервисы за 7 дней: доля «режут», способ, что помогает |
+| `POST /v1/crash` | Сводка об ошибке (по согласию): тип и имена методов, без текста и путей |
+| `GET /v1/crashes` | Сводки за 30 дней, только с `Authorization: Bearer <ADMIN_KEY>` |
+
+Посмотреть ошибки: `curl -H "Authorization: Bearer <ключ>" https://tropa-strategy-base.xckrt.workers.dev/v1/crashes`.
+
+Обновление уже развёрнутой базы — только новые миграции из `migrations/` по порядку, затем `npx wrangler deploy`.

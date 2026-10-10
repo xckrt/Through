@@ -28,6 +28,14 @@ public static class CrashReports
         {
             // если не получилось записать отчёт о падении, падать ещё раз незачем
         }
+        // по согласию — обезличенная сводка (тип и имена методов), ждём не дольше трёх секунд
+        try
+        {
+            if (UiSettings.Load().ShareCrashes
+                && Core.Control.StrategyBase.FromConfig(Path.Combine(AppContext.BaseDirectory, "community.json")) is { } b)
+                Core.Control.CrashTelemetry.SendAsync(b.BaseUrl, Core.Control.CrashTelemetry.Summarize(ex, "tray")).Wait(TimeSpan.FromSeconds(3));
+        }
+        catch (Exception) { /* сводка — не повод для второго падения */ }
     }
 
     /// <summary>Падения, о которых ещё не спросили человека.</summary>

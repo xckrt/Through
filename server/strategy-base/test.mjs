@@ -7,6 +7,7 @@ import worker from "./src/worker.js";
 const db = new DatabaseSync(":memory:");
 db.exec(readFileSync(new URL("./schema.sql", import.meta.url), "utf8"));
 db.exec(readFileSync(new URL("./migrations/0002_status.sql", import.meta.url), "utf8"));
+db.exec(readFileSync(new URL("./migrations/0003_crashes.sql", import.meta.url), "utf8"));
 
 // D1 поверх node:sqlite: prepare().bind().all()/first()/run(), batch()
 const D1 = {
@@ -22,12 +23,12 @@ const D1 = {
   },
   async batch(list) { for (const s of list) await s.run(); },
 };
-const env = { DB: D1, SALT: "test" };
+const env = { DB: D1, SALT: "test", ADMIN_KEY: "admin" };
 
-function req(path, { method = "GET", body, ip = "1.1.1.1", asn = 12389, org = "Rostelecom" } = {}) {
+function req(path, { method = "GET", body, ip = "1.1.1.1", asn = 12389, org = "Rostelecom", auth } = {}) {
   const r = new Request("https://base.test" + path, {
     method, body: body ? JSON.stringify(body) : undefined,
-    headers: { "Content-Type": "application/json", "CF-Connecting-IP": ip },
+    headers: { "Content-Type": "application/json", "CF-Connecting-IP": ip, ...(auth ? { Authorization: auth } : {}) },
   });
   Object.defineProperty(r, "cf", { value: { asn, asOrganization: org } });
   return r;
@@ -93,5 +94,18 @@ assert.equal(r.status, 400);
 // в базе нет IP
 const dump = JSON.stringify(db.prepare("SELECT * FROM reports").all()) + JSON.stringify(db.prepare("SELECT * FROM status").all());
 assert.ok(!dump.includes("10.0.0."), "IP не должен попадать в базу");
+
+// сводки об ошибках: одинаковые склеиваются, сообщения и пути не принимаются, читать — только с ключом
+const crashBody = { app: "tray", version: "1.2.0", type: "System.IO.IOException", frames: ["Tropa.Tray.MainViewModel.CheckAsync", "System.Net.Sockets.Socket.Connect"], os: "Windows 10.0.26100" };
+for (const ip of ["40.0.0.1", "40.0.0.2", "40.0.0.2"]) assert.equal((await call("/v1/crash", { method: "POST", ip, body: crashBody })).status, 200);
+r = await call("/v1/crash", { method: "POST", body: { ...crashBody, frames: ["C:\Users\ivan\file.cs line 10"] } });
+assert.equal(r.status, 400, "путь в кадре не принимается");
+r = await call("/v1/crashes");
+assert.equal(r.status, 403, "без ключа сводку не отдаём");
+r = await call("/v1/crashes", { auth: "Bearer admin" });
+assert.equal(r.body.crashes.length, 1);
+assert.equal(r.body.crashes[0].count, 3);
+assert.equal(r.body.crashes[0].machines, 2);
+assert.ok(!JSON.stringify(db.prepare("SELECT * FROM crashes").all()).includes("40.0.0"), "IP в сводках нет");
 
 console.log("worker: все проверки прошли");

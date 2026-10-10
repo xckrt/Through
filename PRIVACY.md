@@ -29,6 +29,11 @@ and cannot be traced back to an address. Reports older than 60 days no longer af
 **Local data.** Settings, tuned strategies, logs and the downloaded engine are stored on your computer in
 `%ProgramData%\Tropa`, or in the `data` folder of the portable version. They are never uploaded.
 
+**Error summaries** are sent only if you enable "Send error summaries" (off by default). A summary has the exception
+type, up to 8 method names from Tropa and .NET (for example `Tropa.Tray.MainViewModel.CheckAsync`), and the Tropa,
+.NET and Windows versions. The error message is never sent, because messages can contain paths, site addresses or
+names. Identical errors are merged into a counter, and only the developer can read them.
+
 **Bug reports** are never sent automatically. "Report a problem" opens a prefilled GitHub issue in your browser,
 and you see the full text before submitting it.
 
@@ -58,6 +63,10 @@ SHA-256 от IP, дня и секретной соли, который меня�
 
 **Данные на компьютере** — настройки, стратегии, журналы — лежат в `%ProgramData%\Tropa` (у переносной версии —
 в папке `data`) и никуда не выгружаются.
+
+**Сводки об ошибках** уходят, только если включить «Отправлять сводки об ошибках» (по умолчанию выключено). В сводке
+есть тип исключения, до 8 имён методов Тропы и .NET и версии Тропы, .NET и Windows. Текст ошибки не уходит никогда:
+в нём бывают пути, адреса сайтов и имена. Одинаковые ошибки склеиваются в счётчик, читать их может только разработчик.
 
 **Отчёты об ошибках** сами не отправляются: открывается черновик issue на GitHub, и вы видите весь текст.
 

@@ -61,6 +61,8 @@ The `Failure` → strategy mapping table in `docs/architecture.md` drives the de
 
 `server/strategy-base` is a Cloudflare Worker with D1: `GET /v1/strategies` (per caller ASN from `request.cf.asn`), `POST /v1/report`, `GET /v1/map`. No IPs are stored; a daily-rotating `sha256(ip|day|salt)` serves the rate limit and user counts. Test it with `node server/strategy-base/test.mjs`, which emulates D1 on `node:sqlite`. The client is `Core/Control/StrategyBase`, and its URL comes from `community.json` next to the service (an empty URL disables it). Before a tune, the recommendations (score > 0.5) reorder `ServicePlan.Candidates` (`Tuner.TuneAsync(..., preferred)`). After a tune, `StrategyBase.ItemsFrom(report)` is posted only when `ShareResults` is on (off by default). Deploy steps are in `server/strategy-base/README.md`.
 
+Error summaries (`Core/Control/CrashTelemetry`, opt-in `ShareCrashes` in both `ui.json` and the service settings) contain the exception type, up to 8 `Namespace.Type.Method` frames from Tropa, System or Microsoft, and the versions. They never include the message. The Worker re-checks every frame against the same regex. Sent from the tray crash handler, a service crash and watchdog exceptions to `POST /v1/crash`, and read with `GET /v1/crashes` plus the `ADMIN_KEY` bearer.
+
 ## Release & install
 
 - `build/publish.ps1 -Step stage|package|all`. The release signs in two passes: stage (exes and Tropa dlls, SignPath config `app`), then package (portable zip and setup from the signed stage), then the setup (`setup`), then hashes are recomputed. Signing steps run only when the `SIGNPATH_API_TOKEN` secret exists. See `docs/signing.md`.

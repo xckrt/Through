@@ -40,6 +40,7 @@ internal sealed class ServiceHost(string? dataDir = null)
             ObserveApp = EtwAppObserver.ObserveAsync,
             MeasureSpeed = ct => YouTubeSpeed.MeasureAsync(ct),
             Community = StrategyBase.FromConfig(Path.Combine(baseDir, "community.json")),
+            ReportCrash = (ex, app) => SendCrash(ex, app),
         });
 
         // смена сети (другой Wi-Fi, телефон вместо роутера): через 5 секунд тишины смотрим, что за сеть
@@ -88,6 +89,8 @@ internal sealed class ServiceHost(string? dataDir = null)
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
             _log.Write($"служба упала: {ex}");
+            // по согласию — обезличенная сводка; ждём недолго, служба всё равно перезапустится
+            if (ShareCrashesAllowed()) SendCrash(ex, "service")?.Wait(TimeSpan.FromSeconds(5));
             throw;
         }
         _log.Write("служба остановлена, winws выключен");
@@ -183,6 +186,21 @@ internal sealed class ServiceHost(string? dataDir = null)
         http.DefaultRequestHeaders.UserAgent.ParseAdd("Tropa/0.1");
         return http;
     }
+
+    private bool ShareCrashesAllowed()
+    {
+        try
+        {
+            var path = Path.Combine(DataDir, "settings.json");
+            return File.Exists(path) && System.Text.Json.JsonSerializer.Deserialize<ServiceSettings>(File.ReadAllText(path), new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true })?.ShareCrashes == true;
+        }
+        catch (Exception) { return false; }
+    }
+
+    private static Task<bool>? SendCrash(Exception ex, string app) =>
+        StrategyBase.FromConfig(Path.Combine(AppContext.BaseDirectory, "community.json")) is { } b
+            ? CrashTelemetry.SendAsync(b.BaseUrl, CrashTelemetry.Summarize(ex, app))
+            : null;
 
     /// <summary>Правило «Tropa Telegram proxy»: входящий TCP на порт прокси, только с адресов своей подсети.
     /// Профиль любой: домашний Wi-Fi Windows часто сама помечает «общедоступной», и правило для частных его не открывало.</summary>

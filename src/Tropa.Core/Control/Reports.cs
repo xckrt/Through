@@ -106,6 +106,8 @@ public sealed record StatusReport
 
     public HomeProxyReport? Home { get; init; }
 
+    public bool ShareCrashes { get; init; }
+
     /// <summary>«Не трогать»: сайты вне обхода.</summary>
     public string[] Excluded { get; init; } = [];
 

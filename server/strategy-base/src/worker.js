@@ -6,6 +6,8 @@
 //   GET  /v1/alerts       что у этого провайдера массово сломалось под обходом за последние часы и что помогло
 //   POST /v1/report       {tropa, engine, results: [{service, preset, ok}], status: [{service, blocked, protected, preset?, failure?}]}
 //   GET  /v1/map          провайдеры × сервисы за 7 дней: доля «режут», чем, что помогает (для карты блокировок)
+//   POST /v1/crash        сводка об ошибке (по согласию): {app, version, type, frames[], os} — без сообщений и путей
+//   GET  /v1/crashes      сводка ошибок для разработчика, заголовок Authorization: Bearer <ADMIN_KEY>
 
 const ID = /^[a-z0-9][a-z0-9-]{0,63}$/;
 const FAILURE = /^[A-Za-z]{1,32}$/;
@@ -25,6 +27,8 @@ export default {
       if (url.pathname === "/v1/alerts" && req.method === "GET") return cors(await alerts(req, env));
       if (url.pathname === "/v1/report" && req.method === "POST") return cors(await report(req, env));
       if (url.pathname === "/v1/map" && req.method === "GET") return cors(await map(env));
+      if (url.pathname === "/v1/crash" && req.method === "POST") return cors(await crash(req, env));
+      if (url.pathname === "/v1/crashes" && req.method === "GET") return await crashes(req, env);
       if (url.pathname === "/") return json({ name: "tropa-strategy-base", docs: "https://github.com/xckrt/Tropa" });
       return json({ error: "not found" }, 404);
     } catch (e) {
@@ -157,6 +161,48 @@ async function map(env) {
     fix: fx.get(`${r.asn}|${r.service}`)?.preset ?? null,
   }));
   return json({ days: MAP_DAYS, updated: new Date().toISOString(), rows: out }, 200, { "Cache-Control": "public, max-age=1800" });
+}
+
+const FRAME = /^[A-Za-z_][A-Za-z0-9_.`<>+]{0,200}$/;
+const CRASH_APPS = new Set(["tray", "service", "watchdog"]);
+
+async function crash(req, env) {
+  const b = await req.json().catch(() => null);
+  const app = String(b?.app ?? "");
+  const version = String(b?.version ?? "").slice(0, 20);
+  const type = String(b?.type ?? "");
+  const frames = Array.isArray(b?.frames) ? b.frames.slice(0, 8).map(String) : [];
+  if (!CRASH_APPS.has(app) || !/^[0-9][0-9A-Za-z.+-]{0,19}$/.test(version) || !FRAME.test(type) || !frames.every(f => FRAME.test(f)))
+    return json({ error: "bad report" }, 400);
+  const os = String(b?.os ?? "").replace(/[^0-9A-Za-z .()-]/g, "").slice(0, 60);
+  const day = today();
+  const user = (await sha256(`${req.headers.get("CF-Connecting-IP") ?? ""}|${day}|${env.SALT ?? ""}`)).slice(0, 12);
+  const signature = await sha256(`${app}|${type}|${frames.join("|")}`);
+  const row = await env.DB.prepare("SELECT count, users FROM crashes WHERE signature = ?1 AND day = ?2 AND version = ?3").bind(signature, day, version).first();
+  if (row) {
+    const users = row.users ? row.users.split(",") : [];
+    if (!users.includes(user) && users.length < 50) users.push(user);
+    else if (users.includes(user) && row.count > 200) return json({ stored: false }); // одна машина не забивает базу
+    await env.DB.prepare("UPDATE crashes SET count = count + 1, users = ?4 WHERE signature = ?1 AND day = ?2 AND version = ?3")
+      .bind(signature, day, version, users.join(",")).run();
+  } else {
+    await env.DB.prepare("INSERT INTO crashes (signature, day, app, version, type, frames, os, users) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)")
+      .bind(signature, day, app, version, type, JSON.stringify(frames), os, user).run();
+  }
+  return json({ stored: true });
+}
+
+async function crashes(req, env) {
+  if (!env.ADMIN_KEY || req.headers.get("Authorization") !== `Bearer ${env.ADMIN_KEY}`) return json({ error: "forbidden" }, 403);
+  const rows = await env.DB.prepare(
+    `SELECT signature, app, version, type, frames, SUM(count) AS count, MAX(day) AS lastDay, GROUP_CONCAT(users) AS users
+       FROM crashes WHERE day >= ?1 GROUP BY signature, version ORDER BY count DESC LIMIT 200`
+  ).bind(today() - 30).all();
+  const out = (rows.results ?? []).map(r => ({
+    app: r.app, version: r.version, type: r.type, frames: JSON.parse(r.frames), count: r.count,
+    machines: new Set(String(r.users ?? "").split(",").filter(Boolean)).size, last: new Date(r.lastDay * 86400000).toISOString().slice(0, 10),
+  }));
+  return json({ days: 30, crashes: out });
 }
 
 async function sha256(text) {
