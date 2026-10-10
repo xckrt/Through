@@ -153,3 +153,47 @@ jobs:
         run: |
           Invoke-WebRequest https://aka.ms/wingetcreate/latest -OutFile wingetcreate.exe
           ./wingetcreate.exe submit --token $env:WINGET_TOKEN "artifacts/winget/${{ steps.v.outputs.version }}"
+
+  # Тропа для Android: собирается всегда (проверка), к релизу прикладывается только с постоянным ключом
+  # (секреты ANDROID_KEYSTORE — base64 от .jks, ANDROID_KEY_ALIAS, ANDROID_KEY_PASS; см. docs/android.md).
+  # С отладочной подписью новая версия не встала бы поверх старой.
+  android:
+    needs: release
+    runs-on: windows-latest
+    env:
+      ANDROID_KEYSTORE: ${{ secrets.ANDROID_KEYSTORE }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Workload android
+        run: dotnet workload install android
+
+      - name: APK
+        shell: pwsh
+        env:
+          TROPA_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          TROPA_KEY_PASS: ${{ secrets.ANDROID_KEY_PASS }}
+        run: |
+          $v = "${{ github.ref_name }}".TrimStart("v")
+          if ($env:ANDROID_KEYSTORE) {
+            $ks = Join-Path $env:RUNNER_TEMP "tropa.jks"
+            [IO.File]::WriteAllBytes($ks, [Convert]::FromBase64String($env:ANDROID_KEYSTORE))
+            $env:TROPA_KEYSTORE = $ks
+          }
+          dotnet publish src/Tropa.Android -c Release -p:Version=$v -o artifacts/android
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          Copy-Item artifacts/android/com.xckrt.tropa-Signed.apk "artifacts/Tropa-Android-$v.apk"
+          $h = (Get-FileHash "artifacts/Tropa-Android-$v.apk" -Algorithm SHA256).Hash.ToLowerInvariant()
+          "$h  Tropa-Android-$v.apk" | Set-Content -Encoding ascii "artifacts/Tropa-Android-$v.apk.sha256"
+
+      - name: APK в релиз
+        if: env.ANDROID_KEYSTORE != ''
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $v = "${{ github.ref_name }}".TrimStart("v")
+          gh release upload "${{ github.ref_name }}" "artifacts/Tropa-Android-$v.apk" "artifacts/Tropa-Android-$v.apk.sha256"

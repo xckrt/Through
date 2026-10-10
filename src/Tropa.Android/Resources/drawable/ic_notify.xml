@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- значок в строке состояния: метка тропы и пунктир -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="24dp" android:height="24dp" android:viewportWidth="24" android:viewportHeight="24">
+  <path android:fillColor="#FFFFFFFF" android:pathData="M9,3 h6 a1,1 0 0 1 1,1 v8 a1,1 0 0 1 -1,1 h-6 a1,1 0 0 1 -1,-1 v-8 a1,1 0 0 1 1,-1 Z" />
+  <path android:fillColor="#FFFFFFFF" android:pathData="M4,17 h3.5 v2.5 h-3.5 Z M10.25,17 h3.5 v2.5 h-3.5 Z M16.5,17 h3.5 v2.5 h-3.5 Z" />
+</vector>

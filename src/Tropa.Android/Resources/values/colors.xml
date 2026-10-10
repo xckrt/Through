@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- те же цвета, что у окна на компьютере (Themes/Light.xaml) -->
+<resources>
+  <color name="paper">#EEF1EC</color>
+  <color name="surface">#E3E8E1</color>
+  <color name="ink">#1C2A2E</color>
+  <color name="ink_soft">#56645F</color>
+  <color name="line">#C9D2CB</color>
+  <color name="pine">#2E7D5B</color>
+  <color name="signal">#C8322B</color>
+  <color name="icon_plate">#2E7D5B</color>
+</resources>

@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android" android:layout_width="match_parent" android:layout_height="match_parent"
+            android:fillViewport="true" android:fitsSystemWindows="true">
+  <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:orientation="vertical" android:paddingStart="16dp" android:paddingEnd="16dp"
+                android:paddingTop="20dp" android:paddingBottom="24dp">
+
+    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+              android:text="@string/app_name" android:textSize="26sp" android:textStyle="bold"
+              android:textColor="@color/ink" />
+    <TextView style="@style/Body" android:layout_marginTop="2dp" android:text="@string/tagline" />
+
+    <!-- Telegram: большая кнопка -->
+    <LinearLayout style="@style/Card" android:gravity="center_horizontal" android:paddingTop="24dp">
+      <TextView style="@style/CardTitle" android:text="@string/tg_title" />
+      <FrameLayout android:layout_width="184dp" android:layout_height="184dp" android:layout_marginTop="18dp">
+        <ImageView android:id="@+id/orb_ring" android:layout_width="match_parent" android:layout_height="match_parent"
+                   android:src="@drawable/orb_ring" android:importantForAccessibility="no" />
+        <FrameLayout android:id="@+id/orb_core" android:layout_width="140dp" android:layout_height="140dp"
+                     android:layout_gravity="center" android:clickable="true" android:focusable="true"
+                     android:elevation="6dp" android:background="@drawable/orb_core_off"
+                     android:contentDescription="@string/tg_toggle">
+          <ImageView android:layout_width="56dp" android:layout_height="56dp" android:layout_gravity="center"
+                     android:layout_marginEnd="4dp" android:src="@drawable/ic_plane" android:importantForAccessibility="no" />
+        </FrameLayout>
+      </FrameLayout>
+      <TextView android:id="@+id/tg_status" android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:layout_marginTop="16dp" android:textSize="20sp" android:textStyle="bold" />
+      <TextView android:id="@+id/tg_detail" style="@style/Body" android:gravity="center" />
+      <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content" android:orientation="horizontal">
+        <Button android:id="@+id/tg_connect" style="@style/Action" android:text="@string/tg_connect" />
+        <Button android:id="@+id/tg_check" style="@style/Action" android:text="@string/tg_check" />
+      </LinearLayout>
+      <TextView android:id="@+id/tg_dc" style="@style/Result" />
+    </LinearLayout>
+
+    <!-- что режут в этой сети -->
+    <LinearLayout style="@style/Card">
+      <TextView style="@style/CardTitle" android:text="@string/check_title" />
+      <TextView style="@style/Body" android:text="@string/check_text" />
+      <Button android:id="@+id/check" style="@style/Action" android:text="@string/check_button" />
+      <TextView android:id="@+id/check_result" style="@style/Result" />
+    </LinearLayout>
+
+    <!-- YouTube и Discord через компьютер -->
+    <LinearLayout style="@style/Card">
+      <TextView style="@style/CardTitle" android:text="@string/pc_title" />
+      <TextView style="@style/Body" android:text="@string/pc_text" />
+      <Button android:id="@+id/wifi_settings" style="@style/Action" android:text="@string/pc_button" />
+    </LinearLayout>
+
+    <!-- частный DNS -->
+    <LinearLayout style="@style/Card">
+      <TextView style="@style/CardTitle" android:text="@string/dns_title" />
+      <TextView style="@style/Body" android:text="@string/dns_text" />
+      <Button android:id="@+id/dns_settings" style="@style/Action" android:text="@string/dns_button" />
+    </LinearLayout>
+
+    <TextView android:id="@+id/version" style="@style/Body" android:layout_marginTop="18dp"
+              android:gravity="center" android:textSize="12sp" />
+  </LinearLayout>
+</ScrollView>

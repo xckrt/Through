@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="app_name">Тропа</string>
+  <string name="tagline">Telegram без VPN и проверка того, что режет ваша сеть</string>
+  <string name="tg_title">Telegram</string>
+  <string name="tg_toggle">Включить или выключить прокси Telegram</string>
+  <string name="tg_on">Работает</string>
+  <string name="tg_off">Выключен</string>
+  <string name="tg_on_detail">Прокси на 127.0.0.1:%1$d. Один раз нажмите «Подключить в Telegram», дальше Telegram будет ходить через него сам.</string>
+  <string name="tg_off_detail">Нажмите кнопку: Тропа запустит на телефоне прокси, который проводит Telegram в обход блокировки, и по Wi-Fi, и по мобильному интернету.</string>
+  <string name="tg_error">Не удалось запустить прокси: %1$s</string>
+  <string name="tg_connect">Подключить в Telegram</string>
+  <string name="tg_check">Проверить дата-центры</string>
+  <string name="no_telegram">Telegram не установлен</string>
+  <string name="channel_telegram">Прокси Telegram</string>
+  <string name="notify_title">Прокси Telegram включён</string>
+  <string name="notify_text">Telegram ходит через Тропу. Нажмите, чтобы открыть.</string>
+  <string name="check_title">Что режут здесь</string>
+  <string name="check_text">Проверяет YouTube и Discord по этапам, как Тропа на компьютере, и говорит, как именно режут соединение.</string>
+  <string name="check_button">Проверить эту сеть</string>
+  <string name="checking">Проверяю…</string>
+  <string name="no_network">Интернета нет совсем: это не блокировка.</string>
+  <string name="f_sni">режут по имени (SNI)</string>
+  <string name="f_freeze">замирает после ~16 КБ (ТСПУ)</string>
+  <string name="f_dns">DNS подсовывает чужой адрес</string>
+  <string name="f_address">заблокирован адрес</string>
+  <string name="f_voice">режут голос (UDP)</string>
+  <string name="f_other">не открывается</string>
+  <string name="pc_title">YouTube и Discord через компьютер</string>
+  <string name="pc_text">Без VPN Android не даёт программе обходить блокировки за другие приложения. Если на компьютере стоит Тропа, включите там «Для всего дома», а на телефоне откройте Wi-Fi → ваша сеть → Прокси → Авто и вставьте адрес PAC, который покажет Тропа.</string>
+  <string name="pc_button">Открыть настройки Wi-Fi</string>
+  <string name="dns_title">Частный DNS</string>
+  <string name="dns_text">Если проверка говорит, что DNS подсовывает чужой адрес, укажите в «Частном DNS» one.one.one.one или dns.google. Это шифрует DNS для всего телефона.</string>
+  <string name="dns_button">Открыть настройки сети</string>
+</resources>

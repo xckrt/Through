@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Themes/Dark.xaml -->
+<resources>
+  <color name="paper">#131C1E</color>
+  <color name="surface">#1D292C</color>
+  <color name="ink">#E3EAE5</color>
+  <color name="ink_soft">#94A49E</color>
+  <color name="line">#2B3B3E</color>
+  <color name="pine">#52B788</color>
+  <color name="signal">#EF6A55</color>
+</resources>

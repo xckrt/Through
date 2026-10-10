@@ -45,6 +45,8 @@ and data is kept in the `data` folder next to it.
 - **YouTube speed** before and after the bypass, for example "0.8 → 92 Mbit/s".
 - **Shared strategy base.** If you opt in, Tropa installs share what worked on their ISP, so tuning takes seconds
   for the next user.
+- **Tropa for Android.** The Telegram proxy right on the phone, on Wi-Fi and mobile data, plus a check of what
+  the mobile network blocks. See [docs/android.md](docs/android.md).
 - zapret and Tropa updates verified by SHA-256, a dark theme, and tray toggles.
 
 ## What Tropa sends over the network
