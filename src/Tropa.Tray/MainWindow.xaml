@@ -402,7 +402,7 @@
                                 <StackPanel Margin="18,2,0,0" MaxWidth="640">
                                     <TextBlock Text="{Binding HomePac}" FontFamily="{StaticResource Display}" FontSize="17" FontWeight="SemiBold" />
                                     <TextBlock Style="{StaticResource Soft}" TextWrapping="Wrap" Margin="0,6,0,0"
-                                               Text="{local:Tr 'Android: Настройки → Wi-Fi → эта сеть → Прокси → Авто, вставьте адрес. iPhone: Настройки → Wi-Fi → (i) → Настройка прокси → Авто → URL. QR-код поможет скопировать адрес на телефон.'}" />
+                                               Text="{local:Tr 'Наведите телефон с Тропой на QR: она скопирует адрес и откроет настройки Wi-Fi, останется вставить и выбрать «Авто». Вручную: Wi-Fi → эта сеть → Прокси → Авто, вставьте адрес. На iPhone и ТВ впишите адрес сами.'}" />
                                     <TextBlock Style="{StaticResource Soft}" FontSize="12.5" TextWrapping="Wrap" Margin="0,6,0,0"
                                                Text="{local:Tr 'Работает, пока компьютер включён и Тропа запущена. Чужие из интернета подключиться не могут: пускаются только устройства из этой сети.'}" />
                                 </StackPanel>

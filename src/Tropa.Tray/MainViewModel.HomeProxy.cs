@@ -17,6 +17,9 @@ public sealed partial class MainViewModel
     public string? HomePac => _status?.Home?.PacUrl;
     public bool HasHomePac => HomePac is not null;
 
+    /// <summary>Ссылка для QR: ведёт в Тропу на телефоне, та копирует адрес PAC и открывает настройки Wi-Fi.</summary>
+    public string? HomeAppLink => HomePac is { } pac ? $"tropa://home?pac={Uri.EscapeDataString(pac)}" : null;
+
     public string HomeText => _status?.Home switch
     {
         null or { Enabled: false } => Loc.T("Телефоны, планшеты и телевизор в этой Wi-Fi смогут открывать YouTube, Discord и другие сайты из обхода через этот компьютер. Остальное они откроют напрямую, как обычно."),
@@ -30,10 +33,10 @@ public sealed partial class MainViewModel
     {
         get
         {
-            if (HomePac is not { } pac) return null;
-            if (_homeQrFor == pac) return _homeQr;
-            _homeQrFor = pac;
-            return _homeQr = Render(QrCode.Encode(pac));
+            if (HomeAppLink is not { } link) return null;
+            if (_homeQrFor == link) return _homeQr;
+            _homeQrFor = link;
+            return _homeQr = Render(QrCode.Encode(link));
         }
     }
 
@@ -63,6 +66,7 @@ public sealed partial class MainViewModel
         Raise(nameof(HomeOn));
         Raise(nameof(HomePac));
         Raise(nameof(HasHomePac));
+        Raise(nameof(HomeAppLink));
         Raise(nameof(HomeText));
         Raise(nameof(HomeQr));
         CommandManager.InvalidateRequerySuggested();
