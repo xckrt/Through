@@ -497,6 +497,23 @@ public sealed partial class MainViewModel : Observable
     {
         if (_client is not null && !_serviceOutdated) return;
         if (_pipeName is null) throw new InvalidOperationException(Loc.T("Служба Тропы недоступна."));
+
+        // Служба могла быть жива, а трей просто не успел подключиться на старте (быстрый таймаут 400 мс)
+        // или потерял связь на миг. Прежде чем переустанавливать — а это остановит и перезапустит службу —
+        // несколько секунд пробуем просто подключиться, иначе один неудачный коннект гонит в цикл переустановок.
+        if (!_serviceOutdated)
+        {
+            for (var i = 0; i < 8; i++)
+            {
+                if (await ConnectAsync(TimeSpan.FromMilliseconds(500)) is not null)
+                {
+                    if (!_serviceOutdated) return;
+                    break; // подключились, но служба из прошлой версии — ниже обновим
+                }
+                await Task.Delay(300, _cts.Token);
+            }
+        }
+
         Headline = _serviceOutdated ? Loc.T("Обновляю службу Тропы") : Loc.T("Устанавливаю службу Тропы");
         Subline = _serviceOutdated
             ? Loc.T("Служба осталась от прошлой версии. Windows спросит разрешение администратора, чтобы её заменить.")
