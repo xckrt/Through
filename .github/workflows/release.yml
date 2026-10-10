@@ -105,7 +105,7 @@ jobs:
           $sha = (Get-Content "artifacts/Tropa-Setup-$v.exe.sha256").Split(" ")[0]
           $psha = (Get-Content "artifacts/Tropa-Portable-$v.zip.sha256").Split(" ")[0]
           $signed = (Get-AuthenticodeSignature "artifacts/Tropa-Setup-$v.exe").Status -eq "Valid"
-          $signNote = if ($signed) { "Установщик и программа подписаны (SignPath Foundation)." } else { "" }
+          $signNote = "Free code signing provided by [SignPath.io](https://about.signpath.io), certificate by [SignPath Foundation](https://signpath.org)."
           $notes = @"
           ## Установка
 

@@ -77,6 +77,11 @@ dotnet run --project src/Tropa.Cli -- --speed             # скорость You
 Архитектура описана в [docs/architecture.md](docs/architecture.md), подпись — в [docs/signing.md](docs/signing.md),
 общая база стратегий — в [server/strategy-base](server/strategy-base).
 
+## Подпись
+
+Free code signing provided by [SignPath.io](https://about.signpath.io), certificate by [SignPath Foundation](https://signpath.org).
+Политика конфиденциальности — [PRIVACY.md](PRIVACY.md).
+
 ## Лицензия
 
 MIT. Прокси Telegram — порт [Flowseal/tg-ws-proxy](https://github.com/Flowseal/tg-ws-proxy) (MIT), стратегии —

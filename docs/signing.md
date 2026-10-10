@@ -22,8 +22,8 @@ https://signpath.org/apply. Что вписать:
 | Third-party binaries | none in the repository; zapret is downloaded at runtime from official bol-van/zapret releases with SHA-256 verification |
 
 У SignPath есть требования к проекту: открытый код, понятная лицензия, политика конфиденциальности, отсутствие
-вредоносного поведения. Политика — в README (раздел «Что Тропа отправляет в сеть»). Если её попросят отдельным
-файлом, напишите мне, я сделаю `PRIVACY.md`.
+вредоносного поведения. Политика — [PRIVACY.md](../PRIVACY.md); упоминание SignPath есть на сайте, в README и в
+описании релиза.
 
 ## 2. После одобрения
 

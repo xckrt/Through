@@ -73,6 +73,11 @@ dotnet run --project src/Tropa.Cli -- --telegram          # Telegram proxy again
 
 Installer and portable build: `pwsh build/publish.ps1 -Version 1.2.0`. Releases are built by GitHub Actions on a `v*` tag.
 
+## Code signing
+
+Free code signing provided by [SignPath.io](https://about.signpath.io), certificate by [SignPath Foundation](https://signpath.org).
+Privacy policy: [PRIVACY.md](PRIVACY.md).
+
 ## License
 
 MIT. The Telegram proxy is a port of [Flowseal/tg-ws-proxy](https://github.com/Flowseal/tg-ws-proxy) (MIT), and the
