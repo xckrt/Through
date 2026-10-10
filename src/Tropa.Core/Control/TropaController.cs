@@ -47,7 +47,7 @@ public sealed record ControllerOptions
     /// <summary>Остальные параметры прокси (адреса DC, пул). Тесты подменяют их на локальные.</summary>
     public TelegramProxyOptions? TelegramTemplate { get; init; }
 
-    /// <summary>Открыть/закрыть входящий TCP-порт в брандмауэре (только частные сети). null — не трогать (тесты).</summary>
+    /// <summary>Открыть/закрыть входящий TCP-порт в брандмауэре (только для своей подсети). null — не трогать (тесты).</summary>
     public Func<int, bool, CancellationToken, Task>? Firewall { get; init; }
 
     /// <summary>Как переключать DNS системы на локальный сервер. null — только сервер, без переключения (тесты, CLI).</summary>
@@ -230,7 +230,16 @@ public sealed class TropaController(ControllerOptions o) : IAsyncDisposable
         LoadWeek();
         try { _speed = File.Exists(SpeedPath) ? TropaJson.Load<SpeedReport>(SpeedPath) : null; }
         catch (Exception ex) when (ex is IOException or System.Text.Json.JsonException or InvalidDataException) { _speed = null; }
-        if (_settings.Telegram.Enabled) await SetTelegramAsync(true, ct);
+        if (_settings.Telegram.Enabled)
+        {
+            await SetTelegramAsync(true, ct);
+            // правило брандмауэра — заново при каждом старте: после обновления Тропы оно могло быть старым
+            if (_settings.Telegram.Lan && _tg is { } tg && o.Firewall is { } fw)
+            {
+                try { await fw(tg.Port, true, ct); }
+                catch (Exception ex) when (ex is InvalidOperationException or IOException) { _message = $"брандмауэр: {ex.Message}"; }
+            }
+        }
         if (_settings.SecureDns) await SetSecureDnsAsync(true, ct);
         else if (o.DnsSwitch is { } sw)
         {

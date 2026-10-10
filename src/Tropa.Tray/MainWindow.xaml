@@ -743,7 +743,7 @@
                             <TextBlock Text="{local:Tr 'Телефон'}" Style="{StaticResource SectionTitle}" />
                             <ToggleButton Style="{StaticResource Switch}" IsChecked="{Binding TgLanOn, Mode=OneWay}" Command="{Binding TgLanCommand}" Margin="0,0,0,12">
                                 <TextBlock TextWrapping="Wrap" MaxWidth="560"
-                                           Text="{local:Tr 'Пускать телефоны из этой Wi-Fi сети: Тропа откроет прокси для домашней сети (брандмауэр — только частные сети). Без секрета из QR-кода к нему не подключиться.'}" />
+                                           Text="{local:Tr 'Пускать телефоны из этой Wi-Fi сети: Тропа откроет прокси для устройств из вашей сети (из интернета к нему не попасть). Без секрета из QR-кода к нему не подключиться.'}" />
                             </ToggleButton>
                             <StackPanel Orientation="Horizontal" Margin="0,0,0,20" Visibility="{Binding HasTgQr, Converter={StaticResource Visible}}">
                                 <Border CornerRadius="14" Background="White" Padding="6" BorderBrush="{DynamicResource Line}" BorderThickness="1">

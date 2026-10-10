@@ -327,7 +327,6 @@
  "Прокси работает": "The proxy works",
  "Прокси работает внутри службы Тропы, поэтому Telegram будет ходить через него и при закрытом окне.": "The proxy runs inside the Tropa service, so Telegram goes through it even with the window closed.",
  "Прокси работает, осталось подключить Telegram: нажмите «Подключить в Telegram».": "The proxy works; now connect Telegram: press «Connect in Telegram».",
- "Пускать телефоны из этой Wi-Fi сети: Тропа откроет прокси для домашней сети (брандмауэр — только частные сети). Без секрета из QR-кода к нему не подключиться.": "Let phones on this Wi-Fi connect: Tropa opens the proxy to the home network (firewall: private networks only). Nobody can connect without the secret from the QR code.",
  "Работает": "Works",
  "Работает через стратегию «{0}» ({1}).": "Works through the «{0}» strategy ({1}).",
  "Развернуть": "Maximize",
@@ -664,5 +663,6 @@
  "подложный пакет + разрез с перекрытием 664, fooling ts (ALT11)": "fake packet + split with 664 overlap, fooling ts (ALT11)",
  "подложный ClientHello, fooling ts (SIMPLE FAKE)": "fake ClientHello, fooling ts (SIMPLE FAKE)",
  "подложный ClientHello, badseq (SIMPLE FAKE ALT)": "fake ClientHello, badseq (SIMPLE FAKE ALT)",
- "подложный пакет + подмена имени на ya.ru (ALT3)": "fake packet + host name swapped to ya.ru (ALT3)"
+ "подложный пакет + подмена имени на ya.ru (ALT3)": "fake packet + host name swapped to ya.ru (ALT3)",
+ "Пускать телефоны из этой Wi-Fi сети: Тропа откроет прокси для устройств из вашей сети (из интернета к нему не попасть). Без секрета из QR-кода к нему не подключиться.": "Let phones on this Wi-Fi connect: Tropa opens the proxy to devices on your network (it is not reachable from the internet). Nobody can connect without the secret from the QR code."
 }

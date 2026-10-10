@@ -184,13 +184,14 @@ internal sealed class ServiceHost(string? dataDir = null)
         return http;
     }
 
-    /// <summary>Правило «Tropa Telegram proxy»: входящий TCP на порт прокси, только профиль «частная сеть».</summary>
+    /// <summary>Правило «Tropa Telegram proxy»: входящий TCP на порт прокси, только с адресов своей подсети.
+    /// Профиль любой: домашний Wi-Fi Windows часто сама помечает «общедоступной», и правило для частных его не открывало.</summary>
     private static async Task Firewall(int port, bool open, CancellationToken ct)
     {
         const string rule = "Tropa Telegram proxy";
         await Netsh($"advfirewall firewall delete rule name=\"{rule}\"", ct, ignoreErrors: true);
         if (open)
-            await Netsh($"advfirewall firewall add rule name=\"{rule}\" dir=in action=allow protocol=TCP localport={port} profile=private", ct);
+            await Netsh($"advfirewall firewall add rule name=\"{rule}\" dir=in action=allow protocol=TCP localport={port} remoteip=localsubnet profile=any", ct);
     }
 
     private static async Task Netsh(string args, CancellationToken ct, bool ignoreErrors = false)
