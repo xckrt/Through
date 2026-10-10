@@ -31,7 +31,26 @@ internal sealed class ServiceHost
             EngineAccepted = AcceptEngine,
             DataDir = DataDir,
             DnsSwitch = new WindowsDnsSwitch(DataDir, _log),
+            Network = WindowsNetworkIdentity.CurrentAsync,
         });
+
+        // смена сети (другой Wi-Fi, телефон вместо роутера): через 5 секунд тишины смотрим, что за сеть
+        CancellationTokenSource? settle = null;
+        System.Net.NetworkInformation.NetworkChange.NetworkAddressChanged += (_, _) =>
+        {
+            settle?.Cancel();
+            var mine = settle = CancellationTokenSource.CreateLinkedTokenSource(ct);
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    await Task.Delay(TimeSpan.FromSeconds(5), mine.Token);
+                    await controller.NetworkChangedAsync(mine.Token);
+                }
+                catch (OperationCanceledException) { }
+                catch (Exception ex) { _log.Write($"смена сети: {ex.Message}"); }
+            });
+        };
 
         string? lastMessage = null;
         controller.Notify += (evt, data) =>

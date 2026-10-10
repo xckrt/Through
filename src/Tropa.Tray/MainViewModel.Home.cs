@@ -33,6 +33,12 @@ public sealed partial class MainViewModel
     public bool CanRetune => _client is not null && _status is { Profile.Count: > 0 } && !IsRunning;
     public bool TgConnectVisible => TgOn;
 
+    /// <summary>«Сеть «Дом» · своя стратегия»: у каждой сети свой подобранный обход.</summary>
+    public string ZapretNetwork => _status?.Network is { } n
+        ? $"Сеть «{n}»" + (_status.KnownNetworks > 1 ? $" · своя стратегия для каждой из {_status.KnownNetworks} сетей" : "")
+        : "";
+    public bool HasZapretNetwork => ZapretNetwork.Length > 0;
+
     public ICommand ZapretToggleCommand => _zapretToggle ??= new RelayCommand(async () =>
     {
         if (IsRunning) return;
@@ -192,6 +198,8 @@ public sealed partial class MainViewModel
         };
 
         Raise(nameof(CanRetune));
+        Raise(nameof(ZapretNetwork));
+        Raise(nameof(HasZapretNetwork));
         Raise(nameof(TgConnectVisible));
     }
 }

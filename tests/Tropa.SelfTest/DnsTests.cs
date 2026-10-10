@@ -119,6 +119,49 @@ internal static class DnsTests
                 Directory.Delete(dir, true);
             }
         }),
+
+        ("Сети: у каждой сети свой профиль, первая забирает старый profile.json, новая получает копию прежней", async () =>
+        {
+            var dir = Path.Combine(Path.GetTempPath(), $"tropa-net-{Guid.NewGuid():N}");
+            Directory.CreateDirectory(dir);
+            try
+            {
+                Profile("a").Save(Path.Combine(dir, "profile.json"));
+                Directory.CreateDirectory(Path.Combine(dir, "networks"));
+                NetworkId current = new("gw-AAA", "Дом");
+                var engine = new FakeEngineHost((_, _) => true);
+                await using var c = new TropaController(new ControllerOptions
+                {
+                    Targets = new TargetCatalog { Services = new() { ["svc"] = [new ProbeTarget { Name = "x", Host = "x.test", Port = 1 }] } },
+                    Presets = new PresetCatalog { Presets = [P("a"), P("b")] },
+                    Engine = _ => Task.FromResult(new EngineContext(engine, "test")),
+                    DataDir = dir,
+                    Network = _ => Task.FromResult<NetworkId?>(current),
+                    Probe = new ProbeOptions { ConnectTimeout = TimeSpan.FromMilliseconds(300), Resolver = (_, _) => Task.FromResult(new[] { IPAddress.Loopback }), AllowPrivateAddresses = true },
+                });
+                await c.StartAsync();
+                Assert(c.Status() is { Network: "Дом" } st && st.Profile["svc"] == "a", "первая сеть забрала profile.json");
+                Assert(File.Exists(Path.Combine(dir, "networks", "gw-AAA.json")), "файл профиля сети");
+
+                Profile("b").Save(Path.Combine(dir, "networks", "gw-BBB.json"));
+                current = new("gw-BBB", "Телефон");
+                await c.NetworkChangedAsync();
+                Assert(c.Status() is { Network: "Телефон" } s2 && s2.Profile["svc"] == "b", $"своя стратегия сети: {string.Join(",", c.Status().Profile)}");
+
+                current = new("gw-CCC", "Кафе");
+                await c.NetworkChangedAsync();
+                Assert(c.Status().Profile["svc"] == "b" && c.Status().Message!.Contains("новая сеть"), "новая сеть — копия прежней");
+                Assert(File.Exists(Path.Combine(dir, "networks", "gw-CCC.json")) && c.Status().KnownNetworks == 3, $"сетей {c.Status().KnownNetworks}");
+
+                current = new("gw-AAA", "Дом");
+                await c.NetworkChangedAsync();
+                Assert(c.Status().Profile["svc"] == "a", "вернулись домой — домашняя стратегия");
+            }
+            finally
+            {
+                Directory.Delete(dir, true);
+            }
+        }),
     ];
 
     private static SecureDnsOptions Options(FakeDoh doh) => new()
@@ -174,6 +217,11 @@ internal static class DnsTests
             return Task.CompletedTask;
         }
     }
+
+    private static TuningProfile Profile(string preset) =>
+        new() { Services = new() { ["svc"] = new ServiceProfile { PresetId = preset, Complete = true } } };
+
+    private static StrategyPreset P(string id) => new() { Id = id, Treats = [Failure.TlsReset], Args = ["--hostlist={hostlist}"] };
 
     private static void Assert(bool ok, string message)
     {

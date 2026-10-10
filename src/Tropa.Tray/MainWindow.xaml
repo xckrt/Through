@@ -288,7 +288,9 @@
                                 <StackPanel Grid.Column="1" Margin="18,10,0,0">
                                     <TextBlock Text="ОБХОД БЛОКИРОВОК" Style="{StaticResource CardLabel}" />
                                     <TextBlock Text="{Binding ZapretStatus}" Tag="{Binding ZapretOrb}" Style="{StaticResource OrbStatus}" />
-                                    <TextBlock Text="{Binding ZapretDetail}" Style="{StaticResource Soft}" TextWrapping="Wrap" Margin="0,6,0,14" />
+                                    <TextBlock Text="{Binding ZapretDetail}" Style="{StaticResource Soft}" TextWrapping="Wrap" Margin="0,6,0,8" />
+                                    <TextBlock Text="{Binding ZapretNetwork}" Style="{StaticResource Soft}" FontSize="12.5" TextWrapping="Wrap" Margin="0,0,0,10"
+                                               Visibility="{Binding HasZapretNetwork, Converter={StaticResource Visible}}" />
                                 </StackPanel>
                                         <StackPanel Grid.Row="1" Grid.ColumnSpan="2" Margin="0,8,0,0">
                                     <ItemsControl ItemsSource="{Binding HomeServices}" Focusable="False">

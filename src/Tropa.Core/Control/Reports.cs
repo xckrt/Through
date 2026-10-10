@@ -95,6 +95,10 @@ public sealed record StatusReport
     public TelegramReport? Telegram { get; init; }
 
     public DnsReport? Dns { get; init; }
+
+    /// <summary>Имя текущей сети: у каждой сети свой подобранный обход.</summary>
+    public string? Network { get; init; }
+    public int KnownNetworks { get; init; }
 }
 
 public sealed record DnsReport

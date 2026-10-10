@@ -7,6 +7,9 @@ using Tropa.Core.Tuning;
 
 namespace Tropa.Core.Control;
 
+/// <summary>Какая это сеть: ключ (MAC шлюза и т.п.) и имя для человека («Keenetic-1234», «Сеть 2»).</summary>
+public sealed record NetworkId(string Key, string Name);
+
 /// <summary>Движок, готовый к запуску: хост и версия скачанного zapret.</summary>
 public sealed record EngineContext(IEngineHost Host, string Version);
 
@@ -49,6 +52,9 @@ public sealed record ControllerOptions
 
     /// <summary>Адрес, порт и DoH-серверы защищённого DNS. Тесты подменяют.</summary>
     public SecureDnsOptions? Dns { get; init; }
+
+    /// <summary>Узнать текущую сеть. null целиком — один профиль на все сети; null в ответе — сеть не опознана.</summary>
+    public Func<CancellationToken, Task<NetworkId?>>? Network { get; init; }
 }
 
 public sealed record EngineUpdateResult(bool Updated, string? Version, string Message);
@@ -87,7 +93,10 @@ public sealed class TropaController(ControllerOptions o) : IAsyncDisposable
     private readonly SemaphoreSlim _busy = new(1, 1);
     private readonly ProbeRunner _runner = new(new ServiceProber(o.Probe));
     private readonly Dictionary<string, int> _strikes = new(StringComparer.OrdinalIgnoreCase);
-    private readonly string _profilePath = Path.Combine(o.DataDir, "profile.json");
+    // у каждой сети свой профиль: дома одна стратегия, на телефонном интернете другая
+    private NetworkId? _network;
+    private string _profilePath = Path.Combine(o.DataDir, "profile.json");
+    private string NetworksPath => Path.Combine(o.DataDir, "networks.json");
     private readonly string _appsPath = Path.Combine(o.DataDir, "apps.json");
 
     // каталоги = встроенные + приложения пользователя (apps.json); меняются при добавлении приложения
@@ -140,6 +149,8 @@ public sealed class TropaController(ControllerOptions o) : IAsyncDisposable
         LastUpdateCheck = _lastUpdateCheck,
         Message = _message,
         Telegram = TelegramStatus(),
+        Network = _network?.Name,
+        KnownNetworks = o.Network is null ? 0 : Networks().Count,
         Dns = new DnsReport
         {
             Enabled = _settings.SecureDns,
@@ -172,6 +183,11 @@ public sealed class TropaController(ControllerOptions o) : IAsyncDisposable
     public async Task StartAsync(CancellationToken ct = default)
     {
         Directory.CreateDirectory(o.DataDir);
+        if (o.Network is { } detect)
+        {
+            _network = await SafeDetect(detect, ct);
+            _profilePath = ProfilePathFor(_network, migrate: true);
+        }
         _profile = TuningProfile.Load(_profilePath);
         try
         {
@@ -379,6 +395,7 @@ public sealed class TropaController(ControllerOptions o) : IAsyncDisposable
     /// </summary>
     public async Task WatchdogTickAsync(CancellationToken ct = default)
     {
+        await NetworkChangedAsync(ct);
         // порт мог освободиться: прокси, который должен работать, поднимаем снова
         if (_settings.Telegram.Enabled && _tg is null) await SetTelegramAsync(true, ct);
         if (_settings.SecureDns) await DnsWatchAsync(ct);
@@ -433,6 +450,89 @@ public sealed class TropaController(ControllerOptions o) : IAsyncDisposable
         // без службы локального DNS нет: системе возвращаем прежний, при старте снова переключим
         await StopDnsAsync(restore: true);
         _busy.Dispose();
+    }
+
+    // ---------- профили сетей
+
+    private static async Task<NetworkId?> SafeDetect(Func<CancellationToken, Task<NetworkId?>> detect, CancellationToken ct)
+    {
+        try { return await detect(ct); }
+        catch (Exception ex) when (ex is not OperationCanceledException) { return null; }
+    }
+
+    /// <summary>Файл профиля сети. Первая опознанная сеть забирает старый общий profile.json.</summary>
+    private string ProfilePathFor(NetworkId? id, bool migrate)
+    {
+        var common = Path.Combine(o.DataDir, "profile.json");
+        if (id is null) return common;
+        var dir = Path.Combine(o.DataDir, "networks");
+        Directory.CreateDirectory(dir);
+        var safe = new string(id.Key.Select(c => char.IsAsciiLetterOrDigit(c) ? c : '-').ToArray());
+        var path = Path.Combine(dir, safe + ".json");
+        if (migrate && !File.Exists(path) && File.Exists(common) && !Directory.EnumerateFiles(dir, "*.json").Any())
+            File.Copy(common, path);
+        RememberNetwork(id);
+        return path;
+    }
+
+    private void RememberNetwork(NetworkId id)
+    {
+        var known = Networks();
+        known[id.Key] = new KnownNetwork(id.Name, o.Clock());
+        var tmp = NetworksPath + ".tmp";
+        File.WriteAllText(tmp, System.Text.Json.JsonSerializer.Serialize(known, TropaJson.Options));
+        File.Move(tmp, NetworksPath, overwrite: true);
+    }
+
+    private Dictionary<string, KnownNetwork> Networks()
+    {
+        try { return File.Exists(NetworksPath) ? TropaJson.Load<Dictionary<string, KnownNetwork>>(NetworksPath) : []; }
+        catch (Exception ex) when (ex is IOException or System.Text.Json.JsonException or InvalidDataException) { return []; }
+    }
+
+    public sealed record KnownNetwork(string Name, DateTimeOffset LastSeen);
+
+    /// <summary>
+    /// Сеть сменилась (вызывает служба по событию Windows и сторож каждый обход). Своя стратегия у сети есть —
+    /// включаем её; новой сети отдаём копию прежней и проверяем, сторож переподберёт, если не подошла.
+    /// Занято (идёт подбор) — пропускаем, следующий обход сторожа повторит.
+    /// </summary>
+    public async Task NetworkChangedAsync(CancellationToken ct = default)
+    {
+        if (o.Network is not { } detect) return;
+        var id = await SafeDetect(detect, ct);
+        if (id is null || id.Key == _network?.Key) return;
+        if (!await _busy.WaitAsync(0, ct)) return;
+        try
+        {
+            var known = File.Exists(ProfilePathFor(id, migrate: false));
+            _network = id;
+            _profilePath = ProfilePathFor(id, migrate: false);
+            if (known) _profile = TuningProfile.Load(_profilePath);
+            else _profile.Save(_profilePath); // пока нет своей — та же, что была
+            _strikes.Clear();
+            _message = known
+                ? $"сеть «{id.Name}»: включаю обход, подобранный для неё"
+                : $"новая сеть «{id.Name}»: беру обход от прежней и проверяю, подходит ли";
+            Changed();
+            if (_session is { HasExited: false })
+            {
+                await StopEngineAsync();
+                if (HasAnythingToProtect()) await StartEngineAsync(ct);
+            }
+            _state = ControllerState.Checking;
+            await CheckCoreAsync(ct);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            _message = $"смена сети: {ex.Message}";
+        }
+        finally
+        {
+            _state = ControllerState.Idle;
+            _busy.Release();
+            Changed();
+        }
     }
 
     // ---------- защищённый DNS

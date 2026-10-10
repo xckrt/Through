@@ -26,6 +26,11 @@ try
             if (!Environment.IsPrivilegedProcess) return Fail("нужны права администратора");
             return Installer.Uninstall();
 
+        case "network":
+            // какую сеть видит служба: ключ профиля и имя
+            Console.WriteLine(await WindowsNetworkIdentity.CurrentAsync(CancellationToken.None) is { } id ? $"{id.Name}  ({id.Key})" : "сеть не опознана");
+            return 0;
+
         case "run":
             // для отладки: та же служба в консоли, Ctrl+C останавливает и выключает winws
             if (!Environment.IsPrivilegedProcess) return Fail("нужны права администратора: winws ставит драйвер WinDivert");
