@@ -512,6 +512,9 @@ public sealed class UiSettings
     /// <summary>Версия, которую человек отложил кнопкой «Позже»: про неё больше не напоминаем.</summary>
     public string? SkippedVersion { get; set; }
 
+    /// <summary>Начало недели, сводку которой уже показали уведомлением.</summary>
+    public string? LastWeekNotified { get; set; }
+
     public static UiSettings Load()
     {
         try { return File.Exists(Path_) ? JsonSerializer.Deserialize<UiSettings>(File.ReadAllText(Path_)) ?? new() : new(); }

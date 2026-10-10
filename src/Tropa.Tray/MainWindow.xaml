@@ -382,6 +382,8 @@
                             </StackPanel>
                         </DockPanel>
                     </Border>
+                    <TextBlock Text="{Binding WeekText}" Style="{StaticResource Soft}" FontSize="13.5" Margin="4,16,0,0" TextWrapping="Wrap"
+                               Visibility="{Binding HasWeek, Converter={StaticResource Visible}}" />
                     <Rectangle Height="1" Fill="{DynamicResource Line}" Margin="0,28,0,22" />
                     <StackPanel>
                     <!-- «Почему не открывается?»: любой сайт по тем же этапам, вердикт и обход одной кнопкой -->

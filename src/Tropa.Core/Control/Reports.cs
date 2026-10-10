@@ -106,11 +106,30 @@ public sealed record StatusReport
 
     /// <summary>null — в этой сборке база не настроена (пустой community.json).</summary>
     public CommunityReport? Community { get; init; }
+
+    public WeeklyReport? Week { get; init; }
     public int KnownNetworks { get; init; }
 }
 
 /// <summary>Общая база стратегий подключена: берём ли подсказки и делимся ли итогами.</summary>
 public sealed record CommunityReport(bool Use, bool Share);
+
+/// <summary>Что Тропа сделала за неделю: для строки на обзоре и уведомления в конце недели.</summary>
+public sealed record WeekReport
+{
+    public DateTimeOffset Start { get; init; }
+    /// <summary>Часы, пока winws держал обход.</summary>
+    public double ProtectedHours { get; init; }
+    /// <summary>Сколько раз служба сама переподобрала сломавшийся сервис.</summary>
+    public int AutoFixes { get; init; }
+    public long TelegramBytes { get; init; }
+    public long TelegramConnections { get; init; }
+    public long DnsQueries { get; init; }
+    /// <summary>Во сколько раз YouTube быстрее с обходом (последний замер), если оба замера есть.</summary>
+    public double? YoutubeTimes { get; init; }
+}
+
+public sealed record WeeklyReport(WeekReport Current, WeekReport? Previous);
 
 public sealed record SpeedReport
 {

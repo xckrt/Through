@@ -166,6 +166,7 @@ public sealed class TropaController(ControllerOptions o) : IAsyncDisposable
         Telegram = TelegramStatus(),
         Network = _network?.Name,
         Speed = _speed,
+        Week = _week is null ? null : new WeeklyReport(_week, _prevWeek),
         Community = o.Community is null ? null : new CommunityReport(_settings.UseCommunity, _settings.ShareResults),
         KnownNetworks = o.Network is null ? 0 : Networks().Count,
         Dns = new DnsReport
@@ -216,6 +217,7 @@ public sealed class TropaController(ControllerOptions o) : IAsyncDisposable
         }
         RebuildCatalogs();
         _settings = File.Exists(_settingsPath) ? TropaJson.Load<ServiceSettings>(_settingsPath) : new ServiceSettings();
+        LoadWeek();
         try { _speed = File.Exists(SpeedPath) ? TropaJson.Load<SpeedReport>(SpeedPath) : null; }
         catch (Exception ex) when (ex is IOException or System.Text.Json.JsonException or InvalidDataException) { _speed = null; }
         if (_settings.Telegram.Enabled) await SetTelegramAsync(true, ct);
@@ -403,6 +405,7 @@ public sealed class TropaController(ControllerOptions o) : IAsyncDisposable
             {
                 await Task.Delay(o.WatchdogInterval, ct);
                 await WatchdogTickAsync(ct);
+                SampleWeek();
                 await MaybeAutoUpdateAsync(ct);
                 if (_tg is not null) await CheckTelegramAsync(ct, quiet: true);
             }
@@ -465,6 +468,7 @@ public sealed class TropaController(ControllerOptions o) : IAsyncDisposable
             Changed();
             await TuneCoreAsync(degraded.ToArray(), ct, early);
             foreach (var s in degraded) _strikes[s] = 0;
+            if (_week is not null) _week = _week with { AutoFixes = _week.AutoFixes + degraded.Count };
         }
         finally
         {
@@ -532,6 +536,75 @@ public sealed class TropaController(ControllerOptions o) : IAsyncDisposable
             Changed();
         }
         return hint;
+    }
+
+    // ---------- недельная сводка
+
+    private WeekReport? _week, _prevWeek;
+    private DateTimeOffset? _lastSample;
+    private long _lastTgBytes, _lastTgConnections, _lastDnsQueries;
+    private string WeekPath => Path.Combine(o.DataDir, "week.json");
+
+    private sealed record WeekFile(WeekReport Current, WeekReport? Previous);
+
+    private void LoadWeek()
+    {
+        try
+        {
+            if (File.Exists(WeekPath) && TropaJson.Load<WeekFile>(WeekPath) is { } f)
+            {
+                _week = f.Current;
+                _prevWeek = f.Previous;
+            }
+        }
+        catch (Exception ex) when (ex is IOException or System.Text.Json.JsonException or InvalidDataException) { }
+        _week ??= new WeekReport { Start = o.Clock() };
+    }
+
+    /// <summary>Раз в обход сторожа: прибавить время под защитой и прирост счётчиков прокси и DNS; неделя прошла — начать новую.</summary>
+    public void SampleWeek()
+    {
+        var now = o.Clock();
+        var w = _week ??= new WeekReport { Start = now };
+        if (now - w.Start >= TimeSpan.FromDays(7))
+        {
+            _prevWeek = w;
+            w = _week = new WeekReport { Start = now };
+            _message = "неделя с Тропой: сводка готова";
+        }
+
+        var elapsed = _lastSample is { } last ? now - last : TimeSpan.Zero;
+        _lastSample = now;
+        if (elapsed > TimeSpan.FromMinutes(30)) elapsed = TimeSpan.Zero; // компьютер спал: не засчитываем
+        var protectedHours = w.ProtectedHours + (_session is { HasExited: false } ? elapsed.TotalHours : 0);
+
+        // счётчики прокси и DNS обнуляются при перезапуске: меньше прежнего — значит, считаем заново с нуля
+        static long Delta(long now, ref long last) { var d = now >= last ? now - last : now; last = now; return d; }
+        long tgBytes = 0, tgConn = 0, dns = 0;
+        if (_tg?.Stats() is { } st)
+        {
+            tgBytes = Delta(st.BytesUp + st.BytesDown, ref _lastTgBytes);
+            tgConn = Delta(st.Total, ref _lastTgConnections);
+        }
+        if (_dns?.Stats() is { } ds) dns = Delta(ds.Queries, ref _lastDnsQueries);
+
+        double? times = _speed is { Without: { Error: null, Mbps: > 0 } a, With: { Error: null, Mbps: > 0 } b } ? Math.Round(b.Mbps / a.Mbps, 1) : w.YoutubeTimes;
+        _week = w with
+        {
+            ProtectedHours = protectedHours,
+            TelegramBytes = w.TelegramBytes + tgBytes,
+            TelegramConnections = w.TelegramConnections + tgConn,
+            DnsQueries = w.DnsQueries + dns,
+            YoutubeTimes = times,
+        };
+        try
+        {
+            Directory.CreateDirectory(o.DataDir);
+            var tmp = WeekPath + ".tmp";
+            File.WriteAllText(tmp, System.Text.Json.JsonSerializer.Serialize(new WeekFile(_week, _prevWeek), TropaJson.Options));
+            File.Move(tmp, WeekPath, overwrite: true);
+        }
+        catch (IOException) { }
     }
 
     // ---------- скорость YouTube «без обхода → с обходом»
