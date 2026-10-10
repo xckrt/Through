@@ -53,6 +53,9 @@ public sealed record ControllerOptions
     /// <summary>Адрес, порт и DoH-серверы защищённого DNS. Тесты подменяют.</summary>
     public SecureDnsOptions? Dns { get; init; }
 
+    /// <summary>Замер скорости YouTube. null — не мерить (тесты без сети).</summary>
+    public Func<CancellationToken, Task<SpeedResult>>? MeasureSpeed { get; init; }
+
     /// <summary>Подслушать, куда ходит программа (имя процесса, сколько слушать). null — не умеем (не Windows, тесты).</summary>
     public Func<string, TimeSpan, CancellationToken, Task<ObservedTraffic>>? ObserveApp { get; init; }
 
@@ -153,6 +156,7 @@ public sealed class TropaController(ControllerOptions o) : IAsyncDisposable
         Message = _message,
         Telegram = TelegramStatus(),
         Network = _network?.Name,
+        Speed = _speed,
         KnownNetworks = o.Network is null ? 0 : Networks().Count,
         Dns = new DnsReport
         {
@@ -202,6 +206,8 @@ public sealed class TropaController(ControllerOptions o) : IAsyncDisposable
         }
         RebuildCatalogs();
         _settings = File.Exists(_settingsPath) ? TropaJson.Load<ServiceSettings>(_settingsPath) : new ServiceSettings();
+        try { _speed = File.Exists(SpeedPath) ? TropaJson.Load<SpeedReport>(SpeedPath) : null; }
+        catch (Exception ex) when (ex is IOException or System.Text.Json.JsonException or InvalidDataException) { _speed = null; }
         if (_settings.Telegram.Enabled) await SetTelegramAsync(true, ct);
         if (_settings.SecureDns) await SetSecureDnsAsync(true, ct);
         else if (o.DnsSwitch is { } sw)
@@ -457,6 +463,44 @@ public sealed class TropaController(ControllerOptions o) : IAsyncDisposable
         // без службы локального DNS нет: системе возвращаем прежний, при старте снова переключим
         await StopDnsAsync(restore: true);
         _busy.Dispose();
+    }
+
+    // ---------- скорость YouTube «без обхода → с обходом»
+
+    private SpeedReport? _speed;
+    private readonly SemaphoreSlim _speedLock = new(1, 1);
+    private string SpeedPath => Path.Combine(o.DataDir, "speed.json");
+
+    /// <summary>Замерить сейчас: под защитой — «с обходом», без неё — «без обхода».</summary>
+    public async Task<StatusReport> MeasureSpeedAsync(CancellationToken ct = default)
+    {
+        if (o.MeasureSpeed is null) throw new InvalidOperationException("замер скорости недоступен");
+        if (!await _speedLock.WaitAsync(0, ct)) throw new InvalidOperationException("замер уже идёт");
+        try
+        {
+            await MeasureCoreAsync(withBypass: _session is { HasExited: false }, ct);
+            return Status();
+        }
+        finally
+        {
+            _speedLock.Release();
+            Changed();
+        }
+    }
+
+    private async Task MeasureCoreAsync(bool withBypass, CancellationToken ct)
+    {
+        if (o.MeasureSpeed is not { } measure || !_catalog.Services.ContainsKey("youtube")) return;
+        SpeedResult r;
+        try { r = await measure(ct); }
+        catch (Exception ex) when (ex is not OperationCanceledException) { r = new SpeedResult { Error = ex.Message, At = o.Clock() }; }
+        var cur = _speed ?? new SpeedReport();
+        _speed = withBypass ? cur with { With = r } : cur with { Without = r };
+        try { File.WriteAllText(SpeedPath, System.Text.Json.JsonSerializer.Serialize(_speed, TropaJson.Options)); }
+        catch (IOException) { }
+        _message = r.Error is { } e
+            ? $"YouTube {(withBypass ? "с обходом" : "без обхода")}: {e}"
+            : $"YouTube {(withBypass ? "с обходом" : "без обхода")}: {r.Mbps:0.#} Мбит/с";
     }
 
     // ---------- подбор голоса
@@ -892,6 +936,9 @@ public sealed class TropaController(ControllerOptions o) : IAsyncDisposable
         }
         // диагноз подбираемых сервисов ставится без их обхода: свой же winws испортил бы картину
         await StopEngineAsync();
+        // заодно «до»: скорость YouTube без обхода, чтобы потом показать разницу
+        if (services is null || services.Contains("youtube", StringComparer.OrdinalIgnoreCase))
+            await MeasureCoreAsync(withBypass: false, ct);
         try
         {
             var engine = await EnsureEngineAsync(ct);
@@ -927,6 +974,8 @@ public sealed class TropaController(ControllerOptions o) : IAsyncDisposable
                 {
                     await StartEngineAsync(ct);
                     await CheckCoreAsync(ct);
+                    var tunedYoutube = services is null || services.Contains("youtube", StringComparer.OrdinalIgnoreCase);
+                    if (tunedYoutube) await MeasureCoreAsync(withBypass: true, ct);
                 }
                 catch (Exception ex) when (ex is not OperationCanceledException)
                 {

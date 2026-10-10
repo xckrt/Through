@@ -289,6 +289,9 @@
                                     <TextBlock Text="ОБХОД БЛОКИРОВОК" Style="{StaticResource CardLabel}" />
                                     <TextBlock Text="{Binding ZapretStatus}" Tag="{Binding ZapretOrb}" Style="{StaticResource OrbStatus}" />
                                     <TextBlock Text="{Binding ZapretDetail}" Style="{StaticResource Soft}" TextWrapping="Wrap" Margin="0,6,0,8" />
+                                    <TextBlock Text="{Binding SpeedText}" FontFamily="{StaticResource Display}" FontSize="17" FontWeight="SemiBold"
+                                               Foreground="{DynamicResource Pine}" Margin="0,0,0,8"
+                                               Visibility="{Binding HasSpeed, Converter={StaticResource Visible}}" />
                                     <TextBlock Text="{Binding ZapretNetwork}" Style="{StaticResource Soft}" FontSize="12.5" TextWrapping="Wrap" Margin="0,0,0,10"
                                                Visibility="{Binding HasZapretNetwork, Converter={StaticResource Visible}}" />
                                 </StackPanel>
@@ -324,6 +327,9 @@
                                     <Button Content="Подобрать заново" Command="{Binding TuneCommand}" Style="{StaticResource QuietButton}"
                                             HorizontalAlignment="Left" Padding="14,6" FontSize="13" Margin="0,2,0,0"
                                             Visibility="{Binding CanRetune, Converter={StaticResource Visible}}" />
+                                    <Button Content="Замерить скорость YouTube" Command="{Binding MeasureSpeedCommand}" Style="{StaticResource QuietButton}"
+                                            HorizontalAlignment="Left" Padding="14,6" FontSize="13" Margin="0,8,0,0"
+                                            Visibility="{Binding HasService, Converter={StaticResource Visible}}" />
                                     <Button Content="Подобрать голос" Command="{Binding TuneVoiceCommand}" Style="{StaticResource PrimaryButton}"
                                             HorizontalAlignment="Left" Padding="14,6" FontSize="13" Margin="0,8,0,0"
                                             Visibility="{Binding VoiceBroken, Converter={StaticResource Visible}}" />

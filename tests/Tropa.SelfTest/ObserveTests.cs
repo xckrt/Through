@@ -47,6 +47,37 @@ internal static class ObserveTests
             }
             return Task.CompletedTask;
         }),
+
+        ("Скорость YouTube: замер без защиты пишется в «без обхода», переживает перезапуск службы", async () =>
+        {
+            var dir = Path.Combine(Path.GetTempPath(), $"tropa-speed-{Guid.NewGuid():N}");
+            try
+            {
+                Tropa.Core.Control.ControllerOptions Opts() => new()
+                {
+                    Targets = new Tropa.Core.Probing.TargetCatalog { Services = new() { ["youtube"] = [] } },
+                    Presets = new Tropa.Core.Tuning.PresetCatalog { Presets = [] },
+                    Engine = _ => throw new InvalidOperationException(),
+                    DataDir = dir,
+                    MeasureSpeed = _ => Task.FromResult(new Tropa.Core.Probing.SpeedResult { Mbps = 0.7, Bytes = 1000, Milliseconds = 8000 }),
+                };
+                await using (var c = new TropaController(Opts()))
+                {
+                    await c.StartAsync();
+                    var s = await c.MeasureSpeedAsync();
+                    Assert(s.Speed is { Without.Mbps: 0.7, With: null }, $"{s.Speed}");
+                }
+                await using (var c = new TropaController(Opts()))
+                {
+                    await c.StartAsync();
+                    Assert(c.Status().Speed?.Without?.Mbps == 0.7, "замер должен пережить перезапуск");
+                }
+            }
+            finally
+            {
+                if (Directory.Exists(dir)) Directory.Delete(dir, true);
+            }
+        }),
     ];
 
     private static void Assert(bool ok, string message)

@@ -33,6 +33,41 @@ public sealed partial class MainViewModel
     public bool CanRetune => _client is not null && _status is { Profile.Count: > 0 } && !IsRunning;
     public bool TgConnectVisible => TgOn;
 
+    /// <summary>«YouTube: 0,8 → 92 Мбит/с» — до обхода и с ним.</summary>
+    public string SpeedText
+    {
+        get
+        {
+            static string F(Tropa.Core.Probing.SpeedResult? r) => r is null ? "?" : r.Error is not null ? "не открывается" : $"{r.Mbps:0.#}";
+            var s = _status?.Speed;
+            if (s?.With is null && s?.Without is null) return "";
+            if (s.Without is not null && s.With is not null) return $"YouTube: {F(s.Without)} → {F(s.With)} Мбит/с";
+            return s.With is not null ? $"YouTube с обходом: {F(s.With)} Мбит/с" : $"YouTube без обхода: {F(s.Without)} Мбит/с";
+        }
+    }
+    public bool HasSpeed => SpeedText.Length > 0;
+    private bool _speedBusy;
+
+    public ICommand MeasureSpeedCommand => _measureSpeed ??= new RelayCommand(async () =>
+    {
+        _speedBusy = true;
+        CommandManager.InvalidateRequerySuggested();
+        try
+        {
+            Log("замеряю скорость YouTube…");
+            ApplyStatus(await _client!.CallAsync<StatusReport>("speed", ct: _cts.Token));
+            Raise(nameof(SpeedText));
+            Raise(nameof(HasSpeed));
+        }
+        catch (Exception ex) when (ex is InvalidOperationException or System.IO.IOException) { Log($"скорость: {ex.Message}", error: true); }
+        finally
+        {
+            _speedBusy = false;
+            CommandManager.InvalidateRequerySuggested();
+        }
+    }, () => !_speedBusy && !IsRunning && _client is not null);
+    private ICommand? _measureSpeed;
+
     /// <summary>Голос Discord не проходит под защитой: кнопка «Подобрать голос».</summary>
     public bool VoiceBroken => _protecting && _client is not null && _last.Any(t => t.Voice && !t.IsOk) && !IsRunning;
 
@@ -222,6 +257,8 @@ public sealed partial class MainViewModel
 
         Raise(nameof(CanRetune));
         Raise(nameof(VoiceBroken));
+        Raise(nameof(SpeedText));
+        Raise(nameof(HasSpeed));
         Raise(nameof(ZapretNetwork));
         Raise(nameof(HasZapretNetwork));
         Raise(nameof(TgConnectVisible));

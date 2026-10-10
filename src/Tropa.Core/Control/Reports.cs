@@ -100,7 +100,16 @@ public sealed record StatusReport
 
     /// <summary>Имя текущей сети: у каждой сети свой подобранный обход.</summary>
     public string? Network { get; init; }
+
+    /// <summary>Скорость видео YouTube без обхода и с ним (последние замеры).</summary>
+    public SpeedReport? Speed { get; init; }
     public int KnownNetworks { get; init; }
+}
+
+public sealed record SpeedReport
+{
+    public Tropa.Core.Probing.SpeedResult? Without { get; init; }
+    public Tropa.Core.Probing.SpeedResult? With { get; init; }
 }
 
 public sealed record DnsReport

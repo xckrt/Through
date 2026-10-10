@@ -33,6 +33,7 @@ internal sealed class ServiceHost
             DnsSwitch = new WindowsDnsSwitch(DataDir, _log),
             Network = WindowsNetworkIdentity.CurrentAsync,
             ObserveApp = EtwAppObserver.ObserveAsync,
+            MeasureSpeed = ct => YouTubeSpeed.MeasureAsync(ct),
         });
 
         // смена сети (другой Wi-Fi, телефон вместо роутера): через 5 секунд тишины смотрим, что за сеть

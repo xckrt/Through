@@ -15,6 +15,7 @@ var plan = false;
 var tune = false;
 var telegram = false;
 var dns = false;
+var speedTest = false;
 
 for (var i = 0; i < args.Length; i++)
 {
@@ -27,6 +28,7 @@ for (var i = 0; i < args.Length; i++)
         case "--tune": tune = true; break;
         case "--telegram": telegram = true; break;
         case "--dns": dns = true; break;
+        case "--speed": speedTest = true; break;
         case "--presets": presetsPath = args[++i]; break;
         case "-h" or "--help":
             Console.WriteLine("tropa-probe [--targets targets.json] [--only youtube,discord] [--json] [--plan | --tune] [--presets presets.json]");
@@ -45,6 +47,9 @@ var catalog = TargetCatalog.Load(targetsPath);
 var runner = new ProbeRunner(new ServiceProber());
 using var cts = new CancellationTokenSource();
 Console.CancelKeyPress += (_, e) => { e.Cancel = true; cts.Cancel(); };
+
+if (speedTest)
+    return await SpeedCommand.RunAsync(cts.Token);
 
 if (dns)
     return await DnsCommand.RunAsync(cts.Token);
