@@ -61,6 +61,7 @@ The `Failure` → strategy mapping table in `docs/architecture.md` drives the de
 
 ## Release & install
 
+- `build/publish.ps1 -Step stage|package|all`. The release signs in two passes: stage (exes and Tropa dlls, SignPath config `app`), then package (portable zip and setup from the signed stage), then the setup (`setup`), then hashes are recomputed. Signing steps run only when the `SIGNPATH_API_TOKEN` secret exists. See `docs/signing.md`.
 - The version lives in `Directory.Build.props` (`TropaBuild.Version`). To ship: push tag `v1.2.3`, and `.github/workflows/release.yml` runs the tests, then `build/publish.ps1`, then creates the GitHub release with `Tropa-Setup-1.2.3.exe` + `.sha256`. The tray's update check expects exactly that asset name.
 - `Tropa.Setup` targets **net48** on purpose (no bundled runtime, so the installer stays small). It needs `Prefer32Bit=false`, the `IsExternalInit` polyfill, and explicit `using`s; there are no implicit usings there. The payload is `artifacts/payload.zip`, embedded only when it exists.
 - Portable build (`Tropa-Portable-x.y.z.zip`, a `portable` marker next to Tropa.exe): no service. `EnsureServiceAsync` starts `Tropa.Service.exe portable <windowPid> <dataDir>` elevated, which is the same `ServiceHost` with data in `data\` beside it. It exits when the window process exits (winws stops and DNS is restored). It refuses to run next to an installed service. Updates open the releases page instead of running the setup.

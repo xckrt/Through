@@ -1,17 +1,24 @@
 name: release
 
-# тег v1.2.3 → тесты → установщик Tropa-Setup-1.2.3.exe → релиз на GitHub.
+# тег v1.2.3 → тесты → программа → (подпись) → переносная версия и установщик → (подпись) → релиз на GitHub.
 # Окно Тропы находит релиз по тегу и сверяет SHA-256 установщика со страницы релиза.
+# Подпись SignPath включается сама, когда в секретах репозитория есть SIGNPATH_API_TOKEN (см. docs/signing.md).
 on:
   push:
     tags: ['v*']
 
 permissions:
   contents: write
+  actions: read
 
 jobs:
   release:
     runs-on: windows-latest
+    env:
+      SIGNPATH_API_TOKEN: ${{ secrets.SIGNPATH_API_TOKEN }}
+      SIGNPATH_ORG: ${{ vars.SIGNPATH_ORGANIZATION_ID }}
+      SIGNPATH_PROJECT: ${{ vars.SIGNPATH_PROJECT_SLUG || 'Tropa' }}
+      SIGNPATH_POLICY: ${{ vars.SIGNPATH_POLICY_SLUG || 'release-signing' }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-dotnet@v4
@@ -26,9 +33,68 @@ jobs:
       - name: Тесты
         run: dotnet run --project tests/Tropa.SelfTest -c Release
 
-      - name: Установщик
+      - name: Программа
         shell: pwsh
-        run: ./build/publish.ps1 -Version ${{ steps.v.outputs.version }}
+        run: ./build/publish.ps1 -Version ${{ steps.v.outputs.version }} -Step stage
+
+      # ---- подпись программы: Tropa.exe, Tropa.Service.exe и сборки Тропы (конфигурация app в SignPath)
+      - name: Неподписанная программа
+        id: app
+        if: env.SIGNPATH_API_TOKEN != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-unsigned
+          path: artifacts/stage/
+
+      - name: Подпись программы
+        if: env.SIGNPATH_API_TOKEN != ''
+        uses: signpath/github-action-submit-signing-request@v1
+        with:
+          api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
+          organization-id: ${{ env.SIGNPATH_ORG }}
+          project-slug: ${{ env.SIGNPATH_PROJECT }}
+          signing-policy-slug: ${{ env.SIGNPATH_POLICY }}
+          artifact-configuration-slug: app
+          github-artifact-id: ${{ steps.app.outputs.artifact-id }}
+          wait-for-completion: true
+          output-artifact-directory: artifacts/stage
+
+      - name: Переносная версия и установщик
+        shell: pwsh
+        run: ./build/publish.ps1 -Version ${{ steps.v.outputs.version }} -Step package
+
+      # ---- подпись установщика (конфигурация setup), после неё хеш считается заново
+      - name: Неподписанный установщик
+        id: setup
+        if: env.SIGNPATH_API_TOKEN != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: setup-unsigned
+          path: artifacts/Tropa-Setup-${{ steps.v.outputs.version }}.exe
+
+      - name: Подпись установщика
+        if: env.SIGNPATH_API_TOKEN != ''
+        uses: signpath/github-action-submit-signing-request@v1
+        with:
+          api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
+          organization-id: ${{ env.SIGNPATH_ORG }}
+          project-slug: ${{ env.SIGNPATH_PROJECT }}
+          signing-policy-slug: ${{ env.SIGNPATH_POLICY }}
+          artifact-configuration-slug: setup
+          github-artifact-id: ${{ steps.setup.outputs.artifact-id }}
+          wait-for-completion: true
+          output-artifact-directory: artifacts
+
+      - name: Хеши
+        shell: pwsh
+        run: |
+          $v = "${{ steps.v.outputs.version }}"
+          foreach ($f in "Tropa-Setup-$v.exe", "Tropa-Portable-$v.zip") {
+            $h = (Get-FileHash "artifacts/$f" -Algorithm SHA256).Hash.ToLowerInvariant()
+            "$h  $f" | Set-Content -Encoding ascii "artifacts/$f.sha256"
+          }
+          $sig = (Get-AuthenticodeSignature "artifacts/Tropa-Setup-$v.exe").Status
+          "подпись установщика: $sig"
 
       - name: Релиз
         shell: pwsh
@@ -37,6 +103,9 @@ jobs:
         run: |
           $v = "${{ steps.v.outputs.version }}"
           $sha = (Get-Content "artifacts/Tropa-Setup-$v.exe.sha256").Split(" ")[0]
+          $psha = (Get-Content "artifacts/Tropa-Portable-$v.zip.sha256").Split(" ")[0]
+          $signed = (Get-AuthenticodeSignature "artifacts/Tropa-Setup-$v.exe").Status -eq "Valid"
+          $signNote = if ($signed) { "Установщик и программа подписаны (SignPath Foundation)." } else { "" }
           $notes = @"
           ## Установка
 
@@ -50,6 +119,8 @@ jobs:
           пока открыта Тропа; данные лежат в папке data рядом.
 
           SHA-256 установщика: ``$sha``
+          SHA-256 переносной версии: ``$psha``
+          $signNote
 
           Тропа скачивает zapret из официальных релизов [bol-van/zapret](https://github.com/bol-van/zapret)
           и сверяет хеши; бинарей zapret в этом репозитории нет.

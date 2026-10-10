@@ -1,21 +1,33 @@
 # Сборка установщика: Tropa-Setup одним файлом с программой внутри.
-#   pwsh build/publish.ps1 -Version 1.0.0
+#   pwsh build/publish.ps1 -Version 1.0.0                    всё сразу
+#   pwsh build/publish.ps1 -Version 1.0.0 -Step stage        только программа в artifacts/stage (её подписывают)
+#   pwsh build/publish.ps1 -Version 1.0.0 -Step package      из готового stage: переносная версия и установщик
 # Результат: artifacts/Tropa-Setup-<версия>.exe, Tropa-Portable-<версия>.zip и .sha256 рядом с каждым.
-param([string]$Version = "1.0.0")
+param([string]$Version = "1.0.0", [ValidateSet("all", "stage", "package")][string]$Step = "all")
 $ErrorActionPreference = "Stop"
 
 $root = Split-Path $PSScriptRoot -Parent
 $art = Join-Path $root "artifacts"
 $stage = Join-Path $art "stage"
-if (Test-Path $art) { Remove-Item -Recurse -Force $art }
-New-Item -ItemType Directory -Force $stage | Out-Null
 
-# окно и служба самодостаточные (.NET внутри): у пользователя ничего не нужно ставить заранее
-$common = @("-c", "Release", "-r", "win-x64", "--self-contained", "true", "-p:Version=$Version", "-p:DebugType=none")
-dotnet publish (Join-Path $root "src/Tropa.Tray") @common -o $stage
-if ($LASTEXITCODE -ne 0) { throw "publish Tropa.Tray" }
-dotnet publish (Join-Path $root "src/Tropa.Service") @common -o $stage
-if ($LASTEXITCODE -ne 0) { throw "publish Tropa.Service" }
+if ($Step -ne "package") {
+    if (Test-Path $art) { Remove-Item -Recurse -Force $art }
+    New-Item -ItemType Directory -Force $stage | Out-Null
+
+    # окно и служба самодостаточные (.NET внутри): у пользователя ничего не нужно ставить заранее
+    $common = @("-c", "Release", "-r", "win-x64", "--self-contained", "true", "-p:Version=$Version", "-p:DebugType=none")
+    dotnet publish (Join-Path $root "src/Tropa.Tray") @common -o $stage
+    if ($LASTEXITCODE -ne 0) { throw "publish Tropa.Tray" }
+    dotnet publish (Join-Path $root "src/Tropa.Service") @common -o $stage
+    if ($LASTEXITCODE -ne 0) { throw "publish Tropa.Service" }
+    if ($Step -eq "stage") { "stage готов: ${stage}"; return }
+}
+if (-not (Test-Path $stage)) { throw "нет ${stage}, сначала -Step stage" }
+foreach ($leftover in "portable", "setup", "payload.zip") {
+    $path = Join-Path $art $leftover
+    if (Test-Path $path) { Remove-Item -Recurse -Force $path }
+}
+Get-ChildItem $art -Filter "Tropa-*" -File | Remove-Item -Force
 
 # переносная версия: те же файлы, метка portable и короткая памятка; без установки и службы
 $portableDir = Join-Path $art "portable"
