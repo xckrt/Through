@@ -8,6 +8,32 @@
         FontFamily="{StaticResource Body}" FontSize="14" UseLayoutRounding="True">
 
     <Window.Resources>
+
+        <!-- карточка обзора и цвет состояния по Tag (OrbState) -->
+        <Style x:Key="HomeCard" TargetType="Border">
+            <Setter Property="Background" Value="{DynamicResource Surface}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource Line}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="22" />
+            <Setter Property="Padding" Value="26,26,28,24" />
+        </Style>
+        <Style x:Key="OrbStatus" TargetType="TextBlock">
+            <Setter Property="FontFamily" Value="{StaticResource Display}" />
+            <Setter Property="FontSize" Value="32" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Foreground" Value="{DynamicResource InkSoft}" />
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding Tag, RelativeSource={RelativeSource Self}}" Value="On"><Setter Property="Foreground" Value="{DynamicResource Pine}" /></DataTrigger>
+                <DataTrigger Binding="{Binding Tag, RelativeSource={RelativeSource Self}}" Value="Busy"><Setter Property="Foreground" Value="{DynamicResource Amber}" /></DataTrigger>
+                <DataTrigger Binding="{Binding Tag, RelativeSource={RelativeSource Self}}" Value="Problem"><Setter Property="Foreground" Value="{DynamicResource Signal}" /></DataTrigger>
+            </Style.Triggers>
+        </Style>
+        <Style x:Key="CardLabel" TargetType="TextBlock">
+            <Setter Property="FontFamily" Value="{StaticResource DisplayNarrow}" />
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="Foreground" Value="{DynamicResource InkSoft}" />
+            <Setter Property="Margin" Value="0,0,0,2" />
+        </Style>
         <Style x:Key="VerdictText" TargetType="TextBlock">
             <Setter Property="Foreground" Value="{DynamicResource InkSoft}" />
             <Style.Triggers>
@@ -228,21 +254,110 @@
                 </DockPanel>
             </Border>
 
-            <!-- ======== Обзор ======== -->
-            <Grid Grid.Row="2" Margin="48,26,48,26" Visibility="{Binding Page, Converter={StaticResource IsVisible}, ConverterParameter=Overview}">
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto" />
-                    <RowDefinition Height="Auto" />
-                    <RowDefinition Height="*" />
-                    <RowDefinition Height="Auto" />
-                </Grid.RowDefinitions>
+            <!-- ======== Обзор: две большие кнопки — обход и Telegram ======== -->
+            <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto" Focusable="False"
+                          Visibility="{Binding Page, Converter={StaticResource IsVisible}, ConverterParameter=Overview}">
+                <StackPanel Margin="48,28,48,26">
+                    <StackPanel x:Name="HomeHead">
+                        <TextBlock Text="{Binding Greeting}" Style="{StaticResource Soft}" FontSize="15.5" />
+                        <TextBlock Text="{Binding HomeHeadline}" FontFamily="{StaticResource Display}" FontSize="38" FontWeight="SemiBold"
+                                   TextWrapping="Wrap" Margin="0,0,0,24" />
+                    </StackPanel>
 
-                <StackPanel>
-                    <TextBlock Text="{Binding Headline}" FontFamily="{StaticResource Display}" FontSize="36" FontWeight="SemiBold"
-                               TextWrapping="Wrap" Margin="0,0,0,6" />
-                    <TextBlock Text="{Binding Subline}" FontSize="15.5" Foreground="{DynamicResource InkSoft}"
-                               TextWrapping="Wrap" MaxWidth="680" HorizontalAlignment="Left" LineHeight="23" />
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="22" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
 
+                        <Border x:Name="ZapretCard" Style="{StaticResource HomeCard}">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="*" />
+                                    <RowDefinition Height="Auto" />
+                                </Grid.RowDefinitions>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <local:PowerOrb Diameter="148" State="{Binding ZapretOrb}" Command="{Binding ZapretToggleCommand}"
+                                                VerticalAlignment="Top" Margin="-8,-8,0,0"
+                                                AutomationProperties.Name="Включить или выключить обход блокировок"
+                                                ToolTip="Включить или выключить обход блокировок" />
+                                <StackPanel Grid.Column="1" Margin="18,10,0,0">
+                                    <TextBlock Text="ОБХОД БЛОКИРОВОК" Style="{StaticResource CardLabel}" />
+                                    <TextBlock Text="{Binding ZapretStatus}" Tag="{Binding ZapretOrb}" Style="{StaticResource OrbStatus}" />
+                                    <TextBlock Text="{Binding ZapretDetail}" Style="{StaticResource Soft}" TextWrapping="Wrap" Margin="0,6,0,14" />
+                                </StackPanel>
+                                        <StackPanel Grid.Row="1" Grid.ColumnSpan="2" Margin="0,8,0,0">
+                                    <ItemsControl ItemsSource="{Binding HomeServices}" Focusable="False">
+                                        <ItemsControl.ItemsPanel>
+                                            <ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate>
+                                        </ItemsControl.ItemsPanel>
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate DataType="{x:Type local:ServiceVm}">
+                                                <Border CornerRadius="14" Padding="12,6,14,6" Margin="0,0,8,8" Background="{DynamicResource Paper}"
+                                                        BorderBrush="{DynamicResource Line}" BorderThickness="1" ToolTip="{Binding Summary}">
+                                                    <StackPanel Orientation="Horizontal">
+                                                        <Ellipse Width="9" Height="9" Margin="0,1,8,0" VerticalAlignment="Center">
+                                                            <Ellipse.Style>
+                                                                <Style TargetType="Ellipse">
+                                                                    <Setter Property="Fill" Value="{DynamicResource Fog}" />
+                                                                    <Style.Triggers>
+                                                                        <DataTrigger Binding="{Binding Health}" Value="Ok"><Setter Property="Fill" Value="{DynamicResource Pine}" /></DataTrigger>
+                                                                        <DataTrigger Binding="{Binding Health}" Value="Partial"><Setter Property="Fill" Value="{DynamicResource Pine}" /></DataTrigger>
+                                                                        <DataTrigger Binding="{Binding Health}" Value="Slow"><Setter Property="Fill" Value="{DynamicResource Amber}" /></DataTrigger>
+                                                                        <DataTrigger Binding="{Binding Health}" Value="Blocked"><Setter Property="Fill" Value="{DynamicResource Signal}" /></DataTrigger>
+                                                                    </Style.Triggers>
+                                                                </Style>
+                                                            </Ellipse.Style>
+                                                        </Ellipse>
+                                                        <TextBlock Text="{Binding Title}" FontSize="13.5" />
+                                                    </StackPanel>
+                                                </Border>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                    <Button Content="Подобрать заново" Command="{Binding TuneCommand}" Style="{StaticResource QuietButton}"
+                                            HorizontalAlignment="Left" Padding="14,6" FontSize="13" Margin="0,2,0,0"
+                                            Visibility="{Binding CanRetune, Converter={StaticResource Visible}}" />
+                                </StackPanel>
+                            </Grid>
+                        </Border>
+
+                        <Border x:Name="TgCard" Grid.Column="2" Style="{StaticResource HomeCard}">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="*" />
+                                    <RowDefinition Height="Auto" />
+                                </Grid.RowDefinitions>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <local:PowerOrb Diameter="148" State="{Binding TgOrb}" Command="{Binding TgToggleCommand}"
+                                                VerticalAlignment="Top" Margin="-8,-8,0,0"
+                                                AutomationProperties.Name="Включить или выключить прокси Telegram"
+                                                ToolTip="Включить или выключить прокси Telegram" />
+                                <StackPanel Grid.Column="1" Margin="18,10,0,0">
+                                    <TextBlock Text="TELEGRAM" Style="{StaticResource CardLabel}" />
+                                    <TextBlock Text="{Binding TgStatus}" Tag="{Binding TgOrb}" Style="{StaticResource OrbStatus}" />
+                                    <TextBlock Text="{Binding TgDetail}" Style="{StaticResource Soft}" TextWrapping="Wrap" Margin="0,6,0,14" />
+                                </StackPanel>
+                                <WrapPanel Grid.Row="1" Grid.ColumnSpan="2" Margin="0,8,0,0">
+                                    <Button Content="Подключить в Telegram" Command="{Binding TgPrimaryCommand}" Style="{StaticResource QuietButton}"
+                                            Padding="14,6" FontSize="13" Margin="0,0,8,8"
+                                            Visibility="{Binding TgConnectVisible, Converter={StaticResource Visible}}" />
+                                    <Button Content="Дата-центры и счётчики" Command="{Binding NavigateCommand}" CommandParameter="Telegram"
+                                            Style="{StaticResource QuietButton}" Padding="14,6" FontSize="13" Margin="0,0,8,8" />
+                                </WrapPanel>
+                            </Grid>
+                        </Border>
+                    </Grid>
+
+                    <Rectangle Height="1" Fill="{DynamicResource Line}" Margin="0,28,0,22" />
+                    <StackPanel>
                     <!-- «Почему не открывается?»: любой сайт по тем же этапам, вердикт и обход одной кнопкой -->
                     <DockPanel Margin="0,20,0,0" Width="760" HorizontalAlignment="Left">
                         <Button DockPanel.Dock="Right" Content="Проверить" Style="{StaticResource QuietButton}"
@@ -300,6 +415,35 @@
                                     Visibility="{Binding SiteCanBypass, Converter={StaticResource Visible}}" />
                         </StackPanel>
                     </Border>
+                    </StackPanel>
+
+                    <DockPanel Margin="0,26,0,0">
+                        <Button DockPanel.Dock="Right" Content="Подробная проверка" Command="{Binding OpenDiagnosticsCommand}"
+                                Style="{StaticResource QuietButton}" Padding="14,6" FontSize="13" />
+                        <Button DockPanel.Dock="Right" Content="{Binding CheckLabel}" Command="{Binding CheckCommand}"
+                                Style="{StaticResource QuietButton}" Padding="14,6" FontSize="13" Margin="0,0,8,0" />
+                        <TextBlock Text="{Binding CheckedAt}" Foreground="{DynamicResource InkSoft}" FontSize="12.5" VerticalAlignment="Center" />
+                    </DockPanel>
+                </StackPanel>
+            </ScrollViewer>
+
+            <!-- ======== Диагностика: проверка по этапам (раньше была обзором) ======== -->
+            <Grid Grid.Row="2" Margin="48,26,48,26" Visibility="{Binding Page, Converter={StaticResource IsVisible}, ConverterParameter=Diagnostics}">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+
+                <StackPanel>
+                    <Button Content="← Обзор" Style="{StaticResource QuietButton}" HorizontalAlignment="Left" Padding="14,6" FontSize="13"
+                            Margin="0,0,0,16" Command="{Binding NavigateCommand}" CommandParameter="Overview" />
+                    <TextBlock Text="{Binding Headline}" FontFamily="{StaticResource Display}" FontSize="36" FontWeight="SemiBold"
+                               TextWrapping="Wrap" Margin="0,0,0,6" />
+                    <TextBlock Text="{Binding Subline}" FontSize="15.5" Foreground="{DynamicResource InkSoft}"
+                               TextWrapping="Wrap" MaxWidth="680" HorizontalAlignment="Left" LineHeight="23" />
+
                 </StackPanel>
 
                 <!-- Подписи этапов стоят ровно над отметками троп -->

@@ -9,7 +9,7 @@ using Tropa.Core.Probing;
 
 namespace Tropa.Tray;
 
-public enum Pages { Overview, Apps, Telegram, Log, Settings }
+public enum Pages { Overview, Diagnostics, Apps, Telegram, Log, Settings }
 
 /// <summary>Плашка в заголовке окна: что с защитой прямо сейчас.</summary>
 public enum Pill { Off, On, Busy, Warn, NoService }

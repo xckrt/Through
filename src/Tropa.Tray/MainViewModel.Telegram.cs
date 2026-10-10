@@ -98,6 +98,7 @@ public sealed partial class MainViewModel
     private async Task EnableTelegramAsync()
     {
         _tgBusy = true;
+        RefreshHome();
         IsRunning = true;
         try
         {
@@ -123,6 +124,7 @@ public sealed partial class MainViewModel
         finally
         {
             _tgBusy = false;
+            RefreshHome();
             IsRunning = false;
         }
     }
@@ -131,6 +133,7 @@ public sealed partial class MainViewModel
     {
         if (_client is null || _tgBusy) return;
         _tgBusy = true;
+        RefreshHome();
         CommandManager.InvalidateRequerySuggested();
         foreach (var row in DcRows)
         {
@@ -151,6 +154,7 @@ public sealed partial class MainViewModel
         finally
         {
             _tgBusy = false;
+            RefreshHome();
             CommandManager.InvalidateRequerySuggested();
         }
     }
@@ -158,6 +162,7 @@ public sealed partial class MainViewModel
     private async Task TelegramCallAsync(string method, object? data)
     {
         _tgBusy = true;
+        RefreshHome();
         try
         {
             ApplyTelegram((await _client!.CallAsync<StatusReport>(method, data, _cts.Token)).Telegram);
@@ -169,6 +174,7 @@ public sealed partial class MainViewModel
         finally
         {
             _tgBusy = false;
+            RefreshHome();
             CommandManager.InvalidateRequerySuggested();
         }
     }

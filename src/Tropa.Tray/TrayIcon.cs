@@ -11,18 +11,22 @@ public sealed class TrayIcon : IDisposable
 {
     private readonly Forms.NotifyIcon _icon;
     private readonly Forms.ToolStripMenuItem _protect;
+    private readonly Forms.ToolStripMenuItem _telegram;
     private Icon? _current;
 
     public event Action? Open;
     public event Action? ToggleProtection;
+    public event Action? ToggleTelegram;
     public event Action? Exit;
 
     public TrayIcon()
     {
         _protect = new Forms.ToolStripMenuItem("Включить защиту", null, (_, _) => ToggleProtection?.Invoke());
+        _telegram = new Forms.ToolStripMenuItem("Включить прокси Telegram", null, (_, _) => ToggleTelegram?.Invoke());
         var menu = new Forms.ContextMenuStrip();
         menu.Items.Add(new Forms.ToolStripMenuItem("Открыть Тропу", null, (_, _) => Open?.Invoke()) { Font = new Font(Forms.Control.DefaultFont, FontStyle.Bold) });
         menu.Items.Add(_protect);
+        menu.Items.Add(_telegram);
         menu.Items.Add(new Forms.ToolStripSeparator());
         menu.Items.Add(new Forms.ToolStripMenuItem("Выйти из окна", null, (_, _) => Exit?.Invoke()));
 
@@ -50,6 +54,13 @@ public sealed class TrayIcon : IDisposable
         _icon.Text = tip.Length > 63 ? tip[..63] : tip;
         _protect.Text = protecting ? "Выключить защиту" : "Включить защиту";
         _protect.Enabled = canToggle;
+    }
+
+    public void UpdateTelegram(bool on, bool canToggle)
+    {
+        _telegram.Text = on ? "Выключить прокси Telegram" : "Включить прокси Telegram";
+        _telegram.Checked = on;
+        _telegram.Enabled = canToggle;
     }
 
     public void Hint(string title, string text) => _icon.ShowBalloonTip(4000, title, text, Forms.ToolTipIcon.None);

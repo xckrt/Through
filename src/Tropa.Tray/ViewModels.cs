@@ -284,6 +284,7 @@ public sealed partial class MainViewModel : Observable
     /// <summary>Открытие окна: найти службу и сразу показать картину.</summary>
     public async Task StartAsync()
     {
+        HookHome();
         _ = StartBannersAsync();
         if (_pipeName is not null && await ConnectAsync(TimeSpan.FromMilliseconds(400)) is { } status)
         {
