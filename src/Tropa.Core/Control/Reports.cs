@@ -104,6 +104,8 @@ public sealed record StatusReport
     /// <summary>Скорость видео YouTube без обхода и с ним (последние замеры).</summary>
     public SpeedReport? Speed { get; init; }
 
+    public HomeProxyReport? Home { get; init; }
+
     /// <summary>«Не трогать»: сайты вне обхода.</summary>
     public string[] Excluded { get; init; } = [];
 
@@ -138,6 +140,19 @@ public sealed record SpeedReport
 {
     public Tropa.Core.Probing.SpeedResult? Without { get; init; }
     public Tropa.Core.Probing.SpeedResult? With { get; init; }
+}
+
+public sealed record HomeProxyReport
+{
+    public bool Enabled { get; init; }
+    public bool Running { get; init; }
+    public int Port { get; init; }
+    /// <summary>адрес:порт в домашней сети — для ручной настройки прокси.</summary>
+    public string? Address { get; init; }
+    /// <summary>http://адрес:порт/proxy.pac — «Прокси → Авто» на телефоне.</summary>
+    public string? PacUrl { get; init; }
+    public Tropa.Core.Proxy.HomeProxyStats? Stats { get; init; }
+    public string? Error { get; init; }
 }
 
 public sealed record DnsReport

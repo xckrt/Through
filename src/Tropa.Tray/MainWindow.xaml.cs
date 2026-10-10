@@ -87,7 +87,7 @@ public partial class MainWindow : Window
     {
         if (!SystemParameters.ClientAreaAnimation) return;
         var delay = 0;
-        foreach (var el in new FrameworkElement[] { HomeHead, ZapretCard, TgCard, DnsCard })
+        foreach (var el in new FrameworkElement[] { HomeHead, ZapretCard, TgCard, DnsCard, HomeCard })
         {
             var shift = new TranslateTransform(0, 18);
             el.RenderTransform = shift;

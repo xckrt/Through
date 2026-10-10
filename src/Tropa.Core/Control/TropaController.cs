@@ -2,6 +2,7 @@ using System.Net.Sockets;
 using System.Security.Cryptography;
 using Tropa.Core.Doh;
 using Tropa.Core.Probing;
+using Tropa.Core.Proxy;
 using Tropa.Core.Telegram;
 using Tropa.Core.Tuning;
 
@@ -47,8 +48,14 @@ public sealed record ControllerOptions
     /// <summary>Остальные параметры прокси (адреса DC, пул). Тесты подменяют их на локальные.</summary>
     public TelegramProxyOptions? TelegramTemplate { get; init; }
 
-    /// <summary>Открыть/закрыть входящий TCP-порт в брандмауэре (только для своей подсети). null — не трогать (тесты).</summary>
-    public Func<int, bool, CancellationToken, Task>? Firewall { get; init; }
+    /// <summary>Открыть/закрыть входящий TCP-порт в брандмауэре (правило по имени, только для своей подсети). null — не трогать (тесты).</summary>
+    public Func<string, int, bool, CancellationToken, Task>? Firewall { get; init; }
+
+    /// <summary>Порт прокси для всего дома, если в настройках нет своего.</summary>
+    public int HomeProxyPort { get; init; } = 3128;
+
+    /// <summary>Тесты: пускать loopback и ходить в частные адреса.</summary>
+    public HomeProxyOptions? HomeProxyTemplate { get; init; }
 
     /// <summary>Как переключать DNS системы на локальный сервер. null — только сервер, без переключения (тесты, CLI).</summary>
     public IDnsSwitch? DnsSwitch { get; init; }
@@ -83,6 +90,10 @@ public sealed record ServiceSettings
 
     /// <summary>Защищённый DNS: запросы системы уходят через DoH, провайдер их не видит и не подменяет.</summary>
     public bool SecureDns { get; init; }
+
+    /// <summary>Прокси для всего дома: телефоны и ТВ в той же сети ходят на сайты из обхода через этот компьютер.</summary>
+    public bool HomeProxy { get; init; }
+    public int? HomeProxyPort { get; init; }
 
     /// <summary>Брать подсказки из общей базы: что чинило сервисы у этого провайдера.</summary>
     public bool UseCommunity { get; init; } = true;
@@ -176,6 +187,7 @@ public sealed class TropaController(ControllerOptions o) : IAsyncDisposable
         Network = _network?.Name,
         Speed = _speed,
         Excluded = _settings.Excluded,
+        Home = HomeStatus(),
         Week = _week is null ? null : new WeeklyReport(_week, _prevWeek),
         Community = o.Community is null ? null : new CommunityReport(_settings.UseCommunity, _settings.ShareResults),
         KnownNetworks = o.Network is null ? 0 : Networks().Count,
@@ -240,11 +252,12 @@ public sealed class TropaController(ControllerOptions o) : IAsyncDisposable
             // правило брандмауэра — заново при каждом старте: после обновления Тропы оно могло быть старым
             if (_settings.Telegram.Lan && _tg is { } tg && o.Firewall is { } fw)
             {
-                try { await fw(tg.Port, true, ct); }
+                try { await fw(TelegramRule, tg.Port, true, ct); }
                 catch (Exception ex) when (ex is InvalidOperationException or IOException) { _message = $"брандмауэр: {ex.Message}"; }
             }
         }
         if (_settings.SecureDns) await SetSecureDnsAsync(true, ct);
+        if (_settings.HomeProxy) await SetHomeProxyAsync(true, ct);
         else if (o.DnsSwitch is { } sw)
         {
             // служба могла упасть с переключённым DNS: вернуть, что было
@@ -511,6 +524,11 @@ public sealed class TropaController(ControllerOptions o) : IAsyncDisposable
         }
         // без службы локального DNS нет: системе возвращаем прежний, при старте снова переключим
         await StopDnsAsync(restore: true);
+        if (_home is { } home)
+        {
+            _home = null;
+            await home.DisposeAsync();
+        }
         _busy.Dispose();
     }
 
@@ -836,6 +854,99 @@ public sealed class TropaController(ControllerOptions o) : IAsyncDisposable
         }
     }
 
+    // ---------- прокси для всего дома
+
+    private const string TelegramRule = "Tropa Telegram proxy";
+    private const string HomeRule = "Tropa home proxy";
+    private HomeProxy? _home;
+    private string? _homeError;
+    private readonly SemaphoreSlim _homeLock = new(1, 1);
+
+    private HomeProxyReport HomeStatus()
+    {
+        var port = _home?.Port ?? _settings.HomeProxyPort ?? o.HomeProxyPort;
+        var ip = _home is null ? null : LanAddress();
+        return new HomeProxyReport
+        {
+            Enabled = _settings.HomeProxy,
+            Running = _home is not null,
+            Port = port,
+            Address = ip is null ? null : $"{ip}:{port}",
+            PacUrl = ip is null ? null : $"http://{ip}:{port}/proxy.pac",
+            Stats = _home?.Stats(),
+            Error = _homeError,
+        };
+    }
+
+    /// <summary>Домены для PAC: всё, что Тропа обходит (встроенные сервисы и свои приложения), без «не трогать».</summary>
+    private IReadOnlyList<string> HomeDomains() =>
+        [.. _catalog.Services.Keys.SelectMany(s => _catalog.BypassScope(s).Hosts)
+            .Select(d => d.Trim().ToLowerInvariant()).Where(d => d.Length > 0)
+            .Where(d => !_settings.Excluded.Any(e => d == e || d.EndsWith("." + e, StringComparison.Ordinal)))
+            .Distinct().Order()];
+
+    /// <summary>Включить прокси для дома: свободный порт с 3128, правило брандмауэра для своей подсети.</summary>
+    public async Task<StatusReport> SetHomeProxyAsync(bool on, CancellationToken ct = default)
+    {
+        await _homeLock.WaitAsync(ct);
+        try
+        {
+            var port = _home?.Port ?? _settings.HomeProxyPort ?? o.HomeProxyPort;
+            if (_home is { } old)
+            {
+                _home = null;
+                await old.DisposeAsync();
+            }
+            if (!on)
+            {
+                _homeError = null;
+                SaveSettings(_settings with { HomeProxy = false });
+                if (o.Firewall is { } fwOff)
+                    try { await fwOff(HomeRule, port, false, ct); } catch (Exception ex) when (ex is InvalidOperationException or IOException) { }
+                _message = "прокси для дома выключен";
+                return Status();
+            }
+
+            var template = o.HomeProxyTemplate ?? new HomeProxyOptions { Domains = HomeDomains };
+            HomeProxy? started = null;
+            foreach (var p in port == 0 ? [0] : Enumerable.Range(port, 20))
+            {
+                var proxy = new HomeProxy(template with { Port = p, Domains = HomeDomains });
+                try
+                {
+                    proxy.Start();
+                    started = proxy;
+                    break;
+                }
+                catch (SocketException ex) when (ex.SocketErrorCode is SocketError.AddressAlreadyInUse or SocketError.AccessDenied)
+                {
+                    await proxy.DisposeAsync();
+                }
+            }
+            if (started is null)
+            {
+                _homeError = $"порты {port}–{port + 19} заняты";
+                _message = $"прокси для дома не запустился: {_homeError}";
+                return Status();
+            }
+            _home = started;
+            _homeError = null;
+            SaveSettings(_settings with { HomeProxy = true, HomeProxyPort = started.Port });
+            if (o.Firewall is { } fw)
+                try { await fw(HomeRule, started.Port, true, ct); }
+                catch (Exception ex) when (ex is InvalidOperationException or IOException) { _homeError = $"брандмауэр: {ex.Message}"; }
+            _message = LanAddress() is { } ip
+                ? $"прокси для дома работает: на телефоне Wi-Fi → Прокси → Авто → http://{ip}:{started.Port}/proxy.pac"
+                : "прокси для дома запущен, но компьютер не в домашней сети (нет частного адреса)";
+            return Status();
+        }
+        finally
+        {
+            _homeLock.Release();
+            Changed();
+        }
+    }
+
     // ---------- защищённый DNS
 
     /// <summary>Включить: поднять локальный DNS, убедиться, что он разрешает имена через DoH, и только потом
@@ -981,7 +1092,7 @@ public sealed class TropaController(ControllerOptions o) : IAsyncDisposable
                 // выключили прокси — закрыть и порт в брандмауэре, если пускали телефоны
                 if (_settings.Telegram.Lan && o.Firewall is { } fw)
                 {
-                    try { await fw(_settings.Telegram.Port ?? o.TelegramPort, false, ct); }
+                    try { await fw(TelegramRule, _settings.Telegram.Port ?? o.TelegramPort, false, ct); }
                     catch (Exception ex) when (ex is InvalidOperationException or IOException) { }
                 }
                 SaveSettings(_settings with { Telegram = _settings.Telegram with { Enabled = false } });
@@ -1053,7 +1164,7 @@ public sealed class TropaController(ControllerOptions o) : IAsyncDisposable
         var port = _tg?.Port ?? _settings.Telegram.Port ?? o.TelegramPort;
         if (o.Firewall is { } fw)
         {
-            try { await fw(port, on, ct); }
+            try { await fw(TelegramRule, port, on, ct); }
             catch (Exception ex) when (ex is InvalidOperationException or IOException) { _message = $"брандмауэр: {ex.Message}"; }
         }
         if (on && LanAddress() is null) _message = "телефон подключить не выйдет: компьютер не в домашней сети (нет частного адреса)";

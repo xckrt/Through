@@ -622,6 +622,7 @@ public sealed partial class MainViewModel : Observable
         RaiseDns();
         RaiseWeek(s);
         SyncExcluded(s);
+        RaiseHome();
         Raise(nameof(ProtectLabel));
         ProtectVisible = s.Profile.Count > 0;
         TuneVisible = true;

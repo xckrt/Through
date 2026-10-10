@@ -674,5 +674,18 @@
  "обход больше не трогает {0}": "the bypass no longer touches {0}",
  "{0} снова обходится как обычно": "{0} is bypassed as usual again",
  "в «не трогать» уже 200 сайтов": "«don't touch» already has 200 sites",
- "это не похоже на адрес сайта": "this does not look like a site address"
+ "это не похоже на адрес сайта": "this does not look like a site address",
+ "Обход для всего дома": "Bypass for the whole home",
+ "ДЛЯ ВСЕГО ДОМА": "FOR THE WHOLE HOME",
+ "Телефоны, планшеты и телевизор в этой Wi-Fi смогут открывать YouTube, Discord и другие сайты из обхода через этот компьютер. Остальное они откроют напрямую, как обычно.": "Phones, tablets and the TV on this Wi-Fi can open YouTube, Discord and other bypassed sites through this computer. Everything else they open directly, as usual.",
+ "Не запустился: {0}": "Did not start: {0}",
+ "Компьютер не в домашней сети: телефонам не к чему подключиться.": "The computer is not on a home network: phones have nothing to connect to.",
+ "Работает: устройств {0}, соединений сейчас {1}, трафик {2}.": "Works: {0} devices, {1} connections now, {2} of traffic.",
+ "Работает. Осталось настроить телефон: Wi-Fi → эта сеть → Прокси → Авто, адрес ниже.": "Works. Now set up the phone: Wi-Fi → this network → Proxy → Auto, address below.",
+ "Android: Настройки → Wi-Fi → эта сеть → Прокси → Авто, вставьте адрес. iPhone: Настройки → Wi-Fi → (i) → Настройка прокси → Авто → URL. QR-код поможет скопировать адрес на телефон.": "Android: Settings → Wi-Fi → this network → Proxy → Auto, paste the address. iPhone: Settings → Wi-Fi → (i) → Configure Proxy → Automatic → URL. The QR code helps copy the address to the phone.",
+ "Работает, пока компьютер включён и Тропа запущена. Чужие из интернета подключиться не могут: пускаются только устройства из этой сети.": "Works while the computer is on and Tropa is running. Nobody from the internet can connect: only devices on this network are let in.",
+ "прокси для дома выключен": "the home proxy is off",
+ "прокси для дома не запустился: {0}": "the home proxy did not start: {0}",
+ "прокси для дома работает: на телефоне Wi-Fi → Прокси → Авто → http://{0}:{1}/proxy.pac": "the home proxy works: on the phone Wi-Fi → Proxy → Auto → http://{0}:{1}/proxy.pac",
+ "прокси для дома запущен, но компьютер не в домашней сети (нет частного адреса)": "the home proxy started, but the computer is not on a home network (no private address)"
 }

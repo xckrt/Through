@@ -200,7 +200,7 @@ internal static class TelegramTests
                     DataDir = dir,
                     TelegramPort = 0,
                     TelegramTemplate = Local(null) with { Secret = new byte[16], TcpFallback = false },
-                    Firewall = (port, open, _) => { lock (calls) calls.Add((port, open)); return Task.CompletedTask; },
+                    Firewall = (_, port, open, _) => { lock (calls) calls.Add((port, open)); return Task.CompletedTask; },
                 });
                 await c.StartAsync();
                 await c.SetTelegramAsync(true);

@@ -191,6 +191,7 @@ tests.AddRange(CommunityTests.All());
 tests.AddRange(WeekTests.All());
 tests.AddRange(LocTests.All());
 tests.AddRange(ExcludeTests.All());
+tests.AddRange(HomeProxyTests.All());
 
 var failed = 0;
 foreach (var (name, body) in tests)

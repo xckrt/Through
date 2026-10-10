@@ -382,6 +382,33 @@
                             </StackPanel>
                         </DockPanel>
                     </Border>
+
+                    <!-- для всего дома: телефоны и ТВ через этот компьютер -->
+                    <Border x:Name="HomeCard" Style="{StaticResource HomeCard}" Padding="26,18,26,18" Margin="0,14,0,0">
+                        <StackPanel>
+                            <DockPanel>
+                                <ToggleButton DockPanel.Dock="Right" Style="{StaticResource Switch}" VerticalAlignment="Center" Margin="20,0,0,0"
+                                              IsChecked="{Binding HomeOn, Mode=OneWay}" Command="{Binding HomeToggleCommand}"
+                                              AutomationProperties.Name="{local:Tr 'Обход для всего дома'}" />
+                                <StackPanel>
+                                    <TextBlock Text="{local:Tr 'ДЛЯ ВСЕГО ДОМА'}" Style="{StaticResource CardLabel}" />
+                                    <TextBlock Text="{Binding HomeText}" Style="{StaticResource Soft}" TextWrapping="Wrap" />
+                                </StackPanel>
+                            </DockPanel>
+                            <StackPanel Orientation="Horizontal" Margin="0,14,0,0" Visibility="{Binding HasHomePac, Converter={StaticResource Visible}}">
+                                <Border CornerRadius="12" Background="White" Padding="5" BorderBrush="{DynamicResource Line}" BorderThickness="1">
+                                    <Image Source="{Binding HomeQr}" Width="132" Height="132" RenderOptions.BitmapScalingMode="NearestNeighbor" />
+                                </Border>
+                                <StackPanel Margin="18,2,0,0" MaxWidth="640">
+                                    <TextBlock Text="{Binding HomePac}" FontFamily="{StaticResource Display}" FontSize="17" FontWeight="SemiBold" />
+                                    <TextBlock Style="{StaticResource Soft}" TextWrapping="Wrap" Margin="0,6,0,0"
+                                               Text="{local:Tr 'Android: Настройки → Wi-Fi → эта сеть → Прокси → Авто, вставьте адрес. iPhone: Настройки → Wi-Fi → (i) → Настройка прокси → Авто → URL. QR-код поможет скопировать адрес на телефон.'}" />
+                                    <TextBlock Style="{StaticResource Soft}" FontSize="12.5" TextWrapping="Wrap" Margin="0,6,0,0"
+                                               Text="{local:Tr 'Работает, пока компьютер включён и Тропа запущена. Чужие из интернета подключиться не могут: пускаются только устройства из этой сети.'}" />
+                                </StackPanel>
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
                     <TextBlock Text="{Binding WeekText}" Style="{StaticResource Soft}" FontSize="13.5" Margin="4,16,0,0" TextWrapping="Wrap"
                                Visibility="{Binding HasWeek, Converter={StaticResource Visible}}" />
                     <Rectangle Height="1" Fill="{DynamicResource Line}" Margin="0,28,0,22" />
