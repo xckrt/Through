@@ -1,4 +1,4 @@
-# Сборка установщика: Tropa-Setup одним файлом с программой внутри.
+﻿# Сборка установщика: Tropa-Setup одним файлом с программой внутри.
 #   pwsh build/publish.ps1 -Version 1.0.0                    всё сразу
 #   pwsh build/publish.ps1 -Version 1.0.0 -Step stage        только программа в artifacts/stage (её подписывают)
 #   pwsh build/publish.ps1 -Version 1.0.0 -Step package      из готового stage: переносная версия и установщик

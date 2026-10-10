@@ -74,5 +74,7 @@ The `Failure` → strategy mapping table in `docs/architecture.md` drives the de
 - No binaries in the repo. `winws`/WinDivert must be downloaded at runtime from official zapret releases with SHA-256 verification (the planned Fetcher).
 - Known Prober gaps (in the docs): no QUIC/UDP (YouTube QUIC, Discord voice), DNS spoofing is caught only for obvious bogus addresses (no DoH cross-check), and HTTP is HTTP/1.1 with `Connection: close`.
 - If a build suddenly fails with missing `Microsoft.NETCore.App.Ref` files or "could not resolve SDK", a Visual Studio/.NET installer is usually running. Wait for it to finish, or run `dotnet restore --force` (it fetches the targeting pack from NuGet).
-- Locally only the .NET 10 SDK may be installed, and its WPF markup compiler fails on the net48 `Tropa.Setup` (MC1000 "System.Private.CoreLib"). CI pins 8.0.x. Build the other projects one by one, or install the .NET 8 SDK.
+- The net48 `Tropa.Setup` builds fine with `-c Release -o <dir>` (as `publish.ps1` does), but fails with MC1000 "System.Private.CoreLib" when you pass `-p:BaseOutputPath`. Build it with `-o`.
+- `build/*.ps1` are saved with a UTF-8 BOM, because Windows PowerShell 5.1 reads BOM-less scripts as ANSI and garbles the Cyrillic. CI uses pwsh 7.
+- Packages: `build/packages.ps1` writes the winget manifests (`artifacts/winget/<v>`, id `xckrt.Tropa`, installer `/silent`) and the Scoop bucket `bucket/tropa.json` (portable zip, `persist: data`). The release commits the bucket and, with `WINGET_TOKEN`, runs `wingetcreate submit`. See `docs/packages.md`.
 - Windows quirk: connecting to a closed loopback port takes ~2 s (Windows retries the SYN after RST), so test `ConnectTimeout` is 5 s.

@@ -19,6 +19,7 @@ jobs:
       SIGNPATH_ORG: ${{ vars.SIGNPATH_ORGANIZATION_ID }}
       SIGNPATH_PROJECT: ${{ vars.SIGNPATH_PROJECT_SLUG || 'Tropa' }}
       SIGNPATH_POLICY: ${{ vars.SIGNPATH_POLICY_SLUG || 'release-signing' }}
+      WINGET_TOKEN: ${{ secrets.WINGET_TOKEN }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-dotnet@v4
@@ -96,6 +97,10 @@ jobs:
           $sig = (Get-AuthenticodeSignature "artifacts/Tropa-Setup-$v.exe").Status
           "подпись установщика: $sig"
 
+      - name: Манифесты winget и Scoop
+        shell: pwsh
+        run: ./build/packages.ps1 -Version ${{ steps.v.outputs.version }}
+
       - name: Релиз
         shell: pwsh
         env:
@@ -128,3 +133,23 @@ jobs:
           gh release create "${{ github.ref_name }}" "artifacts/Tropa-Setup-$v.exe" "artifacts/Tropa-Setup-$v.exe.sha256" `
             "artifacts/Tropa-Portable-$v.zip" "artifacts/Tropa-Portable-$v.zip.sha256" `
             --title "Тропа $v" --notes $notes
+
+      # Scoop: бакет лежит в этом репозитории, после релиза в нём новая версия и хеш
+      - name: Scoop-бакет
+        shell: pwsh
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch origin main
+          git checkout -B bucket-update origin/main
+          ./build/packages.ps1 -Version ${{ steps.v.outputs.version }} | Out-Null
+          git add bucket/tropa.json
+          git diff --cached --quiet || (git commit -m "Scoop: Тропа ${{ steps.v.outputs.version }}" && git push origin HEAD:main)
+
+      # winget: PR в microsoft/winget-pkgs от имени владельца токена (секрет WINGET_TOKEN, classic PAT с public_repo)
+      - name: winget
+        if: env.WINGET_TOKEN != ''
+        shell: pwsh
+        run: |
+          Invoke-WebRequest https://aka.ms/wingetcreate/latest -OutFile wingetcreate.exe
+          ./wingetcreate.exe submit --token $env:WINGET_TOKEN "artifacts/winget/${{ steps.v.outputs.version }}"

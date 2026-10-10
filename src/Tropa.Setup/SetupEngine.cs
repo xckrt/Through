@@ -216,6 +216,7 @@ public sealed class SetupEngine(Action<int, string> progress)
         k.SetValue("DisplayIcon", Path.Combine(InstallDir, "Tropa.exe"));
         k.SetValue("InstallLocation", InstallDir);
         k.SetValue("UninstallString", $"\"{setup}\" /uninstall");
+        k.SetValue("QuietUninstallString", $"\"{setup}\" /uninstall /silent");
         k.SetValue("URLInfoAbout", "https://github.com/xckrt/Tropa");
         k.SetValue("HelpLink", "https://github.com/xckrt/Tropa/issues");
         k.SetValue("NoModify", 1, RegistryValueKind.DWord);

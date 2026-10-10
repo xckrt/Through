@@ -16,6 +16,9 @@ Download **Tropa-Setup-x.y.z.exe** from [Releases](https://github.com/xckrt/Trop
 Windows asks for administrator permission once, because Tropa installs a service that keeps the bypass running.
 No .NET install is needed. Uninstall it like any other app.
 
+Or from the command line: `winget install xckrt.Tropa` (regular), or
+`scoop bucket add tropa https://github.com/xckrt/Tropa` and then `scoop install tropa` (portable).
+
 No install: **Tropa-Portable-x.y.z.zip**. Unpack it and run `Tropa.exe`. The bypass runs while Tropa is open,
 and data is kept in the `data` folder next to it.
 
