@@ -53,6 +53,9 @@ internal static class Installer
     {
         if (!Exists()) return 0;
         Stop();
+        // служба при остановке сама возвращает DNS; если она до этого упала, вернём по сохранённому файлу
+        try { new WindowsDnsSwitch(ServiceHost.DataDir, Log).RestoreAsync(CancellationToken.None).GetAwaiter().GetResult(); }
+        catch (Exception ex) when (ex is InvalidOperationException or IOException) { Log.Write($"DNS не вернулся: {ex.Message}"); }
         var code = Sc("delete", Name);
         if (code != 0) throw new InvalidOperationException($"sc delete вернул {code}");
         Log.Write("служба удалена");

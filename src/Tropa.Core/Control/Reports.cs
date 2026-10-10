@@ -93,6 +93,19 @@ public sealed record StatusReport
 
     /// <summary>Прокси Telegram. У служб старее 1.1 его нет.</summary>
     public TelegramReport? Telegram { get; init; }
+
+    public DnsReport? Dns { get; init; }
+}
+
+public sealed record DnsReport
+{
+    public bool Enabled { get; init; }
+    /// <summary>Локальный сервер открыт.</summary>
+    public bool Running { get; init; }
+    /// <summary>Система смотрит на него (адаптеры переключены).</summary>
+    public bool Active { get; init; }
+    public Tropa.Core.Doh.SecureDnsStats? Stats { get; init; }
+    public string? Error { get; init; }
 }
 
 public sealed record TelegramReport

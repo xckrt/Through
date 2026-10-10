@@ -1,5 +1,6 @@
 using System.Net.Sockets;
 using System.Security.Cryptography;
+using Tropa.Core.Doh;
 using Tropa.Core.Probing;
 using Tropa.Core.Telegram;
 using Tropa.Core.Tuning;
@@ -42,6 +43,12 @@ public sealed record ControllerOptions
 
     /// <summary>Остальные параметры прокси (адреса DC, пул). Тесты подменяют их на локальные.</summary>
     public TelegramProxyOptions? TelegramTemplate { get; init; }
+
+    /// <summary>Как переключать DNS системы на локальный сервер. null — только сервер, без переключения (тесты, CLI).</summary>
+    public IDnsSwitch? DnsSwitch { get; init; }
+
+    /// <summary>Адрес, порт и DoH-серверы защищённого DNS. Тесты подменяют.</summary>
+    public SecureDnsOptions? Dns { get; init; }
 }
 
 public sealed record EngineUpdateResult(bool Updated, string? Version, string Message);
@@ -55,6 +62,9 @@ public sealed record ServiceSettings
     public bool AutoUpdate { get; init; } = true;
 
     public TelegramSettings Telegram { get; init; } = new();
+
+    /// <summary>Защищённый DNS: запросы системы уходят через DoH, провайдер их не видит и не подменяет.</summary>
+    public bool SecureDns { get; init; }
 }
 
 /// <summary>Прокси Telegram: включён ли, на каком порту и с каким секретом (их помнит ссылка в клиенте).</summary>
@@ -105,6 +115,12 @@ public sealed class TropaController(ControllerOptions o) : IAsyncDisposable
     private TelegramDcCheck[] _tgChecks = [];
     private DateTimeOffset? _tgCheckedAt;
 
+    private readonly SemaphoreSlim _dnsLock = new(1, 1);
+    private SecureDnsServer? _dns;
+    private bool _dnsPointed;
+    private int _dnsStrikes;
+    private string? _dnsError;
+
     /// <summary>Событие и его данные: "status" (StatusReport), "probe" (TargetReport), "attempt" (AttemptReport).</summary>
     public event Action<string, object>? Notify;
 
@@ -124,6 +140,14 @@ public sealed class TropaController(ControllerOptions o) : IAsyncDisposable
         LastUpdateCheck = _lastUpdateCheck,
         Message = _message,
         Telegram = TelegramStatus(),
+        Dns = new DnsReport
+        {
+            Enabled = _settings.SecureDns,
+            Running = _dns is not null,
+            Active = _dnsPointed,
+            Stats = _dns?.Stats(),
+            Error = _dnsError,
+        },
     };
 
     private TelegramReport TelegramStatus()
@@ -160,6 +184,13 @@ public sealed class TropaController(ControllerOptions o) : IAsyncDisposable
         RebuildCatalogs();
         _settings = File.Exists(_settingsPath) ? TropaJson.Load<ServiceSettings>(_settingsPath) : new ServiceSettings();
         if (_settings.Telegram.Enabled) await SetTelegramAsync(true, ct);
+        if (_settings.SecureDns) await SetSecureDnsAsync(true, ct);
+        else if (o.DnsSwitch is { } sw)
+        {
+            // служба могла упасть с переключённым DNS: вернуть, что было
+            try { await sw.RestoreAsync(ct); }
+            catch (Exception ex) when (ex is InvalidOperationException or IOException) { _message = $"DNS не вернулся: {ex.Message}"; }
+        }
         if (!_settings.Protect || !HasAnythingToProtect()) return;
 
         await Exclusive(async () =>
@@ -350,6 +381,7 @@ public sealed class TropaController(ControllerOptions o) : IAsyncDisposable
     {
         // порт мог освободиться: прокси, который должен работать, поднимаем снова
         if (_settings.Telegram.Enabled && _tg is null) await SetTelegramAsync(true, ct);
+        if (_settings.SecureDns) await DnsWatchAsync(ct);
         if (!_settings.Protect || !HasAnythingToProtect()) return;
         if (!await _busy.WaitAsync(0, ct)) return;
         try
@@ -398,7 +430,134 @@ public sealed class TropaController(ControllerOptions o) : IAsyncDisposable
             _tg = null;
             await tg.DisposeAsync();
         }
+        // без службы локального DNS нет: системе возвращаем прежний, при старте снова переключим
+        await StopDnsAsync(restore: true);
         _busy.Dispose();
+    }
+
+    // ---------- защищённый DNS
+
+    /// <summary>Включить: поднять локальный DNS, убедиться, что он разрешает имена через DoH, и только потом
+    /// переключить на него систему. Выключить: вернуть прежний DNS и закрыть порты.</summary>
+    public async Task<StatusReport> SetSecureDnsAsync(bool on, CancellationToken ct = default)
+    {
+        await _dnsLock.WaitAsync(ct);
+        try
+        {
+            if (!on)
+            {
+                await StopDnsAsync(restore: true);
+                _dnsError = null;
+                SaveSettings(_settings with { SecureDns = false });
+                _message = "защищённый DNS выключен, вернул прежний";
+                return Status();
+            }
+            SaveSettings(_settings with { SecureDns = true });
+            await StartDnsAsync(ct);
+            return Status();
+        }
+        finally
+        {
+            _dnsLock.Release();
+            Changed();
+        }
+    }
+
+    private async Task StartDnsAsync(CancellationToken ct)
+    {
+        if (_dns is null)
+        {
+            var server = new SecureDnsServer(o.Dns ?? new SecureDnsOptions());
+            try
+            {
+                server.Start();
+            }
+            catch (SocketException ex)
+            {
+                await server.DisposeAsync();
+                _dnsError = ex.SocketErrorCode == SocketError.AddressAlreadyInUse
+                    ? "порт 53 занят другой программой (другой DNS-сервер или общий доступ к интернету)"
+                    : $"не открылся порт 53: {ex.Message}";
+                _message = $"защищённый DNS не запустился: {_dnsError}";
+                return;
+            }
+            _dns = server;
+        }
+
+        if (!await _dns.SelfTestAsync(ct: ct) && !await _dns.SelfTestAsync("google.com", ct))
+        {
+            _dnsError = $"DoH-серверы не ответили ({_dns.Stats().LastError})";
+            _message = $"защищённый DNS пока не включён: {_dnsError}. Попробую снова через 10 минут";
+            if (_dnsPointed) await StopDnsAsync(restore: true, keepServer: true);
+            return;
+        }
+        _dnsError = null;
+        _dnsStrikes = 0;
+        if (o.DnsSwitch is { } sw)
+        {
+            try
+            {
+                var n = await sw.PointToLocalAsync(ct);
+                _dnsPointed = true;
+                _message = $"защищённый DNS включён: запросы идут через {_dns.CurrentUpstream.Name} (DoH), адаптеров: {n}";
+            }
+            catch (Exception ex) when (ex is InvalidOperationException or IOException or UnauthorizedAccessException)
+            {
+                _dnsError = $"не удалось переключить DNS адаптеров: {ex.Message}";
+                _message = _dnsError;
+                try { await sw.RestoreAsync(ct); } catch (Exception rex) when (rex is InvalidOperationException or IOException) { }
+            }
+        }
+        else _message = $"защищённый DNS работает на порту {_dns.Port}";
+    }
+
+    private async Task StopDnsAsync(bool restore, bool keepServer = false)
+    {
+        if (restore && _dnsPointed && o.DnsSwitch is { } sw)
+        {
+            try { await sw.RestoreAsync(CancellationToken.None); }
+            catch (Exception ex) when (ex is InvalidOperationException or IOException) { _dnsError = $"DNS не вернулся: {ex.Message}"; }
+        }
+        if (restore) _dnsPointed = false;
+        if (!keepServer && _dns is { } server)
+        {
+            _dns = null;
+            await server.DisposeAsync();
+        }
+    }
+
+    /// <summary>Сторож DNS: DoH перестал отвечать два раза подряд — отдаём системе прежний DNS, чтобы интернет
+    /// не встал; заработал снова — переключаем обратно. Заодно ловит адаптеры, подключённые после включения.</summary>
+    private async Task DnsWatchAsync(CancellationToken ct)
+    {
+        await _dnsLock.WaitAsync(ct);
+        try
+        {
+            if (_dns is null || !_dnsPointed)
+            {
+                await StartDnsAsync(ct);
+                return;
+            }
+            if (await _dns.SelfTestAsync(ct: ct) || await _dns.SelfTestAsync("google.com", ct))
+            {
+                _dnsStrikes = 0;
+                if (o.DnsSwitch is { } sw) await sw.PointToLocalAsync(ct);
+                return;
+            }
+            if (++_dnsStrikes < 2) return;
+            await StopDnsAsync(restore: true, keepServer: true);
+            _dnsError = $"DoH-серверы не отвечают ({_dns.Stats().LastError})";
+            _message = "защищённый DNS временно отдал систему прежнему DNS: DoH-серверы не отвечают. Вернусь, когда они оживут";
+        }
+        catch (Exception ex) when (ex is InvalidOperationException or IOException)
+        {
+            _dnsError = ex.Message;
+        }
+        finally
+        {
+            _dnsLock.Release();
+            Changed();
+        }
     }
 
     // ---------- Telegram

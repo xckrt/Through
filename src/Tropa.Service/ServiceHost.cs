@@ -30,6 +30,7 @@ internal sealed class ServiceHost
             EngineUpdate = FindUpdateAsync,
             EngineAccepted = AcceptEngine,
             DataDir = DataDir,
+            DnsSwitch = new WindowsDnsSwitch(DataDir, _log),
         });
 
         string? lastMessage = null;

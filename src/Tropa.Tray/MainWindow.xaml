@@ -356,6 +356,19 @@
                         </Border>
                     </Grid>
 
+
+                    <!-- защищённый DNS: тихий третий переключатель -->
+                    <Border x:Name="DnsCard" Style="{StaticResource HomeCard}" Padding="26,18,26,18" Margin="0,22,0,0">
+                        <DockPanel>
+                            <ToggleButton DockPanel.Dock="Right" Style="{StaticResource Switch}" VerticalAlignment="Center" Margin="20,0,0,0"
+                                          IsChecked="{Binding DnsOn, Mode=OneWay}" Command="{Binding DnsToggleCommand}"
+                                          AutomationProperties.Name="Защищённый DNS" />
+                            <StackPanel>
+                                <TextBlock Text="ЗАЩИЩЁННЫЙ DNS" Style="{StaticResource CardLabel}" />
+                                <TextBlock Text="{Binding DnsText}" Style="{StaticResource Soft}" TextWrapping="Wrap" />
+                            </StackPanel>
+                        </DockPanel>
+                    </Border>
                     <Rectangle Height="1" Fill="{DynamicResource Line}" Margin="0,28,0,22" />
                     <StackPanel>
                     <!-- «Почему не открывается?»: любой сайт по тем же этапам, вердикт и обход одной кнопкой -->
@@ -413,6 +426,9 @@
                             <Button Content="{Binding SiteBypassLabel}" Style="{StaticResource PrimaryButton}" HorizontalAlignment="Left"
                                     Command="{Binding BypassSiteCommand}" Margin="0,12,0,0"
                                     Visibility="{Binding SiteCanBypass, Converter={StaticResource Visible}}" />
+                            <Button Content="Включить защищённый DNS" Style="{StaticResource PrimaryButton}" HorizontalAlignment="Left"
+                                    Command="{Binding FixSiteDnsCommand}" Margin="0,12,0,0"
+                                    Visibility="{Binding SiteCanFixDns, Converter={StaticResource Visible}}" />
                         </StackPanel>
                     </Border>
                     </StackPanel>

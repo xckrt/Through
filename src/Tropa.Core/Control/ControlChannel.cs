@@ -69,7 +69,7 @@ internal sealed class LineReader(Stream stream)
 /// <summary>
 /// Сервер канала службы. Методы: status, check, tune {services?}, protect {on},
 /// apps, apps.add {AppDefinition}, apps.remove {key}, engine.update, settings.autoUpdate {on},
-/// telegram {on}, telegram.check.
+/// telegram {on}, telegram.check, dns {on}.
 /// По каналу принимаются только имена сервисов и действия: аргументы winws и пути
 /// приходят из файлов рядом со службой, а не от клиента.
 /// </summary>
@@ -159,6 +159,7 @@ public sealed class ControlServer(TropaController controller, string pipeName, F
                     "settings.autoUpdate" => await controller.SetAutoUpdateAsync(On(request.Data), ct),
                     "telegram" => await controller.SetTelegramAsync(On(request.Data), ct),
                     "telegram.check" => await controller.CheckTelegramAsync(ct),
+                    "dns" => await controller.SetSecureDnsAsync(On(request.Data), ct),
                     // только данные (имя, домены, порты): Normalize в контроллере проверяет каждое поле
                     "apps.add" => await controller.AddAppAsync(request.Data is { } d
                         ? ControlProtocol.FromData<AppDefinition>(d)

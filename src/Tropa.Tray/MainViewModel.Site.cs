@@ -90,7 +90,7 @@ public sealed partial class MainViewModel
                 : $"Провайдер вмешивается в соединение ({Wording.Explain(TargetReport.From("site", r.Probe))}). Обычно это лечится настройкой DPI-обработки."),
             SiteVerdict.Slow => ($"{r.Host} работает медленно", "Похоже на замедление со стороны провайдера. Обход часто помогает и против него."),
             SiteVerdict.AddressBlocked => ($"{r.Host} заблокирован по адресу", "Провайдер глушит сам сервер, а не имя сайта, либо сайт лежит. Настройка DPI-обработки тут не поможет: нужен VPN или прокси."),
-            SiteVerdict.DnsSpoofed => ($"DNS подменяет адрес {r.Host}", "Провайдер выдаёт неправильный адрес сайта. Это лечится сменой DNS (например, на 1.1.1.1 или DNS-over-HTTPS в браузере), а не обходом."),
+            SiteVerdict.DnsSpoofed => ($"DNS подменяет адрес {r.Host}", "Провайдер выдаёт неправильный адрес сайта. Это лечится не обходом, а защищённым DNS: Тропа включит его одной кнопкой."),
             SiteVerdict.NotFound => ($"{r.Host} не находится", "Такого имени нет: проверьте адрес. Если он точно верный, DNS провайдера может его прятать."),
             SiteVerdict.SiteRefuses => ($"{r.Host} отказывает сам", $"Провайдер пропускает, а сервер ответил «HTTP {r.Probe.HttpStatus}». Часто это блокировка по стране со стороны сайта: тут поможет только VPN."),
             _ => ($"Не удалось проверить {r.Host}", r.Probe.Detail ?? "Похоже, нет сети."),
@@ -132,6 +132,7 @@ public sealed partial class MainViewModel
     private void RaiseSite()
     {
         Raise(nameof(SiteCanBypass));
+        Raise(nameof(SiteCanFixDns));
         Raise(nameof(SiteBypassLabel));
         CommandManager.InvalidateRequerySuggested();
     }
