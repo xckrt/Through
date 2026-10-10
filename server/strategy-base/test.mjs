@@ -6,6 +6,7 @@ import worker from "./src/worker.js";
 
 const db = new DatabaseSync(":memory:");
 db.exec(readFileSync(new URL("./schema.sql", import.meta.url), "utf8"));
+db.exec(readFileSync(new URL("./migrations/0002_status.sql", import.meta.url), "utf8"));
 
 // D1 поверх node:sqlite: prepare().bind().all()/first()/run(), batch()
 const D1 = {
@@ -60,15 +61,37 @@ assert.equal(r.status, 400);
 
 // лимит в сутки
 const many = Array.from({ length: 30 }, () => ({ service: "discord", preset: "seqovl-568", ok: true }));
-await call("/v1/report", { method: "POST", ip: "10.0.0.9", body: { results: many } });
-await call("/v1/report", { method: "POST", ip: "10.0.0.9", body: { results: many } });
+for (let i = 0; i < 4; i++) await call("/v1/report", { method: "POST", ip: "10.0.0.9", body: { results: many } });
 r = await call("/v1/report", { method: "POST", ip: "10.0.0.9", body: { results: many } });
 assert.equal(r.status, 429);
 
+// ранний сигнал: трое под одной стратегией видят поломку, у одного из них уже сработала другая
+for (const ip of ["20.0.0.1", "20.0.0.2", "20.0.0.3"])
+  await call("/v1/report", { method: "POST", ip, body: { status: [{ service: "discord", blocked: true, protected: true, preset: "seqovl-568", failure: "TlsReset" }] } });
+await call("/v1/report", { method: "POST", ip: "20.0.0.1", body: { results: [{ service: "discord", preset: "fake-multi", ok: true }] } });
+r = await call("/v1/alerts");
+assert.equal(r.body.alerts.length, 1);
+assert.equal(r.body.alerts[0].service, "discord");
+assert.equal(r.body.alerts[0].preset, "seqovl-568");
+assert.equal(r.body.alerts[0].fix, "fake-multi");
+r = await call("/v1/alerts", { asn: 8359 });
+assert.equal(r.body.alerts.length, 0, "чужой провайдер не тревожится");
+
+// карта: «без обхода режут» у двух людей
+for (const ip of ["30.0.0.1", "30.0.0.2"])
+  await call("/v1/report", { method: "POST", ip, body: { status: [{ service: "youtube", blocked: true, protected: false, failure: "TransferStalled" }] } });
+r = await call("/v1/map");
+const yt = r.body.rows.find(x => x.service === "youtube");
+assert.equal(yt.blockedShare, 1);
+assert.equal(yt.failure, "TransferStalled");
+assert.equal(yt.fix, "yt-seqovl-681");
+
+// мусор в статусе не проходит
+r = await call("/v1/report", { method: "POST", ip: "30.0.0.9", body: { status: [{ service: "youtube", blocked: "yes", protected: false }] } });
+assert.equal(r.status, 400);
+
 // в базе нет IP
-const dump = JSON.stringify(db.prepare("SELECT * FROM reports").all());
+const dump = JSON.stringify(db.prepare("SELECT * FROM reports").all()) + JSON.stringify(db.prepare("SELECT * FROM status").all());
 assert.ok(!dump.includes("10.0.0."), "IP не должен попадать в базу");
 
-r = await call("/v1/map");
-assert.ok(r.body.rows.some(x => x.service === "youtube" && x.users === 2));
 console.log("worker: все проверки прошли");

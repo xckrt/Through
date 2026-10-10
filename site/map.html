@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Карта блокировок — Тропа</title>
+<meta name="description" content="Что и у какого провайдера режут сейчас и какая стратегия помогает. По данным пользователей Тропы.">
+<link rel="icon" href="img/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root { --paper:#f1f3ef; --surface:#e6ebe5; --ink:#18211f; --soft:#56645f; --line:#d3dbd4; --pine:#2e7d5b; --amber:#b7791f; --signal:#c8322b; --glow:rgba(46,125,91,.25); }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --paper:#121b1d; --surface:#1b2628; --ink:#e9efec; --soft:#9aaba5; --line:#2a3739; --pine:#52b788; --amber:#e0a84a; --signal:#ef6a55; --glow:rgba(82,183,136,.25); } }
+  :root[data-theme="dark"] { --paper:#121b1d; --surface:#1b2628; --ink:#e9efec; --soft:#9aaba5; --line:#2a3739; --pine:#52b788; --amber:#e0a84a; --signal:#ef6a55; --glow:rgba(82,183,136,.25); }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--paper); color: var(--ink); font: 16px/1.55 Manrope, "Segoe UI", system-ui, sans-serif; }
+  a { color: var(--pine); }
+  .wrap { max-width: 1200px; margin: 0 auto; padding: 0 20px 60px; }
+  header { display: flex; align-items: center; justify-content: space-between; padding: 22px 0; gap: 12px; flex-wrap: wrap; }
+  .brand { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 19px; text-decoration: none; color: var(--ink); }
+  .mark { width: 20px; height: 24px; border-radius: 4px; border: 2px solid var(--ink); background: linear-gradient(var(--paper) 0 34%, #c8322b 34% 66%, var(--paper) 66%); }
+  h1 { font-size: clamp(30px, 5vw, 48px); margin: 18px 0 8px; letter-spacing: -.02em; }
+  .sub { color: var(--soft); max-width: 760px; margin: 0 0 24px; }
+  .bar { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-bottom: 18px; }
+  select, .pill { border: 1px solid var(--line); background: var(--surface); color: var(--ink); border-radius: 999px; padding: 7px 14px; font: 600 14px Manrope, sans-serif; }
+  .legend { display: flex; gap: 14px; color: var(--soft); font-size: 13.5px; align-items: center; flex-wrap: wrap; }
+  .dot { display: inline-block; width: 11px; height: 11px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; }
+  .table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 18px; background: var(--surface); }
+  table { border-collapse: separate; border-spacing: 0; width: 100%; min-width: 640px; }
+  th, td { padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--line); }
+  th { position: sticky; top: 0; background: var(--surface); color: var(--soft); font-weight: 600; font-size: 14px; }
+  td.isp { font-weight: 700; white-space: nowrap; }
+  td.isp small { display: block; color: var(--soft); font-weight: 500; }
+  td.cell { min-width: 120px; }
+  .chip { display: block; border-radius: 10px; padding: 7px 10px; font-size: 13px; line-height: 1.3; cursor: default; transition: transform .15s; }
+  .chip:hover { transform: scale(1.03); }
+  .chip b { display: block; font-size: 14px; }
+  .ok { background: color-mix(in srgb, var(--pine) 18%, transparent); }
+  .mid { background: color-mix(in srgb, var(--amber) 22%, transparent); }
+  .bad { background: color-mix(in srgb, var(--signal) 22%, transparent); }
+  .none { color: var(--soft); font-size: 13px; }
+  .empty { padding: 40px; text-align: center; color: var(--soft); }
+  footer { color: var(--soft); font-size: 13.5px; margin-top: 22px; }
+  @keyframes pulse { 50% { opacity: .45; } }
+  .loading { animation: pulse 1.4s ease-in-out infinite; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <a class="brand" href="./"><span class="mark" aria-hidden="true"></span>Тропа</a>
+    <a class="pill" href="./" style="text-decoration:none">← На главную</a>
+  </header>
+  <h1>Карта блокировок</h1>
+  <p class="sub">Что сейчас режут у каждого провайдера, каким способом и какая стратегия Тропы помогает.
+    Это данные людей, которые включили в Тропе «Делиться итогами подбора», за последние 7 дней.
+    Показаны провайдеры, где данные прислали хотя бы двое; без IP-адресов и идентификаторов.</p>
+
+  <div class="bar">
+    <select id="country" aria-label="Страна"></select>
+    <div class="legend">
+      <span><span class="dot" style="background:var(--signal)"></span>режут у большинства</span>
+      <span><span class="dot" style="background:var(--amber)"></span>у части</span>
+      <span><span class="dot" style="background:var(--pine)"></span>работает</span>
+    </div>
+  </div>
+
+  <div class="table-wrap"><div id="out" class="empty loading">Загружаю данные…</div></div>
+  <footer id="updated"></footer>
+</div>
+<script>
+  const API = "https://tropa-strategy-base.xckrt.workers.dev/v1/map";
+  const TITLES = { youtube: "YouTube", discord: "Discord", cloudflare: "Cloudflare", telegram: "Telegram" };
+  const FAIL = {
+    TlsReset: "обрыв по имени сайта", TlsTimeout: "глушат по имени", TransferStalled: "заморозка 16 КБ",
+    TransferReset: "обрыв загрузки", DnsBogus: "подмена DNS", DnsFailed: "нет DNS", TcpTimeout: "адрес недоступен",
+    TcpReset: "обрыв соединения", HttpBlockPage: "страница блокировки", UdpBlocked: "режут UDP", Slow: "замедление",
+  };
+  const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  let rows = [];
+
+  function render() {
+    const c = document.getElementById("country").value;
+    const data = rows.filter(r => !c || r.country === c);
+    const out = document.getElementById("out");
+    out.classList.remove("loading");
+    if (data.length === 0) {
+      out.className = "empty";
+      out.textContent = "Пока мало данных. Включите в Тропе «Делиться итогами подбора» — карта наполнится.";
+      return;
+    }
+    const services = [...new Set(data.map(r => r.service))].sort((a, b) => (TITLES[a] ? 0 : 1) - (TITLES[b] ? 0 : 1) || a.localeCompare(b));
+    const isps = new Map();
+    for (const r of data) {
+      const k = r.asn;
+      if (!isps.has(k)) isps.set(k, { asn: r.asn, org: r.org, country: r.country, users: 0, cells: {} });
+      const i = isps.get(k);
+      i.cells[r.service] = r;
+      i.users = Math.max(i.users, r.users);
+    }
+    const list = [...isps.values()].sort((a, b) => b.users - a.users);
+    let html = "<table><thead><tr><th>Провайдер</th>" + services.map(s => `<th>${esc(TITLES[s] ?? s)}</th>`).join("") + "</tr></thead><tbody>";
+    for (const i of list) {
+      html += `<tr><td class="isp">${esc(i.org || "AS" + i.asn)}<small>AS${i.asn}${i.country ? " · " + esc(i.country) : ""}</small></td>`;
+      for (const s of services) {
+        const r = i.cells[s];
+        if (!r) { html += `<td class="cell"><span class="none">—</span></td>`; continue; }
+        const share = r.blockedShare;
+        const cls = share >= .6 ? "bad" : share >= .2 ? "mid" : "ok";
+        const what = share >= .2 ? (FAIL[r.failure] ?? "режут") : "работает";
+        const fix = r.fix ? `помогает: ${esc(r.fix)}` : "";
+        html += `<td class="cell"><span class="chip ${cls}" title="${r.users} чел. · режут у ${Math.round(share * 100)}%"><b>${esc(what)}</b>${fix}</span></td>`;
+      }
+      html += "</tr>";
+    }
+    out.className = "";
+    out.innerHTML = html + "</tbody></table>";
+  }
+
+  fetch(API).then(r => r.json()).then(d => {
+    rows = d.rows ?? [];
+    const countries = [...new Set(rows.map(r => r.country).filter(Boolean))].sort();
+    const sel = document.getElementById("country");
+    sel.innerHTML = `<option value="">Все страны</option>` + countries.map(c => `<option${c === "RU" ? " selected" : ""}>${esc(c)}</option>`).join("");
+    sel.onchange = render;
+    if (d.updated) document.getElementById("updated").textContent = `Обновлено ${new Date(d.updated).toLocaleString("ru-RU")} · окно ${d.days} дней`;
+    render();
+  }).catch(() => {
+    const out = document.getElementById("out");
+    out.className = "empty";
+    out.textContent = "Не удалось загрузить данные. Попробуйте позже.";
+  });
+</script>
+</body>
+</html>

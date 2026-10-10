@@ -65,9 +65,45 @@ public sealed class StrategyBase(string baseUrl, HttpMessageHandler? handler = n
 
     public sealed record ReportItem(string Service, string Preset, bool Ok);
 
-    public async Task<bool> ReportAsync(IReadOnlyList<ReportItem> items, string? engine, CancellationToken ct)
+    /// <summary>«У меня сервис сломан / работает»: под обходом (preset) или без него (то, что режет провайдер).</summary>
+    public sealed record StatusItem(string Service, bool Blocked, bool Protected, string? Preset, string? Failure);
+
+    /// <summary>У провайдера массово сломалась стратегия: сколько людей, с какого часа и что помогло другим.</summary>
+    public sealed record Alert(string Service, string Preset, int Users, string? Fix);
+
+    public async Task<IReadOnlyList<Alert>> AlertsAsync(CancellationToken ct)
     {
-        if (items.Count == 0) return false;
+        try
+        {
+            using var http = Client();
+            using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+            cts.CancelAfter(TimeSpan.FromSeconds(6));
+            var r = await http.GetFromJsonAsync<AlertsResponse>($"{BaseUrl}/v1/alerts", Json, cts.Token);
+            return r?.Alerts?.Where(a => IsId(a.Service) && IsId(a.Preset) && (a.Fix is null || IsId(a.Fix))).ToArray() ?? [];
+        }
+        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or JsonException or NotSupportedException && !ct.IsCancellationRequested)
+        {
+            return [];
+        }
+    }
+
+    /// <summary>Статусы из проверки: блок, под обходом ли, какая стратегия, чем режут. Только сервисы, без хостов.</summary>
+    public static List<StatusItem> StatusFrom(IEnumerable<TargetReport> targets, Func<string, string?> activePreset, bool protecting)
+    {
+        var items = new List<StatusItem>();
+        foreach (var g in targets.Where(t => !t.IsControl && !t.Optional && IsId(t.Service)).GroupBy(t => t.Service))
+        {
+            var bad = g.Where(t => t.Verdict == Probing.Verdict.Blocked).ToList();
+            var preset = protecting ? activePreset(g.Key) : null;
+            items.Add(new StatusItem(g.Key, bad.Count > 0, preset is not null, preset,
+                bad.GroupBy(t => t.Failure).OrderByDescending(x => x.Count()).Select(x => x.Key.ToString()).FirstOrDefault()));
+        }
+        return items;
+    }
+
+    public async Task<bool> ReportAsync(IReadOnlyList<ReportItem> items, string? engine, CancellationToken ct, IReadOnlyList<StatusItem>? status = null)
+    {
+        if (items.Count == 0 && status is not { Count: > 0 }) return false;
         try
         {
             using var http = Client();
@@ -78,6 +114,7 @@ public sealed class StrategyBase(string baseUrl, HttpMessageHandler? handler = n
                 tropa = TropaBuild.Version,
                 engine,
                 results = items.Select(i => new { service = i.Service, preset = i.Preset, ok = i.Ok }),
+                status = (status ?? []).Select(s => new { service = s.Service, blocked = s.Blocked, @protected = s.Protected, preset = s.Preset, failure = s.Failure }),
             }, cts.Token);
             return resp.IsSuccessStatusCode;
         }
@@ -98,6 +135,7 @@ public sealed class StrategyBase(string baseUrl, HttpMessageHandler? handler = n
 
     private static readonly JsonSerializerOptions Json = new() { PropertyNameCaseInsensitive = true };
 
+    private sealed record AlertsResponse(int Asn, string? Org, Alert[]? Alerts);
     private sealed record StrategiesResponse(int Asn, string? Org, Dictionary<string, Entry[]>? Services);
     private sealed record Entry(string Preset, int Ok, int Fail, int Users, double Score);
 }

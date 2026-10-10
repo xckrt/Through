@@ -19,9 +19,10 @@ Tropa is a desktop app that runs on your computer. It has no accounts, no analyt
 | Telegram servers (via Telegram Web or Cloudflare) | the local Telegram proxy, only if you turn it on | Telegram's own traffic, already encrypted by Telegram; Tropa cannot read it |
 | tropa-strategy-base.xckrt.workers.dev | hints on which strategy works for your ISP before tuning | nothing beyond the request itself |
 | tropa-strategy-base.xckrt.workers.dev | **only if you enable "share tuning results"** (off by default) | service id, strategy id, whether it worked, Tropa and zapret versions |
+| tropa-strategy-base.xckrt.workers.dev | **only if you enable "share tuning results"**: the blocking map and early warnings | per service: blocked or not, whether under bypass, the active strategy id and the blocking type (e.g. TlsReset); at most hourly, plus when a service breaks or recovers |
 
 **The shared strategy base** is a Cloudflare Worker. It determines your ISP (autonomous system number and name)
-from the connection. It does **not** store IP addresses, site addresses or device identifiers. For rate limiting
+from the connection, along with the country and region (province) that Cloudflare reports for it, but no city or address. It does **not** store IP addresses, site addresses or device identifiers. For rate limiting
 and for counting distinct users it keeps a SHA-256 hash of IP, day and a secret salt. That hash changes every day
 and cannot be traced back to an address. Reports older than 60 days no longer affect recommendations.
 
@@ -49,7 +50,9 @@ Questions: https://github.com/xckrt/Tropa/issues
 - общая база стратегий: подсказки перед подбором.
 
 **Отправка итогов подбора** в общую базу выключена по умолчанию. Если её включить, уходят только id сервиса,
-id стратегии, «помогла или нет» и версии Тропы и zapret. Провайдера сервер определяет по соединению.
+id стратегии, «помогла или нет» и версии Тропы и zapret. Для карты блокировок и раннего сигнала по каждому сервису
+уходит «режут или нет», под обходом ли, id стратегии и тип блокировки. Это не чаще раза в час и сразу, когда сервис
+сломался или ожил. Страну и область сервер берёт из соединения; города и адреса нет. Провайдера сервер определяет по соединению.
 IP-адреса, адреса сайтов и идентификаторы устройств не хранятся. Для лимита и подсчёта людей хранится хеш
 SHA-256 от IP, дня и секретной соли, который меняется каждые сутки.
 

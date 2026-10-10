@@ -1,15 +1,20 @@
-// Общая база стратегий Тропы: «у этого провайдера YouTube чинит стратегия X».
-// Провайдера Worker узнаёт сам по соединению (request.cf.asn): клиент не шлёт ни IP, ни идентификаторов.
+// Общая база стратегий Тропы: «у этого провайдера YouTube чинит стратегия X» и «сейчас у многих сломался Discord».
+// Провайдера и регион Worker узнаёт сам по соединению (request.cf): клиент не шлёт ни IP, ни идентификаторов.
 // IP в базу не пишется: для ограничения частоты хранится только хеш (IP + день + соль), он меняется каждые сутки.
 //
-//   GET  /v1/strategies          что работает у провайдера того, кто спрашивает
-//   POST /v1/report              {tropa, engine, results: [{service, preset, ok}]}
-//   GET  /v1/map                 сводка по провайдерам и сервисам (для карты блокировок)
+//   GET  /v1/strategies   что работает у провайдера того, кто спрашивает
+//   GET  /v1/alerts       что у этого провайдера массово сломалось под обходом за последние часы и что помогло
+//   POST /v1/report       {tropa, engine, results: [{service, preset, ok}], status: [{service, blocked, protected, preset?, failure?}]}
+//   GET  /v1/map          провайдеры × сервисы за 7 дней: доля «режут», чем, что помогает (для карты блокировок)
 
 const ID = /^[a-z0-9][a-z0-9-]{0,63}$/;
-const DAYS = 60;          // учитываем последние два месяца: провайдеры меняют ТСПУ
+const FAILURE = /^[A-Za-z]{1,32}$/;
+const DAYS = 60;          // рекомендации: последние два месяца, провайдеры меняют ТСПУ
 const MIN_USERS = 2;      // одиночный отчёт не рекомендация
-const MAX_PER_DAY = 60;   // отчётов с одного адреса в сутки
+const MAX_PER_DAY = 120;  // записей с одного адреса в сутки
+const ALERT_HOURS = 3;    // окно раннего сигнала
+const ALERT_USERS = 3;    // сколько разных людей должны увидеть поломку
+const MAP_DAYS = 7;
 
 export default {
   async fetch(req, env) {
@@ -17,6 +22,7 @@ export default {
     try {
       if (req.method === "OPTIONS") return cors(new Response(null, { status: 204 }));
       if (url.pathname === "/v1/strategies" && req.method === "GET") return cors(await strategies(req, env));
+      if (url.pathname === "/v1/alerts" && req.method === "GET") return cors(await alerts(req, env));
       if (url.pathname === "/v1/report" && req.method === "POST") return cors(await report(req, env));
       if (url.pathname === "/v1/map" && req.method === "GET") return cors(await map(env));
       if (url.pathname === "/") return json({ name: "tropa-strategy-base", docs: "https://github.com/xckrt/Tropa" });
@@ -28,12 +34,16 @@ export default {
 };
 
 function provider(req) {
-  return { asn: Number(req.cf?.asn ?? 0), org: String(req.cf?.asOrganization ?? "").slice(0, 80) };
+  return {
+    asn: Number(req.cf?.asn ?? 0),
+    org: String(req.cf?.asOrganization ?? "").slice(0, 80),
+    country: String(req.cf?.country ?? "").slice(0, 2),
+    region: String(req.cf?.region ?? "").slice(0, 60),
+  };
 }
 
-function today() {
-  return Math.floor(Date.now() / 86400000);
-}
+const today = () => Math.floor(Date.now() / 86400000);
+const hourNow = () => Math.floor(Date.now() / 3600000);
 
 async function strategies(req, env) {
   const { asn, org } = provider(req);
@@ -54,34 +64,99 @@ async function strategies(req, env) {
   return json({ asn, org, services }, 200, { "Cache-Control": "public, max-age=900" });
 }
 
-async function report(req, env) {
+// ранний сигнал: под обходом с одной и той же стратегией сервис сломался у нескольких людей за последние часы
+async function alerts(req, env) {
   const { asn, org } = provider(req);
-  if (!asn) return json({ error: "no asn" }, 400);
+  if (!asn) return json({ asn: 0, org, alerts: [] });
+  const since = hourNow() - ALERT_HOURS;
+  const broken = await env.DB.prepare(
+    `SELECT service, preset, COUNT(DISTINCT iphash) AS users, MIN(hour) AS since
+       FROM status WHERE asn = ?1 AND hour >= ?2 AND protected = 1 AND blocked = 1 AND preset <> ''
+      GROUP BY service, preset HAVING users >= ?3`
+  ).bind(asn, since, ALERT_USERS).all();
+
+  const list = [];
+  for (const b of broken.results ?? []) {
+    // что за последние сутки у этого провайдера чинило сервис (кроме сломавшейся)
+    const fix = await env.DB.prepare(
+      `SELECT preset, COUNT(DISTINCT iphash) AS users FROM reports
+        WHERE asn = ?1 AND service = ?2 AND ok = 1 AND day >= ?3 AND preset <> ?4
+        GROUP BY preset ORDER BY users DESC LIMIT 1`
+    ).bind(asn, b.service, today() - 1, b.preset).first();
+    list.push({ service: b.service, preset: b.preset, users: b.users, since: b.since * 3600, fix: fix?.preset ?? null });
+  }
+  return json({ asn, org, alerts: list }, 200, { "Cache-Control": "public, max-age=300" });
+}
+
+async function report(req, env) {
+  const p = provider(req);
+  if (!p.asn) return json({ error: "no asn" }, 400);
   const body = await req.json().catch(() => null);
-  const results = Array.isArray(body?.results) ? body.results.slice(0, 30) : [];
-  const clean = results.filter(r => ID.test(String(r?.service)) && ID.test(String(r?.preset)) && typeof r?.ok === "boolean");
-  if (clean.length === 0) return json({ error: "nothing to store" }, 400);
+  const results = (Array.isArray(body?.results) ? body.results.slice(0, 30) : [])
+    .filter(r => ID.test(String(r?.service)) && ID.test(String(r?.preset)) && typeof r?.ok === "boolean");
+  const status = (Array.isArray(body?.status) ? body.status.slice(0, 30) : [])
+    .filter(s => ID.test(String(s?.service)) && typeof s?.blocked === "boolean" && typeof s?.protected === "boolean"
+      && (s.preset == null || ID.test(String(s.preset))) && (s.failure == null || FAILURE.test(String(s.failure))));
+  if (results.length + status.length === 0) return json({ error: "nothing to store" }, 400);
   const tropa = String(body?.tropa ?? "").slice(0, 20);
   const engine = String(body?.engine ?? "").slice(0, 20);
 
   const day = today();
+  const hour = hourNow();
   const ip = req.headers.get("CF-Connecting-IP") ?? "";
   const iphash = await sha256(`${ip}|${day}|${env.SALT ?? ""}`);
-  const used = await env.DB.prepare("SELECT COUNT(*) AS n FROM reports WHERE iphash = ?1 AND day = ?2").bind(iphash, day).first();
-  if ((used?.n ?? 0) + clean.length > MAX_PER_DAY) return json({ error: "too many reports today" }, 429);
+  const used = await env.DB.prepare(
+    "SELECT (SELECT COUNT(*) FROM reports WHERE iphash = ?1 AND day = ?2) + (SELECT COUNT(*) FROM status WHERE iphash = ?1 AND day = ?2) AS n"
+  ).bind(iphash, day).first();
+  if ((used?.n ?? 0) + results.length + status.length > MAX_PER_DAY) return json({ error: "too many reports today" }, 429);
 
-  const insert = env.DB.prepare(
+  const insR = env.DB.prepare(
     "INSERT INTO reports (day, asn, org, service, preset, ok, iphash, tropa, engine) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)");
-  await env.DB.batch(clean.map(r => insert.bind(day, asn, org, r.service, r.preset, r.ok ? 1 : 0, iphash, tropa, engine)));
-  return json({ stored: clean.length, asn, org });
+  const insS = env.DB.prepare(
+    `INSERT INTO status (day, hour, asn, org, country, region, service, blocked, protected, preset, failure, iphash, tropa)
+     VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13)`);
+  await env.DB.batch([
+    ...results.map(r => insR.bind(day, p.asn, p.org, r.service, r.preset, r.ok ? 1 : 0, iphash, tropa, engine)),
+    ...status.map(s => insS.bind(day, hour, p.asn, p.org, p.country, p.region, s.service, s.blocked ? 1 : 0, s.protected ? 1 : 0,
+      s.preset ?? "", s.failure ?? "", iphash, tropa)),
+  ]);
+  return json({ stored: results.length + status.length, asn: p.asn, org: p.org });
 }
 
+// карта: что у провайдера режут без обхода (status.protected = 0) и что помогает (reports)
 async function map(env) {
   const rows = await env.DB.prepare(
-    `SELECT asn, org, service, COUNT(DISTINCT iphash) AS users, SUM(ok) AS ok, COUNT(*) AS total
-       FROM reports WHERE day >= ?1 GROUP BY asn, service HAVING users >= ?2 ORDER BY users DESC LIMIT 500`
-  ).bind(today() - DAYS, MIN_USERS).all();
-  return json({ days: DAYS, rows: rows.results ?? [] }, 200, { "Cache-Control": "public, max-age=3600" });
+    `SELECT asn, MAX(org) AS org, MAX(country) AS country, service,
+            COUNT(DISTINCT iphash) AS users, SUM(blocked) AS blocked, COUNT(*) AS total
+       FROM status WHERE day >= ?1 AND protected = 0
+      GROUP BY asn, service HAVING users >= ?2 ORDER BY users DESC LIMIT 600`
+  ).bind(today() - MAP_DAYS, MIN_USERS).all();
+  const failures = await env.DB.prepare(
+    `SELECT asn, service, failure, COUNT(*) AS n FROM status
+      WHERE day >= ?1 AND protected = 0 AND blocked = 1 AND failure <> '' GROUP BY asn, service, failure`
+  ).bind(today() - MAP_DAYS).all();
+  const fixes = await env.DB.prepare(
+    `SELECT asn, service, preset, COUNT(DISTINCT iphash) AS users FROM reports
+      WHERE day >= ?1 AND ok = 1 GROUP BY asn, service, preset`
+  ).bind(today() - DAYS).all();
+
+  const top = (list, key) => {
+    const best = new Map();
+    for (const x of list) {
+      const k = `${x.asn}|${x.service}`;
+      if (!best.has(k) || best.get(k)[key] < x[key]) best.set(k, x);
+    }
+    return best;
+  };
+  const f = top(failures.results ?? [], "n");
+  const fx = top(fixes.results ?? [], "users");
+  const out = (rows.results ?? []).map(r => ({
+    asn: r.asn, org: r.org, country: r.country, service: r.service, users: r.users,
+    blockedShare: Math.round((r.blocked / r.total) * 100) / 100,
+    failure: f.get(`${r.asn}|${r.service}`)?.failure ?? null,
+    fix: fx.get(`${r.asn}|${r.service}`)?.preset ?? null,
+  }));
+  return json({ days: MAP_DAYS, updated: new Date().toISOString(), rows: out }, 200, { "Cache-Control": "public, max-age=1800" });
 }
 
 async function sha256(text) {

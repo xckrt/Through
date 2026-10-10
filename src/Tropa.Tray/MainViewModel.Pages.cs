@@ -469,6 +469,7 @@ public sealed partial class MainViewModel
         : msg.Contains("остановился сам") ? "Тропа перезапустила движок"
         : msg.Contains("не удалось включить защиту") || msg.Contains("не запустился") ? "Тропа: нужна помощь"
         : msg.StartsWith("подбор закончен") ? "Подбор закончен"
+        : msg.StartsWith("ранний сигнал") ? "Тропа: провайдер что-то поменял"
         : msg.StartsWith("Telegram: не отвечают") || msg.StartsWith("прокси Telegram не запустился") ? "Telegram"
         : msg.StartsWith("порт ") && msg.Contains("прокси Telegram") ? "Telegram: подключите прокси заново"
         : null;

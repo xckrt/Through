@@ -443,6 +443,8 @@ public sealed class TropaController(ControllerOptions o) : IAsyncDisposable
             _state = ControllerState.Checking;
             await CheckCoreAsync(ct);
             if (_networkDown) return; // без сети деградацию не засчитываем
+            ShareStatus();
+            var early = await EarlySignalAsync(ct);
 
             var degraded = new List<string>();
             foreach (var service in _profile.Services.Keys)
@@ -450,7 +452,7 @@ public sealed class TropaController(ControllerOptions o) : IAsyncDisposable
                 // второстепенные проверки (обновления клиента) не повод рвать работающий обход переподбором
                 var broken = _targets.Any(t => t.Service.Equals(service, StringComparison.OrdinalIgnoreCase) && !t.IsOk && !t.Optional);
                 _strikes[service] = broken ? _strikes.GetValueOrDefault(service) + 1 : 0;
-                if (_strikes[service] >= o.WatchdogStrikes) degraded.Add(service);
+                if (_strikes[service] >= o.WatchdogStrikes || (early.ContainsKey(service) && broken)) degraded.Add(service);
             }
             if (degraded.Count == 0)
             {
@@ -461,7 +463,7 @@ public sealed class TropaController(ControllerOptions o) : IAsyncDisposable
             _message = $"перестало работать: {string.Join(", ", degraded)}, подбираю заново";
             _state = ControllerState.Tuning;
             Changed();
-            await TuneCoreAsync(degraded.ToArray(), ct);
+            await TuneCoreAsync(degraded.ToArray(), ct, early);
             foreach (var s in degraded) _strikes[s] = 0;
         }
         finally
@@ -483,6 +485,53 @@ public sealed class TropaController(ControllerOptions o) : IAsyncDisposable
         // без службы локального DNS нет: системе возвращаем прежний, при старте снова переключим
         await StopDnsAsync(restore: true);
         _busy.Dispose();
+    }
+
+    // ---------- ранний сигнал и статусы для общей базы
+
+    private DateTimeOffset? _lastStatusShare, _lastAlertCheck;
+    private readonly Dictionary<string, bool> _lastBroken = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, DateTimeOffset> _alertHandled = new(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>Отправить статусы после проверки сторожа: не чаще раза в час, но сразу, если что-то сломалось или ожило.
+    /// Только с разрешения «делиться итогами».</summary>
+    private void ShareStatus()
+    {
+        if (o.Community is not { } share || !_settings.ShareResults) return;
+        var protecting = _session is { HasExited: false };
+        var items = StrategyBase.StatusFrom(_targets, s => _profile.Services.TryGetValue(s, out var p) ? p.PresetId : null, protecting);
+        var changed = items.Any(i => _lastBroken.TryGetValue(i.Service, out var was) && was != i.Blocked);
+        foreach (var i in items) _lastBroken[i.Service] = i.Blocked;
+        if (!changed && _lastStatusShare is { } last && o.Clock() - last < TimeSpan.FromHours(1)) return;
+        _lastStatusShare = o.Clock();
+        var engine = _engine?.Version;
+        _ = Task.Run(() => share.ReportAsync([], engine, CancellationToken.None, items));
+    }
+
+    /// <summary>
+    /// Ранний сигнал: у провайдера несколько человек за последние часы увидели поломку сервиса под той же стратегией,
+    /// что стоит здесь. Сломано и у нас — переподбор сразу (без второй проверки), с подсказкой, что помогло другим.
+    /// Работает — только предупреждение. На сервис не чаще раза в 6 часов.
+    /// </summary>
+    private async Task<Dictionary<string, string>> EarlySignalAsync(CancellationToken ct)
+    {
+        var hint = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        if (o.Community is not { } community || !_settings.UseCommunity) return hint;
+        if (_lastAlertCheck is { } last && o.Clock() - last < TimeSpan.FromMinutes(14)) return hint;
+        _lastAlertCheck = o.Clock();
+        foreach (var a in await community.AlertsAsync(ct))
+        {
+            if (!_profile.Services.TryGetValue(a.Service, out var mine) || mine.PresetId != a.Preset) continue;
+            if (_alertHandled.TryGetValue(a.Service, out var at) && o.Clock() - at < TimeSpan.FromHours(6)) continue;
+            _alertHandled[a.Service] = o.Clock();
+            var brokenHere = _targets.Any(t => t.Service.Equals(a.Service, StringComparison.OrdinalIgnoreCase) && !t.IsOk && !t.Optional);
+            hint[a.Service] = a.Fix ?? "";
+            _message = brokenHere
+                ? $"ранний сигнал: у {a.Users} человек с вашим провайдером сломался {a.Service} на той же стратегии — подбираю сразу" + (a.Fix is null ? "" : $", первой пробую «{a.Fix}»")
+                : $"ранний сигнал: у {a.Users} человек с вашим провайдером сломался {a.Service} на той же стратегии; у вас пока работает, слежу";
+            Changed();
+        }
+        return hint;
     }
 
     // ---------- скорость YouTube «без обхода → с обходом»
@@ -945,7 +994,7 @@ public sealed class TropaController(ControllerOptions o) : IAsyncDisposable
         return Status();
     }
 
-    private async Task<TuneSummary> TuneCoreAsync(string[]? services, CancellationToken ct)
+    private async Task<TuneSummary> TuneCoreAsync(string[]? services, CancellationToken ct, IReadOnlyDictionary<string, string>? hint = null)
     {
         // остальные сервисы при переподборе одного продолжают работать: их стратегии идут фоном
         List<EngineLaunch> background = [];
@@ -966,12 +1015,19 @@ public sealed class TropaController(ControllerOptions o) : IAsyncDisposable
             if (o.Community is { } community && _settings.UseCommunity && await community.RecommendAsync(ct) is { } rec)
             {
                 preferred = rec.Services;
+                if (hint is not null)
+                    preferred = preferred.Concat(hint.Where(h => !preferred.ContainsKey(h.Key)).Select(h => KeyValuePair.Create(h.Key, Array.Empty<string>())))
+                        .ToDictionary(kv => kv.Key, kv => hint.TryGetValue(kv.Key, out var fix) && fix.Length > 0 ? [fix, .. kv.Value.Where(v => v != fix)] : kv.Value);
                 var hints = rec.Services.Where(kv => kv.Value.Length > 0 && (services is null || services.Contains(kv.Key, StringComparer.OrdinalIgnoreCase))).ToList();
                 if (hints.Count > 0)
                 {
                     _message = $"общая база: у {(rec.Org.Length > 0 ? rec.Org : "вашего провайдера")} уже чинили {string.Join(", ", hints.Select(h => h.Key))} — пробую эти стратегии первыми";
                     Changed();
                 }
+            }
+            else if (hint?.Any(h => h.Value.Length > 0) == true)
+            {
+                preferred = hint.Where(h => h.Value.Length > 0).ToDictionary(h => h.Key, h => new[] { h.Value });
             }
             // три прогона, а не два: на живой сети стратегия, проскочившая дважды, потом сыпалась (dl.discordapp.net)
             var report = await new Tuner(engine.Host, o.Probe, runsPerPreset: 3).TuneAsync(_catalog, _presetCatalog, services, ct,
@@ -988,8 +1044,11 @@ public sealed class TropaController(ControllerOptions o) : IAsyncDisposable
             if (o.Community is { } share && _settings.ShareResults)
             {
                 var items = StrategyBase.ItemsFrom(report);
+                var serviceOf = ServiceOf();
+                // диагноз без обхода — то, что режет провайдер: из этого складывается карта блокировок
+                var raw = StrategyBase.StatusFrom(report.Diagnosis.Select(r => TargetReport.From(serviceOf.GetValueOrDefault(r.Target, ""), r)), _ => null, protecting: false);
                 var engineVersion = engine.Version;
-                _ = Task.Run(() => share.ReportAsync(items, engineVersion, CancellationToken.None));
+                _ = Task.Run(() => share.ReportAsync(items, engineVersion, CancellationToken.None, raw));
             }
             var fixedAny = report.Services.Any(s => s.Best is not null);
             if (fixedAny) SaveSettings(_settings with { Protect = true });
