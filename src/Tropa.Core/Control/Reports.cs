@@ -1,5 +1,6 @@
 using System.Text.Json.Serialization;
 using Tropa.Core.Probing;
+using Tropa.Core.Telegram;
 using Tropa.Core.Tuning;
 
 namespace Tropa.Core.Control;
@@ -89,6 +90,25 @@ public sealed record StatusReport
 
     /// <summary>Последнее, что служба хочет сказать человеку: ошибка или что она сделала сама.</summary>
     public string? Message { get; init; }
+
+    /// <summary>Прокси Telegram. У служб старее 1.1 его нет.</summary>
+    public TelegramReport? Telegram { get; init; }
+}
+
+public sealed record TelegramReport
+{
+    public bool Enabled { get; init; }
+
+    /// <summary>Порт открыт и принимает соединения.</summary>
+    public bool Running { get; init; }
+    public int Port { get; init; }
+
+    /// <summary>tg://proxy?… — открыть в Telegram, чтобы добавить прокси.</summary>
+    public string? Link { get; init; }
+    public string? Error { get; init; }
+    public TelegramProxyStats? Stats { get; init; }
+    public TelegramDcCheck[] Checks { get; init; } = [];
+    public DateTimeOffset? CheckedAt { get; init; }
 }
 
 public sealed record AttemptReport

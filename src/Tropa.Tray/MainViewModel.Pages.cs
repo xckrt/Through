@@ -9,7 +9,7 @@ using Tropa.Core.Probing;
 
 namespace Tropa.Tray;
 
-public enum Pages { Overview, Apps, Log, Settings }
+public enum Pages { Overview, Apps, Telegram, Log, Settings }
 
 /// <summary>Плашка в заголовке окна: что с защитой прямо сейчас.</summary>
 public enum Pill { Off, On, Busy, Warn, NoService }
@@ -57,6 +57,7 @@ public sealed partial class MainViewModel
     public ICommand NavigateCommand => _navigate ??= new ParamCommand(p =>
     {
         if (p is string name && Enum.TryParse<Pages>(name, out var page)) Page = page;
+        OnTelegramPage(Page == Pages.Telegram);
         if (Page == Pages.Apps) return RefreshAppsAsync();
         return Task.CompletedTask;
     });
@@ -438,6 +439,8 @@ public sealed partial class MainViewModel
         : msg.Contains("остановился сам") ? "Тропа перезапустила движок"
         : msg.Contains("не удалось включить защиту") || msg.Contains("не запустился") ? "Тропа: нужна помощь"
         : msg.StartsWith("подбор закончен") ? "Подбор закончен"
+        : msg.StartsWith("Telegram: не отвечают") || msg.StartsWith("прокси Telegram не запустился") ? "Telegram"
+        : msg.StartsWith("порт ") && msg.Contains("прокси Telegram") ? "Telegram: подключите прокси заново"
         : null;
 
     public bool Notify

@@ -68,7 +68,8 @@ internal sealed class LineReader(Stream stream)
 
 /// <summary>
 /// Сервер канала службы. Методы: status, check, tune {services?}, protect {on},
-/// apps, apps.add {AppDefinition}, apps.remove {key}, engine.update, settings.autoUpdate {on}.
+/// apps, apps.add {AppDefinition}, apps.remove {key}, engine.update, settings.autoUpdate {on},
+/// telegram {on}, telegram.check.
 /// По каналу принимаются только имена сервисов и действия: аргументы winws и пути
 /// приходят из файлов рядом со службой, а не от клиента.
 /// </summary>
@@ -156,6 +157,8 @@ public sealed class ControlServer(TropaController controller, string pipeName, F
                     "apps" => controller.Apps(),
                     "engine.update" => await controller.UpdateEngineAsync(ct),
                     "settings.autoUpdate" => await controller.SetAutoUpdateAsync(On(request.Data), ct),
+                    "telegram" => await controller.SetTelegramAsync(On(request.Data), ct),
+                    "telegram.check" => await controller.CheckTelegramAsync(ct),
                     // только данные (имя, домены, порты): Normalize в контроллере проверяет каждое поле
                     "apps.add" => await controller.AddAppAsync(request.Data is { } d
                         ? ControlProtocol.FromData<AppDefinition>(d)
@@ -185,7 +188,7 @@ public sealed class ControlServer(TropaController controller, string pipeName, F
         private static bool On(JsonElement? data) =>
             data is { ValueKind: JsonValueKind.Object } d && d.TryGetProperty("on", out var on)
                 ? on.ValueKind == JsonValueKind.True
-                : throw new InvalidOperationException("protect: нужен параметр on");
+                : throw new InvalidOperationException("нужен параметр on");
 
         public void Send(string line) => _ = SendAsync(line);
 

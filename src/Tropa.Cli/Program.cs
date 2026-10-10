@@ -13,6 +13,7 @@ string[]? only = null;
 var json = false;
 var plan = false;
 var tune = false;
+var telegram = false;
 
 for (var i = 0; i < args.Length; i++)
 {
@@ -23,11 +24,13 @@ for (var i = 0; i < args.Length; i++)
         case "--json": json = true; break;
         case "--plan": plan = true; break;
         case "--tune": tune = true; break;
+        case "--telegram": telegram = true; break;
         case "--presets": presetsPath = args[++i]; break;
         case "-h" or "--help":
             Console.WriteLine("tropa-probe [--targets targets.json] [--only youtube,discord] [--json] [--plan | --tune] [--presets presets.json]");
             Console.WriteLine("  --plan  показать, какие стратегии подборщик стал бы пробовать (ничего не запускает)");
             Console.WriteLine("  --tune  скачать zapret по engine.json и подобрать стратегию (нужны права администратора)");
+            Console.WriteLine("  --telegram  проверить, доходит ли Telegram до каждого DC через встроенный прокси");
             return 0;
         default:
             Console.Error.WriteLine($"неизвестный аргумент: {args[i]}");
@@ -39,6 +42,9 @@ var catalog = TargetCatalog.Load(targetsPath);
 var runner = new ProbeRunner(new ServiceProber());
 using var cts = new CancellationTokenSource();
 Console.CancelKeyPress += (_, e) => { e.Cancel = true; cts.Cancel(); };
+
+if (telegram)
+    return await TelegramCommand.RunAsync(cts.Token);
 
 if (tune)
     return await TuneCommand.RunAsync(catalog, presetsPath, only, cts.Token);

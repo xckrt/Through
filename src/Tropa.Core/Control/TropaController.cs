@@ -1,4 +1,7 @@
+using System.Net.Sockets;
+using System.Security.Cryptography;
 using Tropa.Core.Probing;
+using Tropa.Core.Telegram;
 using Tropa.Core.Tuning;
 
 namespace Tropa.Core.Control;
@@ -33,6 +36,12 @@ public sealed record ControllerOptions
     public Action<EngineContext>? EngineAccepted { get; init; }
 
     public TimeSpan UpdateInterval { get; init; } = TimeSpan.FromHours(24);
+
+    /// <summary>Порт прокси Telegram, если в настройках ещё нет своего. Занят — берётся следующий свободный.</summary>
+    public int TelegramPort { get; init; } = 1443;
+
+    /// <summary>Остальные параметры прокси (адреса DC, пул). Тесты подменяют их на локальные.</summary>
+    public TelegramProxyOptions? TelegramTemplate { get; init; }
 }
 
 public sealed record EngineUpdateResult(bool Updated, string? Version, string Message);
@@ -44,6 +53,18 @@ public sealed record ServiceSettings
 
     /// <summary>Сама искать и ставить новые версии zapret.</summary>
     public bool AutoUpdate { get; init; } = true;
+
+    public TelegramSettings Telegram { get; init; } = new();
+}
+
+/// <summary>Прокси Telegram: включён ли, на каком порту и с каким секретом (их помнит ссылка в клиенте).</summary>
+public sealed record TelegramSettings
+{
+    public bool Enabled { get; init; }
+    public int? Port { get; init; }
+
+    /// <summary>32 hex-символа. Создаётся при первом включении и дальше не меняется, чтобы ссылка в Telegram жила.</summary>
+    public string? Secret { get; init; }
 }
 
 /// <summary>
@@ -77,6 +98,13 @@ public sealed class TropaController(ControllerOptions o) : IAsyncDisposable
     private string? _message;
     private DateTimeOffset? _lastUpdateCheck;
 
+    // прокси Telegram живёт отдельно от _busy: подбор и проверки его не трогают
+    private readonly SemaphoreSlim _tgLock = new(1, 1);
+    private TelegramProxy? _tg;
+    private string? _tgError;
+    private TelegramDcCheck[] _tgChecks = [];
+    private DateTimeOffset? _tgCheckedAt;
+
     /// <summary>Событие и его данные: "status" (StatusReport), "probe" (TargetReport), "attempt" (AttemptReport).</summary>
     public event Action<string, object>? Notify;
 
@@ -95,7 +123,26 @@ public sealed class TropaController(ControllerOptions o) : IAsyncDisposable
         AutoUpdate = _settings.AutoUpdate,
         LastUpdateCheck = _lastUpdateCheck,
         Message = _message,
+        Telegram = TelegramStatus(),
     };
+
+    private TelegramReport TelegramStatus()
+    {
+        var tg = _tg;
+        var t = _settings.Telegram;
+        var port = tg?.Port ?? t.Port ?? o.TelegramPort;
+        return new TelegramReport
+        {
+            Enabled = t.Enabled,
+            Running = tg is not null,
+            Port = port,
+            Link = t.Secret is { } secret ? TelegramProxy.LinkFor("127.0.0.1", port, Convert.FromHexString(secret)) : null,
+            Error = _tgError,
+            Stats = tg?.Stats(),
+            Checks = _tgChecks,
+            CheckedAt = _tgCheckedAt,
+        };
+    }
 
     /// <summary>Старт службы: поднять защиту, если она была включена до перезагрузки.</summary>
     public async Task StartAsync(CancellationToken ct = default)
@@ -112,6 +159,7 @@ public sealed class TropaController(ControllerOptions o) : IAsyncDisposable
         }
         RebuildCatalogs();
         _settings = File.Exists(_settingsPath) ? TropaJson.Load<ServiceSettings>(_settingsPath) : new ServiceSettings();
+        if (_settings.Telegram.Enabled) await SetTelegramAsync(true, ct);
         if (!_settings.Protect || !HasAnythingToProtect()) return;
 
         await Exclusive(async () =>
@@ -280,6 +328,7 @@ public sealed class TropaController(ControllerOptions o) : IAsyncDisposable
                 await Task.Delay(o.WatchdogInterval, ct);
                 await WatchdogTickAsync(ct);
                 await MaybeAutoUpdateAsync(ct);
+                if (_tg is not null) await CheckTelegramAsync(ct, quiet: true);
             }
             catch (OperationCanceledException) when (ct.IsCancellationRequested)
             {
@@ -299,6 +348,8 @@ public sealed class TropaController(ControllerOptions o) : IAsyncDisposable
     /// </summary>
     public async Task WatchdogTickAsync(CancellationToken ct = default)
     {
+        // порт мог освободиться: прокси, который должен работать, поднимаем снова
+        if (_settings.Telegram.Enabled && _tg is null) await SetTelegramAsync(true, ct);
         if (!_settings.Protect || !HasAnythingToProtect()) return;
         if (!await _busy.WaitAsync(0, ct)) return;
         try
@@ -342,7 +393,106 @@ public sealed class TropaController(ControllerOptions o) : IAsyncDisposable
     public async ValueTask DisposeAsync()
     {
         await StopEngineAsync();
+        if (_tg is { } tg)
+        {
+            _tg = null;
+            await tg.DisposeAsync();
+        }
         _busy.Dispose();
+    }
+
+    // ---------- Telegram
+
+    /// <summary>Включить или выключить прокси Telegram. Секрет создаётся один раз, порт — первый свободный начиная с TelegramPort.</summary>
+    public async Task<StatusReport> SetTelegramAsync(bool on, CancellationToken ct = default)
+    {
+        await _tgLock.WaitAsync(ct);
+        try
+        {
+            if (!on)
+            {
+                if (_tg is { } old)
+                {
+                    _tg = null;
+                    await old.DisposeAsync();
+                }
+                _tgError = null;
+                _tgChecks = [];
+                SaveSettings(_settings with { Telegram = _settings.Telegram with { Enabled = false } });
+                _message = "прокси Telegram выключен";
+                return Status();
+            }
+
+            var t = _settings.Telegram;
+            var secret = t.Secret ?? Convert.ToHexString(RandomNumberGenerator.GetBytes(16)).ToLowerInvariant();
+            if (_tg is null)
+            {
+                var wanted = t.Port ?? o.TelegramPort;
+                var (proxy, error) = StartTelegramProxy(Convert.FromHexString(secret), wanted);
+                _tg = proxy;
+                _tgError = error;
+                if (proxy is not null)
+                {
+                    _message = proxy.Port == wanted || wanted == 0
+                        ? $"прокси Telegram работает на 127.0.0.1:{proxy.Port}"
+                        : $"порт {wanted} занят другой программой (например, tg-ws-proxy), прокси Telegram на {proxy.Port}: подключите его в Telegram заново";
+                    t = t with { Port = proxy.Port };
+                }
+                else _message = $"прокси Telegram не запустился: {error}";
+            }
+            SaveSettings(_settings with { Telegram = t with { Enabled = true, Secret = secret } });
+            return Status();
+        }
+        finally
+        {
+            _tgLock.Release();
+            Changed();
+        }
+    }
+
+    private (TelegramProxy? Proxy, string? Error) StartTelegramProxy(byte[] secret, int port)
+    {
+        var template = o.TelegramTemplate ?? new TelegramProxyOptions { Secret = secret };
+        string? error = null;
+        // занятый порт не повод оставить человека без Telegram: пробуем следующие
+        foreach (var p in port == 0 ? [0] : Enumerable.Range(port, 20))
+        {
+            var proxy = new TelegramProxy(template with { Secret = secret, Port = p });
+            try
+            {
+                proxy.Start();
+                return (proxy, null);
+            }
+            catch (SocketException ex)
+            {
+                _ = proxy.DisposeAsync().AsTask();
+                var busy = ex.SocketErrorCode is SocketError.AddressAlreadyInUse or SocketError.AccessDenied;
+                error = busy ? $"порты {port}–{p} заняты" : $"не удалось открыть порт {p}: {ex.Message}";
+                if (!busy) break;
+            }
+        }
+        return (null, error);
+    }
+
+    /// <summary>Спросить каждый DC через собственный прокси, как это сделал бы Telegram.
+    /// quiet — проверка сторожа: сообщение только если что-то поменялось, а не каждые десять минут.</summary>
+    public async Task<StatusReport> CheckTelegramAsync(CancellationToken ct = default, bool quiet = false)
+    {
+        var tg = _tg ?? throw new InvalidOperationException("прокси Telegram выключен");
+        var secret = Convert.FromHexString(_settings.Telegram.Secret!);
+        var checks = await Task.WhenAll(new[] { 1, 2, 3, 4, 5 }.Select(dc =>
+            TelegramProbe.CheckAsync("127.0.0.1", tg.Port, secret, dc, TimeSpan.FromSeconds(25), ct, tg.MarkSelfCheck)));
+        var wasBad = _tgChecks.Where(c => !c.Ok).Select(c => c.Dc).ToHashSet();
+        _tgChecks = checks;
+        _tgCheckedAt = o.Clock();
+        var bad = checks.Where(c => !c.Ok).Select(c => $"DC{c.Dc}").ToArray();
+        var changed = !wasBad.SetEquals(checks.Where(c => !c.Ok).Select(c => c.Dc));
+        if (!quiet || changed)
+            _message = bad.Length == 0
+                ? "Telegram: все дата-центры отвечают через прокси"
+                : $"Telegram: не отвечают {string.Join(", ", bad)}";
+        Changed();
+        return Status();
     }
 
     // ---------- внутреннее: вызывается под _busy

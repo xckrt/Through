@@ -183,6 +183,7 @@ tests.AddRange(ControlTests.All());
 tests.AddRange(AppTests.All());
 tests.AddRange(SiteCheckTests.All(opts));
 tests.AddRange(AppUpdateTests.All());
+tests.AddRange(TelegramTests.All());
 
 var failed = 0;
 foreach (var (name, body) in tests)

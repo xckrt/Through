@@ -198,6 +198,9 @@
                         <RadioButton Style="{StaticResource NavTab}" Content="Приложения" GroupName="Nav"
                                      IsChecked="{Binding Page, Mode=OneWay, Converter={StaticResource Is}, ConverterParameter=Apps}"
                                      Command="{Binding NavigateCommand}" CommandParameter="Apps" />
+                        <RadioButton Style="{StaticResource NavTab}" Content="Telegram" GroupName="Nav"
+                                     IsChecked="{Binding Page, Mode=OneWay, Converter={StaticResource Is}, ConverterParameter=Telegram}"
+                                     Command="{Binding NavigateCommand}" CommandParameter="Telegram" />
                         <RadioButton Style="{StaticResource NavTab}" Content="Журнал" GroupName="Nav"
                                      IsChecked="{Binding Page, Mode=OneWay, Converter={StaticResource Is}, ConverterParameter=Log}"
                                      Command="{Binding NavigateCommand}" CommandParameter="Log" />
@@ -458,6 +461,107 @@
                                 <Button Content="Отмена" Style="{StaticResource QuietButton}" Command="{Binding CancelFormCommand}" Margin="10,0,0,0" />
                             </StackPanel>
                         </StackPanel>
+                    </StackPanel>
+                </ScrollViewer>
+            </Grid>
+
+            <!-- ======== Telegram: локальный прокси службы ======== -->
+            <Grid Grid.Row="2" Margin="48,26,48,26" Visibility="{Binding Page, Converter={StaticResource IsVisible}, ConverterParameter=Telegram}">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="44" />
+                    <ColumnDefinition Width="360" />
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+
+                <StackPanel Grid.ColumnSpan="3" Margin="0,0,0,26">
+                    <TextBlock Text="Telegram" Style="{StaticResource PageTitle}" />
+                    <TextBlock Style="{StaticResource Soft}" FontSize="15" MaxWidth="720" HorizontalAlignment="Left" Margin="0,6,0,0" TextWrapping="Wrap"
+                               Text="Тропа держит для Telegram локальный прокси: трафик уходит через WebSocket веб-версии Telegram, который режут реже, а если и его нет — через Cloudflare. Работает внутри службы, окно можно закрыть." />
+                </StackPanel>
+
+                <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Focusable="False">
+                    <StackPanel>
+                        <DockPanel Margin="0,0,0,10">
+                            <Ellipse Width="14" Height="14" VerticalAlignment="Center" Margin="0,4,14,0">
+                                <Ellipse.Style>
+                                    <Style TargetType="Ellipse">
+                                        <Setter Property="Fill" Value="{DynamicResource Fog}" />
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding TgHealth}" Value="Ok"><Setter Property="Fill" Value="{DynamicResource Pine}" /></DataTrigger>
+                                            <DataTrigger Binding="{Binding TgHealth}" Value="Partial"><Setter Property="Fill" Value="{DynamicResource Amber}" /></DataTrigger>
+                                            <DataTrigger Binding="{Binding TgHealth}" Value="Blocked"><Setter Property="Fill" Value="{DynamicResource Signal}" /></DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Ellipse.Style>
+                            </Ellipse>
+                            <TextBlock Text="{Binding TgHeadline}" FontFamily="{StaticResource Display}" FontSize="30" FontWeight="SemiBold"
+                                       TextWrapping="Wrap" />
+                        </DockPanel>
+                        <TextBlock Text="{Binding TgSubline}" FontSize="15.5" TextWrapping="Wrap" MaxWidth="640" HorizontalAlignment="Left"
+                                   Foreground="{DynamicResource InkSoft}" Margin="28,0,0,22" />
+
+                        <WrapPanel Margin="28,0,0,18">
+                            <Button Content="{Binding TgPrimaryLabel}" Command="{Binding TgPrimaryCommand}" Style="{StaticResource PrimaryButton}"
+                                    Margin="0,0,10,10" />
+                            <Button Content="Проверить дата-центры" Command="{Binding TgCheckCommand}" Style="{StaticResource QuietButton}"
+                                    Margin="0,0,10,10" Visibility="{Binding TgOn, Converter={StaticResource Visible}}" />
+                            <Button Content="Скопировать ссылку" Command="{Binding TgCopyCommand}" Style="{StaticResource QuietButton}"
+                                    Margin="0,0,10,10" Visibility="{Binding TgOn, Converter={StaticResource Visible}}" />
+                        </WrapPanel>
+
+                        <Border Margin="28,0,0,18" Padding="16,12" CornerRadius="10" Background="{DynamicResource Surface}"
+                                BorderBrush="{DynamicResource Line}" BorderThickness="1" HorizontalAlignment="Left" MaxWidth="640"
+                                Visibility="{Binding HasTgRival, Converter={StaticResource Visible}}">
+                            <DockPanel>
+                                <Button DockPanel.Dock="Right" Content="Закрыть его" Command="{Binding TgCloseRivalCommand}"
+                                        Style="{StaticResource QuietButton}" Padding="14,6" FontSize="13" VerticalAlignment="Center" Margin="16,0,0,0" />
+                                <TextBlock Text="{Binding TgRival}" TextWrapping="Wrap" FontSize="13.5" VerticalAlignment="Center" />
+                            </DockPanel>
+                        </Border>
+
+                        <StackPanel Margin="28,6,0,0" Visibility="{Binding TgOn, Converter={StaticResource Visible}}">
+                            <TextBlock Text="Как это устроено" Style="{StaticResource SectionTitle}" />
+                            <TextBlock Style="{StaticResource Soft}" TextWrapping="Wrap" MaxWidth="640" HorizontalAlignment="Left" Margin="0,0,0,6">
+                                <Run Text="Прокси слушает только этот компьютер: " /><Run Text="{Binding TgAddress, Mode=OneWay}" FontWeight="SemiBold" Foreground="{DynamicResource Ink}" /><Run Text=". Telegram шифрует всё сам, Тропа лишь перекладывает его пакеты в WebSocket и не видит переписку." />
+                            </TextBlock>
+                            <TextBlock Style="{StaticResource Soft}" TextWrapping="Wrap" MaxWidth="640" HorizontalAlignment="Left" Margin="0,0,0,18"
+                                       Text="Телефон так не подключить: прокси открыт только для этого компьютера. Чтобы Telegram снова ходил напрямую, отключите прокси в его настройках." />
+                            <Button Content="Выключить прокси" Command="{Binding TgOffCommand}" Style="{StaticResource QuietButton}"
+                                    Foreground="{DynamicResource Signal}" HorizontalAlignment="Left" />
+                        </StackPanel>
+                    </StackPanel>
+                </ScrollViewer>
+
+                <!-- правая колонка: дата-центры и счётчики -->
+                <ScrollViewer Grid.Row="1" Grid.Column="2" VerticalScrollBarVisibility="Auto" Focusable="False">
+                    <StackPanel>
+                        <TextBlock Text="Дата-центры" Style="{StaticResource SectionTitle}" />
+                        <ItemsControl ItemsSource="{Binding DcRows}" Focusable="False" Margin="0,0,0,22">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate DataType="{x:Type local:DcRowVm}">
+                                    <StackPanel>
+                                        <DockPanel Margin="0,8">
+                                            <TextBlock DockPanel.Dock="Right" Text="{Binding Summary}" Style="{StaticResource SummaryText}" FontSize="14" />
+                                            <TextBlock Text="{Binding Name}" FontFamily="{StaticResource Display}" FontSize="17" FontWeight="SemiBold" Width="52" />
+                                            <TextBlock Text="{Binding Place}" Foreground="{DynamicResource InkSoft}" FontSize="13.5" VerticalAlignment="Center" />
+                                        </DockPanel>
+                                        <Rectangle Height="1" Fill="{DynamicResource Line}" />
+                                    </StackPanel>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+
+                        <StackPanel Visibility="{Binding HasTgStats, Converter={StaticResource Visible}}">
+                            <TextBlock Text="Что идёт через прокси" Style="{StaticResource SectionTitle}" />
+                            <TextBlock Text="{Binding TgStats}" Style="{StaticResource Soft}" LineHeight="22" TextWrapping="Wrap" />
+                        </StackPanel>
+
+                        <TextBlock Style="{StaticResource Soft}" FontSize="12.5" Margin="0,22,0,0" TextWrapping="Wrap"
+                                   Text="Порт tg-ws-proxy от Flowseal (MIT), переписан на C# и работает в службе Тропы без Python." />
                     </StackPanel>
                 </ScrollViewer>
             </Grid>
