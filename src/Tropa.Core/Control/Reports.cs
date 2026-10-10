@@ -103,8 +103,14 @@ public sealed record StatusReport
 
     /// <summary>Скорость видео YouTube без обхода и с ним (последние замеры).</summary>
     public SpeedReport? Speed { get; init; }
+
+    /// <summary>null — в этой сборке база не настроена (пустой community.json).</summary>
+    public CommunityReport? Community { get; init; }
     public int KnownNetworks { get; init; }
 }
+
+/// <summary>Общая база стратегий подключена: берём ли подсказки и делимся ли итогами.</summary>
+public sealed record CommunityReport(bool Use, bool Share);
 
 public sealed record SpeedReport
 {

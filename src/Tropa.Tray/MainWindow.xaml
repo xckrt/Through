@@ -854,6 +854,19 @@
                     <Button Content="Проверить сейчас" Command="{Binding CheckUpdatesCommand}" Style="{StaticResource QuietButton}" HorizontalAlignment="Left" />
                     <Rectangle Height="1" Fill="{DynamicResource Line}" Margin="0,26,0,24" />
 
+                    <StackPanel Visibility="{Binding HasCommunity, Converter={StaticResource Visible}}">
+                        <TextBlock Text="Общая база стратегий" Style="{StaticResource SectionTitle}" />
+                        <TextBlock Style="{StaticResource Soft}" TextWrapping="Wrap" Margin="0,0,0,14"
+                                   Text="Тропы делятся тем, что помогло: у вашего провайдера YouTube уже чинили — Тропа попробует эту стратегию первой, и подбор займёт секунды. Провайдера сервер узнаёт сам по соединению; Тропа отправляет только «сервис → стратегия → помогла или нет», без IP, адресов сайтов и идентификаторов." />
+                        <ToggleButton Style="{StaticResource Switch}" IsChecked="{Binding CommunityUse}" IsEnabled="{Binding HasService}" Margin="0,0,0,14">
+                            <TextBlock TextWrapping="Wrap" Text="Брать подсказки из общей базы перед подбором" />
+                        </ToggleButton>
+                        <ToggleButton Style="{StaticResource Switch}" IsChecked="{Binding CommunityShare}" IsEnabled="{Binding HasService}">
+                            <TextBlock TextWrapping="Wrap" Text="Делиться итогами своего подбора (помогает другим с тем же провайдером)" />
+                        </ToggleButton>
+                        <Rectangle Height="1" Fill="{DynamicResource Line}" Margin="0,26,0,24" />
+                    </StackPanel>
+
                     <TextBlock Text="Окно" Style="{StaticResource SectionTitle}" />
                     <TextBlock Text="Тема" Style="{StaticResource FieldLabel}" Margin="0,0,0,8" />
                     <StackPanel Orientation="Horizontal" Margin="0,0,0,18">

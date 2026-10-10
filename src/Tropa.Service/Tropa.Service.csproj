@@ -25,6 +25,7 @@
     <None Include="..\Tropa.Cli\targets.json" Link="targets.json" CopyToOutputDirectory="PreserveNewest" />
     <None Include="..\Tropa.Cli\presets.json" Link="presets.json" CopyToOutputDirectory="PreserveNewest" />
     <None Include="..\Tropa.Cli\engine.json" Link="engine.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\Tropa.Cli\community.json" Link="community.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>

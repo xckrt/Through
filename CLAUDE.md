@@ -55,6 +55,10 @@ dotnet run --project src/Tropa.Tray                            # WPF window, aut
 
 The `Failure` → strategy mapping table in `docs/architecture.md` drives the design: Tuner tries the `winws` presets that treat the diagnosed failure first, instead of brute-forcing all of them. When you add a `Failure` value, update that table and the `treats` lists in `presets.json`.
 
+## Community strategy base
+
+`server/strategy-base` is a Cloudflare Worker with D1: `GET /v1/strategies` (per caller ASN from `request.cf.asn`), `POST /v1/report`, `GET /v1/map`. No IPs are stored; a daily-rotating `sha256(ip|day|salt)` serves the rate limit and user counts. Test it with `node server/strategy-base/test.mjs`, which emulates D1 on `node:sqlite`. The client is `Core/Control/StrategyBase`, and its URL comes from `community.json` next to the service (an empty URL disables it). Before a tune, the recommendations (score > 0.5) reorder `ServicePlan.Candidates` (`Tuner.TuneAsync(..., preferred)`). After a tune, `StrategyBase.ItemsFrom(report)` is posted only when `ShareResults` is on (off by default). Deploy steps are in `server/strategy-base/README.md`.
+
 ## Release & install
 
 - The version lives in `Directory.Build.props` (`TropaBuild.Version`). To ship: push tag `v1.2.3`, and `.github/workflows/release.yml` runs the tests, then `build/publish.ps1`, then creates the GitHub release with `Tropa-Setup-1.2.3.exe` + `.sha256`. The tray's update check expects exactly that asset name.

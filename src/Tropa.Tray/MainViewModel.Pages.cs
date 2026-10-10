@@ -311,6 +311,31 @@ public sealed partial class MainViewModel
         }
     }
 
+    private bool _communityUse, _communityShare;
+
+    /// <summary>Общая база настроена в этой сборке (адрес в community.json).</summary>
+    public bool HasCommunity => _status?.Community is not null;
+
+    public bool CommunityUse
+    {
+        get => _communityUse;
+        set
+        {
+            if (!Set(ref _communityUse, value) || _syncingSettings || _client is null) return;
+            _ = CallQuietly("settings.community", new { use = value, share = _communityShare });
+        }
+    }
+
+    public bool CommunityShare
+    {
+        get => _communityShare;
+        set
+        {
+            if (!Set(ref _communityShare, value) || _syncingSettings || _client is null) return;
+            _ = CallQuietly("settings.community", new { use = _communityUse, share = value });
+        }
+    }
+
     public bool Autostart
     {
         get => _autostart;
@@ -414,6 +439,9 @@ public sealed partial class MainViewModel
     {
         _syncingSettings = true;
         AutoUpdate = s.AutoUpdate;
+        CommunityUse = s.Community?.Use ?? false;
+        CommunityShare = s.Community?.Share ?? false;
+        Raise(nameof(HasCommunity));
         _syncingSettings = false;
         EngineText = s.EngineVersion is { } v ? $"zapret {v}" : "zapret скачается при первом подборе";
         if (s.LastUpdateCheck is { } at && UpdateText is "" or "Проверяю…")

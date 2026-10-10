@@ -38,6 +38,7 @@ internal sealed class ServiceHost(string? dataDir = null)
             Network = WindowsNetworkIdentity.CurrentAsync,
             ObserveApp = EtwAppObserver.ObserveAsync,
             MeasureSpeed = ct => YouTubeSpeed.MeasureAsync(ct),
+            Community = StrategyBase.FromConfig(Path.Combine(baseDir, "community.json")),
         });
 
         // смена сети (другой Wi-Fi, телефон вместо роутера): через 5 секунд тишины смотрим, что за сеть

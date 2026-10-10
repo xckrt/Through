@@ -1,0 +1,9 @@
+name = "tropa-strategy-base"
+main = "src/worker.js"
+compatibility_date = "2025-09-01"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "tropa-strategies"
+# сюда вставить database_id из вывода `npx wrangler d1 create tropa-strategies`
+database_id = "REPLACE_WITH_DATABASE_ID"

@@ -53,6 +53,9 @@ public sealed record ControllerOptions
     /// <summary>Адрес, порт и DoH-серверы защищённого DNS. Тесты подменяют.</summary>
     public SecureDnsOptions? Dns { get; init; }
 
+    /// <summary>Общая база стратегий (community.json). null — выключена.</summary>
+    public StrategyBase? Community { get; init; }
+
     /// <summary>Замер скорости YouTube. null — не мерить (тесты без сети).</summary>
     public Func<CancellationToken, Task<SpeedResult>>? MeasureSpeed { get; init; }
 
@@ -77,6 +80,12 @@ public sealed record ServiceSettings
 
     /// <summary>Защищённый DNS: запросы системы уходят через DoH, провайдер их не видит и не подменяет.</summary>
     public bool SecureDns { get; init; }
+
+    /// <summary>Брать подсказки из общей базы: что чинило сервисы у этого провайдера.</summary>
+    public bool UseCommunity { get; init; } = true;
+
+    /// <summary>Отправлять в общую базу итог подбора (сервис, стратегия, помогла ли). По умолчанию выключено.</summary>
+    public bool ShareResults { get; init; }
 }
 
 /// <summary>Прокси Telegram: включён ли, на каком порту и с каким секретом (их помнит ссылка в клиенте).</summary>
@@ -157,6 +166,7 @@ public sealed class TropaController(ControllerOptions o) : IAsyncDisposable
         Telegram = TelegramStatus(),
         Network = _network?.Name,
         Speed = _speed,
+        Community = o.Community is null ? null : new CommunityReport(_settings.UseCommunity, _settings.ShareResults),
         KnownNetworks = o.Network is null ? 0 : Networks().Count,
         Dns = new DnsReport
         {
@@ -309,6 +319,16 @@ public sealed class TropaController(ControllerOptions o) : IAsyncDisposable
     /// <summary>Проверить и поставить новую версию zapret. Если она не запустилась, вернуться на прежнюю.</summary>
     public Task<EngineUpdateResult> UpdateEngineAsync(CancellationToken ct = default) =>
         Exclusive(() => UpdateCoreAsync(ct), ct);
+
+    /// <summary>Общая база: брать подсказки и/или делиться итогами подбора.</summary>
+    public Task<StatusReport> SetCommunityAsync(bool use, bool share, CancellationToken ct = default)
+    {
+        SaveSettings(_settings with { UseCommunity = use, ShareResults = share });
+        _message = share ? "итоги подбора будут уходить в общую базу (без IP и идентификаторов)"
+            : use ? "общая база: только подсказки, свои итоги не отправляются" : "общая база выключена";
+        Changed();
+        return Task.FromResult(Status());
+    }
 
     public Task<StatusReport> SetAutoUpdateAsync(bool on, CancellationToken ct = default) => Exclusive(() =>
     {
@@ -942,9 +962,20 @@ public sealed class TropaController(ControllerOptions o) : IAsyncDisposable
         try
         {
             var engine = await EnsureEngineAsync(ct);
+            IReadOnlyDictionary<string, string[]>? preferred = null;
+            if (o.Community is { } community && _settings.UseCommunity && await community.RecommendAsync(ct) is { } rec)
+            {
+                preferred = rec.Services;
+                var hints = rec.Services.Where(kv => kv.Value.Length > 0 && (services is null || services.Contains(kv.Key, StringComparer.OrdinalIgnoreCase))).ToList();
+                if (hints.Count > 0)
+                {
+                    _message = $"общая база: у {(rec.Org.Length > 0 ? rec.Org : "вашего провайдера")} уже чинили {string.Join(", ", hints.Select(h => h.Key))} — пробую эти стратегии первыми";
+                    Changed();
+                }
+            }
             // три прогона, а не два: на живой сети стратегия, проскочившая дважды, потом сыпалась (dl.discordapp.net)
             var report = await new Tuner(engine.Host, o.Probe, runsPerPreset: 3).TuneAsync(_catalog, _presetCatalog, services, ct,
-                new SyncProgress<TuneAttempt>(a => Notify?.Invoke("attempt", AttemptReport.From(a))), background);
+                new SyncProgress<TuneAttempt>(a => Notify?.Invoke("attempt", AttemptReport.From(a))), background, preferred);
 
             if (report.NetworkDown)
             {
@@ -954,6 +985,12 @@ public sealed class TropaController(ControllerOptions o) : IAsyncDisposable
 
             _profile = _profile.Apply(report, o.Clock());
             _profile.Save(_profilePath);
+            if (o.Community is { } share && _settings.ShareResults)
+            {
+                var items = StrategyBase.ItemsFrom(report);
+                var engineVersion = engine.Version;
+                _ = Task.Run(() => share.ReportAsync(items, engineVersion, CancellationToken.None));
+            }
             var fixedAny = report.Services.Any(s => s.Best is not null);
             if (fixedAny) SaveSettings(_settings with { Protect = true });
 

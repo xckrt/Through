@@ -102,7 +102,8 @@ public sealed class Tuner(IEngineHost engine, ProbeOptions? options = null, int 
         IEnumerable<string>? only = null,
         CancellationToken ct = default,
         IProgress<TuneAttempt>? progress = null,
-        IReadOnlyList<EngineLaunch>? background = null)
+        IReadOnlyList<EngineLaunch>? background = null,
+        IReadOnlyDictionary<string, string[]>? preferred = null)
     {
         _background = background ?? [];
         var selected = only?.ToArray();
@@ -120,8 +121,12 @@ public sealed class Tuner(IEngineHost engine, ProbeOptions? options = null, int 
             return new TuneReport { Diagnosis = diagnosis, NetworkDown = true };
 
         var services = new List<ServiceTune>();
-        foreach (var plan in Plan(targets, selected, diagnosis, presets))
+        foreach (var raw in Plan(targets, selected, diagnosis, presets))
         {
+            // общая база: у этого провайдера сервис чинили такие-то стратегии — их первыми, остальные как были
+            var plan = preferred?.GetValueOrDefault(raw.Service) is { Length: > 0 } first
+                ? raw with { Candidates = [.. raw.Candidates.OrderBy(c => Array.IndexOf(first, c.Id) is var i && i < 0 ? int.MaxValue : i)] }
+                : raw;
             services.Add(plan.Status == PlanStatus.NeedsTuning
                 ? await TuneServiceAsync(plan, targets, progress, ct)
                 : new ServiceTune { Plan = plan });

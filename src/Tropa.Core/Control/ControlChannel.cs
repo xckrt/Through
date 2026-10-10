@@ -162,6 +162,7 @@ public sealed class ControlServer(TropaController controller, string pipeName, F
                     "dns" => await controller.SetSecureDnsAsync(On(request.Data), ct),
                     "tune.voice" => await controller.TuneVoiceAsync(ct),
                     "speed" => await controller.MeasureSpeedAsync(ct),
+                    "settings.community" => await controller.SetCommunityAsync(Bool(request.Data, "use"), Bool(request.Data, "share"), ct),
                     // только имя процесса и число секунд; ответ — адреса и имена, которые программа запрашивала
                     "apps.observe" => await controller.ObserveAppAsync(Str(request.Data, "process"), Int(request.Data, "seconds", 20), ct),
                     // только данные (имя, домены, порты): Normalize в контроллере проверяет каждое поле
@@ -194,6 +195,9 @@ public sealed class ControlServer(TropaController controller, string pipeName, F
             data is { ValueKind: JsonValueKind.Object } d && d.TryGetProperty(name, out var v) && v.ValueKind == JsonValueKind.String
                 ? v.GetString()!
                 : throw new InvalidOperationException($"нужен параметр {name}");
+
+        private static bool Bool(JsonElement? data, string name) =>
+            data is { ValueKind: JsonValueKind.Object } d && d.TryGetProperty(name, out var v) && v.ValueKind == JsonValueKind.True;
 
         private static int Int(JsonElement? data, string name, int fallback) =>
             data is { ValueKind: JsonValueKind.Object } d && d.TryGetProperty(name, out var v) && v.TryGetInt32(out var i) ? i : fallback;
