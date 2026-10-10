@@ -25,6 +25,9 @@ public sealed record ProbeTarget
     /// Так работает gateway Discord: TLS и короткий HTTP проходят, а живое соединение рвут.</summary>
     public bool WebSocket { get; init; }
 
+    /// <summary>Голос Discord по UDP: Host/Path — список регионов (latency.discord.media/rtc), проверка — IP Discovery.</summary>
+    public bool Voice { get; init; }
+
     /// <summary>Второстепенная проверка: без неё сервис работает (например, хост обновлений клиента).
     /// Её провал не делает сервис «сломанным» и не запускает переподбор, но подборщик всё равно пытается её починить.</summary>
     public bool Optional { get; init; }
@@ -70,6 +73,9 @@ public enum Failure
     TransferReset,
     Slow,
     Error,
+
+    /// <summary>UDP-пакеты к серверу не возвращаются (голос, игры).</summary>
+    UdpBlocked,
 }
 
 public sealed record StageTiming(ProbeStage Stage, TimeSpan Duration);

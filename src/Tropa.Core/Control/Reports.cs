@@ -14,6 +14,7 @@ public sealed record TargetReport
     public bool IsControl { get; init; }
     public bool Optional { get; init; }
     public string? Role { get; init; }
+    public bool Voice { get; init; }
     public Verdict Verdict { get; init; }
     public Failure Failure { get; init; }
     public ProbeStage? FailedAt { get; init; }
@@ -36,6 +37,7 @@ public sealed record TargetReport
         IsControl = r.Target.IsControl,
         Optional = r.Target.Optional,
         Role = r.Target.Role,
+        Voice = r.Target.Voice,
         Verdict = r.Verdict,
         Failure = r.Failure,
         FailedAt = r.FailedAt,

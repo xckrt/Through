@@ -36,6 +36,7 @@ internal static class Wording
             Failure.HttpNoResponse => "сервер не отвечает на запрос",
             Failure.TransferStalled => r.Detail?.Contains("16 КБ") == true ? "загрузка встаёт на 16 КБ" : "загрузка встаёт",
             Failure.TransferReset => "загрузку обрывают",
+            Failure.UdpBlocked => "голос не проходит",
             _ => "не работает",
         },
     };

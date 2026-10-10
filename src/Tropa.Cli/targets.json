@@ -21,7 +21,9 @@
       { "name": "discord cdn", "host": "cdn.discordapp.com" },
       // с этого хоста приложение Discord качает обновления при старте: без него висит «Starting…»
       // второстепенная: на живой сети через 5–10 минут начинала падать, хотя Discord целиком работал
-      { "name": "discord updates", "host": "dl.discordapp.net", "optional": true, "role": "обновления клиента" }
+      { "name": "discord updates", "host": "dl.discordapp.net", "optional": true, "role": "обновления клиента" },
+      // голос: UDP IP Discovery на серверы ближайших регионов, как при входе в голосовой канал
+      { "name": "discord voice", "host": "latency.discord.media", "path": "/rtc", "voice": true, "optional": true, "role": "голос" }
     ],
     // Канарейка «заморозки 16 КБ»: качаем 64 КБ с Cloudflare.
     "cloudflare": [

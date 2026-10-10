@@ -324,6 +324,9 @@
                                     <Button Content="Подобрать заново" Command="{Binding TuneCommand}" Style="{StaticResource QuietButton}"
                                             HorizontalAlignment="Left" Padding="14,6" FontSize="13" Margin="0,2,0,0"
                                             Visibility="{Binding CanRetune, Converter={StaticResource Visible}}" />
+                                    <Button Content="Подобрать голос" Command="{Binding TuneVoiceCommand}" Style="{StaticResource PrimaryButton}"
+                                            HorizontalAlignment="Left" Padding="14,6" FontSize="13" Margin="0,8,0,0"
+                                            Visibility="{Binding VoiceBroken, Converter={StaticResource Visible}}" />
                                 </StackPanel>
                             </Grid>
                         </Border>

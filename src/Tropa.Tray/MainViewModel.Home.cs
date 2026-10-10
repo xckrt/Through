@@ -33,6 +33,29 @@ public sealed partial class MainViewModel
     public bool CanRetune => _client is not null && _status is { Profile.Count: > 0 } && !IsRunning;
     public bool TgConnectVisible => TgOn;
 
+    /// <summary>Голос Discord не проходит под защитой: кнопка «Подобрать голос».</summary>
+    public bool VoiceBroken => _protecting && _client is not null && _last.Any(t => t.Voice && !t.IsOk) && !IsRunning;
+
+    public ICommand TuneVoiceCommand => _tuneVoice ??= new RelayCommand(async () =>
+    {
+        IsRunning = true;
+        try
+        {
+            Headline = "Подбираю обход";
+            Subline = "Перебираю варианты голосового профиля: каждый проверяю как вход в голосовой канал. Около минуты.";
+            ApplyStatus(await _client!.CallAsync<StatusReport>("tune.voice", ct: _cts.Token));
+        }
+        catch (Exception ex) when (ex is InvalidOperationException or System.IO.IOException)
+        {
+            Log($"голос: {ex.Message}", error: true);
+        }
+        finally
+        {
+            IsRunning = false;
+        }
+    }, () => !IsRunning && _client is not null);
+    private ICommand? _tuneVoice;
+
     /// <summary>«Сеть «Дом» · своя стратегия»: у каждой сети свой подобранный обход.</summary>
     public string ZapretNetwork => _status?.Network is { } n
         ? $"Сеть «{n}»" + (_status.KnownNetworks > 1 ? $" · своя стратегия для каждой из {_status.KnownNetworks} сетей" : "")
@@ -198,6 +221,7 @@ public sealed partial class MainViewModel
         };
 
         Raise(nameof(CanRetune));
+        Raise(nameof(VoiceBroken));
         Raise(nameof(ZapretNetwork));
         Raise(nameof(HasZapretNetwork));
         Raise(nameof(TgConnectVisible));

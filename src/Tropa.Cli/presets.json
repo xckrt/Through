@@ -224,7 +224,28 @@
                "--filter-l7=discord,stun", "--dpi-desync=fake",
                "--dpi-desync-fake-discord={engineDir}/files/extra/ACTIVE_DISCORD_UDP.bin",
                "--dpi-desync-fake-stun={engineDir}/files/extra/ACTIVE_DISCORD_UDP.bin",
+               "--dpi-desync-repeats=6"],
+      "group": "discord-voice"
+    },
+    {
+      // запасные варианты голоса: подбор голоса включает их, только если основной не прошёл проверку
+      "id": "discord-voice-any", "service": "discord", "group": "discord-voice", "alternative": true,
+      "args": ["--wf-udp=19294-19344,50000-50100", "--filter-udp=19294-19344,50000-50100",
+               "--dpi-desync=fake", "--dpi-desync-any-protocol", "--dpi-desync-cutoff=n3",
+               "--dpi-desync-fake-unknown-udp={engineDir}/files/fake/quic_initial_www_google_com.bin",
                "--dpi-desync-repeats=6"]
+    },
+    {
+      "id": "discord-voice-ipfrag", "service": "discord", "group": "discord-voice", "alternative": true,
+      "args": ["--wf-udp=19294-19344,50000-50100", "--filter-udp=19294-19344,50000-50100",
+               "--filter-l7=discord,stun", "--dpi-desync=ipfrag2", "--dpi-desync-ipfrag-pos-udp=8"]
+    },
+    {
+      "id": "discord-voice-ttl", "service": "discord", "group": "discord-voice", "alternative": true,
+      "args": ["--wf-udp=19294-19344,50000-50100", "--filter-udp=19294-19344,50000-50100",
+               "--filter-l7=discord,stun", "--dpi-desync=fake", "--dpi-desync-ttl=4", "--dpi-desync-repeats=8",
+               "--dpi-desync-fake-discord={engineDir}/files/extra/ACTIVE_DISCORD_UDP.bin",
+               "--dpi-desync-fake-stun={engineDir}/files/extra/ACTIVE_DISCORD_UDP.bin"]
     },
     {
       // медиасерверы Discord (discord.media) на нестандартных портах: у Flowseal для них отдельный профиль

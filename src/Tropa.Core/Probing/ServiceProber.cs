@@ -13,7 +13,7 @@ namespace Tropa.Core.Probing;
 /// Это основа подборщика стратегий: «YouTube не работает» бесполезно,
 /// «RST после ClientHello» сразу говорит, что нужна десинхронизация по SNI.
 /// </summary>
-public sealed class ServiceProber(ProbeOptions? options = null)
+public sealed partial class ServiceProber(ProbeOptions? options = null)
 {
     private readonly ProbeOptions _o = options ?? ProbeOptions.Default;
 
@@ -40,6 +40,7 @@ public sealed class ServiceProber(ProbeOptions? options = null)
     private async Task<ProbeResult> ProbeCoreAsync(Run run, CancellationToken ct)
     {
         var t = run.Target;
+        if (t.Voice) return await VoiceAsync(run, ct);
 
         // ---- DNS
         run.Enter(ProbeStage.Dns);

@@ -426,7 +426,11 @@ public sealed class TropaController(ControllerOptions o) : IAsyncDisposable
                 _strikes[service] = broken ? _strikes.GetValueOrDefault(service) + 1 : 0;
                 if (_strikes[service] >= o.WatchdogStrikes) degraded.Add(service);
             }
-            if (degraded.Count == 0) return;
+            if (degraded.Count == 0)
+            {
+                await MaybeTuneVoiceAsync(ct);
+                return;
+            }
 
             _message = $"перестало работать: {string.Join(", ", degraded)}, подбираю заново";
             _state = ControllerState.Tuning;
@@ -453,6 +457,71 @@ public sealed class TropaController(ControllerOptions o) : IAsyncDisposable
         // без службы локального DNS нет: системе возвращаем прежний, при старте снова переключим
         await StopDnsAsync(restore: true);
         _busy.Dispose();
+    }
+
+    // ---------- подбор голоса
+
+    /// <summary>Сторож: голос под защитой молчит две проверки подряд — подобрать вариант (не чаще раза в 6 часов).</summary>
+    private async Task MaybeTuneVoiceAsync(CancellationToken ct)
+    {
+        var failing = _targets.Where(t => t.Voice && _profile.Services.ContainsKey(t.Service) && !t.IsOk).Select(t => t.Service).ToHashSet();
+        foreach (var s in _profile.Services.Keys)
+            _voiceStrikes[s] = failing.Contains(s) ? _voiceStrikes.GetValueOrDefault(s) + 1 : 0;
+        if (!_voiceStrikes.Values.Any(v => v >= o.WatchdogStrikes)) return;
+        if (_lastVoiceTune is { } last && o.Clock() - last < TimeSpan.FromHours(6)) return;
+        _message = "голос не проходит, подбираю вариант голосового профиля";
+        _state = ControllerState.Tuning;
+        Changed();
+        await TuneVoiceCoreAsync(ct);
+        _voiceStrikes.Clear();
+    }
+
+    private DateTimeOffset? _lastVoiceTune;
+    private readonly Dictionary<string, int> _voiceStrikes = [];
+
+    /// <summary>Голос не проходит под защитой: перебрать варианты голосового профиля, оставить рабочий.</summary>
+    public Task<StatusReport> TuneVoiceAsync(CancellationToken ct = default) =>
+        Exclusive(async () => { await TuneVoiceCoreAsync(ct); return Status(); }, ct, ControllerState.Tuning);
+
+    private async Task TuneVoiceCoreAsync(CancellationToken ct)
+    {
+        _lastVoiceTune = o.Clock();
+        if (_session is not { HasExited: false }) throw new InvalidOperationException("голос подбирается под включённой защитой");
+        var voice = _catalog.Services.SelectMany(kv => kv.Value.Where(t => t.Voice).Select(t => (Service: kv.Key, Target: t))).ToList();
+        if (voice.Count == 0) return;
+
+        foreach (var group in _presetCatalog.Companions.Where(c => c.Group is not null && voice.Any(v => v.Service == c.Service))
+                     .GroupBy(c => c.Group!))
+        {
+            var targets = voice.Where(v => v.Service == group.First().Service).Select(v => v.Target).ToList();
+            var before = _profile.Companions.GetValueOrDefault(group.Key);
+            // текущий вариант последним: его только что видели нерабочим
+            var order = group.OrderBy(c => c.Id == (before ?? group.First(x => !x.Alternative).Id)).ToList();
+            string? found = null;
+            foreach (var variant in order)
+            {
+                _profile.Companions[group.Key] = variant.Id;
+                await StopEngineAsync();
+                await StartEngineAsync(ct);
+                Notify?.Invoke("attempt", new AttemptReport { Service = variant.Service, PresetId = variant.Id, PresetName = "голос", Score = "проверяю" });
+                var ok = true;
+                for (var run = 0; run < 2 && ok; run++)
+                    ok = (await _runner.RunAsync(targets, ct)).All(r => r.IsOk);
+                Notify?.Invoke("attempt", new AttemptReport { Service = variant.Service, PresetId = variant.Id, PresetName = "голос", Score = ok ? "голос проходит" : "не помогло", Perfect = ok });
+                if (ok) { found = variant.Id; break; }
+            }
+            if (found is null)
+            {
+                if (before is null) _profile.Companions.Remove(group.Key);
+                else _profile.Companions[group.Key] = before;
+                await StopEngineAsync();
+                await StartEngineAsync(ct);
+                _message = "голос: ни один вариант не помог, оставил прежний";
+            }
+            else _message = $"голос: подобран вариант «{found}»";
+            _profile.Save(_profilePath);
+        }
+        await CheckCoreAsync(ct);
     }
 
     // ---------- «добавить запущенную программу»
@@ -928,13 +997,19 @@ public sealed class TropaController(ControllerOptions o) : IAsyncDisposable
                 Add(app.Key, preset);
 
         // то, что не подбирается, но нужно приложению: QUIC, голос, игровые порты
-        foreach (var c in _presetCatalog.Companions.Where(c => (c.Always || withStrategy.Contains(c.Service)) && exclude?.Contains(c.Service) != true))
+        foreach (var c in _presetCatalog.Companions.Where(c => (c.Always || withStrategy.Contains(c.Service)) && exclude?.Contains(c.Service) != true && Chosen(c)))
         {
             var (hosts, ports) = _catalog.BypassScope(c.Service);
             companions.Add(new EngineLaunch(new StrategyPreset { Id = c.Id, Treats = [], Args = c.Args }, hosts, ports));
         }
         return (launches, companions);
     }
+
+    /// <summary>Из группы вариантов стоит выбранный подбором голоса, а без выбора — основной.</summary>
+    private bool Chosen(CompanionProfile c) =>
+        c.Group is null || (_profile.Companions.TryGetValue(c.Group, out var id) && _presetCatalog.Companions.Any(x => x.Id == id)
+            ? c.Id == id
+            : !c.Alternative);
 
     private bool HasAnythingToProtect() =>
         _profile.Services.Count > 0 || _apps.Any(a => a.Always || a.UdpPorts.Length > 0 || a.TcpPorts.Length > 0);

@@ -36,6 +36,12 @@ public sealed record CompanionProfile
 
     /// <summary>Включать под защитой всегда, даже если сервиса нет в профиле (игровые порты).</summary>
     public bool Always { get; init; }
+
+    /// <summary>Взаимозаменяемые варианты одного профиля (голос): под защитой стоит один из группы.</summary>
+    public string? Group { get; init; }
+
+    /// <summary>Запасной вариант группы: включается, только если подбор голоса выбрал его.</summary>
+    public bool Alternative { get; init; }
 }
 
 /// <summary>Набор пресетов. Хранится в JSON, обновляется без релиза программы.</summary>

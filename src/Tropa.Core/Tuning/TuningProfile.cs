@@ -22,6 +22,9 @@ public sealed record TuningProfile
 {
     public Dictionary<string, ServiceProfile> Services { get; init; } = [];
 
+    /// <summary>Группа сопутствующих профилей → выбранный вариант (подбор голоса).</summary>
+    public Dictionary<string, string> Companions { get; init; } = [];
+
     /// <summary>Записывает сервисы, для которых нашёлся пресет. Остальные записи не трогает:
     /// неудачный подбор не должен стирать прежнюю рабочую стратегию.</summary>
     public TuningProfile Apply(TuneReport report, DateTimeOffset now)

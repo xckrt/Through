@@ -186,6 +186,7 @@ tests.AddRange(AppUpdateTests.All());
 tests.AddRange(TelegramTests.All());
 tests.AddRange(DnsTests.All());
 tests.AddRange(ObserveTests.All());
+tests.AddRange(VoiceTests.All());
 
 var failed = 0;
 foreach (var (name, body) in tests)

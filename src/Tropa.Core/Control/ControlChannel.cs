@@ -160,6 +160,7 @@ public sealed class ControlServer(TropaController controller, string pipeName, F
                     "telegram" => await controller.SetTelegramAsync(On(request.Data), ct),
                     "telegram.check" => await controller.CheckTelegramAsync(ct),
                     "dns" => await controller.SetSecureDnsAsync(On(request.Data), ct),
+                    "tune.voice" => await controller.TuneVoiceAsync(ct),
                     // только имя процесса и число секунд; ответ — адреса и имена, которые программа запрашивала
                     "apps.observe" => await controller.ObserveAppAsync(Str(request.Data, "process"), Int(request.Data, "seconds", 20), ct),
                     // только данные (имя, домены, порты): Normalize в контроллере проверяет каждое поле

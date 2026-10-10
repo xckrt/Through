@@ -7,6 +7,13 @@ public delegate Task<IPAddress[]> HostResolver(string host, CancellationToken ct
 public sealed record ProbeOptions
 {
     public TimeSpan DnsTimeout { get; init; } = TimeSpan.FromSeconds(3);
+
+    /// <summary>Голос: сколько ждать ответа голосовых серверов на заход (заходов два).</summary>
+    public TimeSpan VoiceTimeout { get; init; } = TimeSpan.FromSeconds(2.5);
+
+    /// <summary>Голос: свои адреса вместо списка регионов (тесты). null — список Discord.</summary>
+    public IReadOnlyList<string>? VoiceAddresses { get; init; }
+    public IReadOnlyList<int>? VoicePorts { get; init; }
     public TimeSpan ConnectTimeout { get; init; } = TimeSpan.FromSeconds(5);
     public TimeSpan TlsTimeout { get; init; } = TimeSpan.FromSeconds(5);
 
