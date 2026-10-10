@@ -362,6 +362,7 @@ public sealed partial class MainViewModel
     public string UpdateText { get => _updateText; private set => Set(ref _updateText, value); }
     public string BuildText => $"Тропа, сборка {Core.TropaBuild.Id}";
     public bool HasService => _client is not null;
+    public bool CanUninstall => HasService && !IsPortable;
 
     public ICommand CheckUpdatesCommand => _checkUpdates ??= new RelayCommand(async () =>
     {
@@ -418,6 +419,7 @@ public sealed partial class MainViewModel
         if (s.LastUpdateCheck is { } at && UpdateText is "" or "Проверяю…")
             UpdateText = $"Последняя проверка обновлений: {at.LocalDateTime:dd.MM HH:mm}";
         Raise(nameof(HasService));
+        Raise(nameof(CanUninstall));
 
         (Pill, PillText) = s switch
         {

@@ -867,7 +867,8 @@
                                      IsChecked="{Binding Theme, Mode=OneWay, Converter={StaticResource Is}, ConverterParameter=Dark}"
                                      Command="{Binding SetThemeCommand}" CommandParameter="Dark" />
                     </StackPanel>
-                    <ToggleButton Style="{StaticResource Switch}" IsChecked="{Binding Autostart}" Margin="0,0,0,14">
+                    <ToggleButton Style="{StaticResource Switch}" IsChecked="{Binding Autostart}" Margin="0,0,0,14"
+                                  Visibility="{Binding NotPortable, Converter={StaticResource Visible}}">
                         <TextBlock TextWrapping="Wrap" Text="Запускать Тропу вместе с Windows (сразу в трей)" />
                     </ToggleButton>
                     <ToggleButton Style="{StaticResource Switch}" IsChecked="{Binding Notify}" Margin="0,0,0,14">
@@ -888,7 +889,7 @@
                                Text="Откроется черновик issue на GitHub с версиями и журналами. Вы увидите весь текст до отправки; без вашего нажатия Тропа ничего никуда не шлёт." />
                     <Button Content="Удалить службу Тропы" Command="{Binding UninstallServiceCommand}" Style="{StaticResource QuietButton}"
                             Foreground="{DynamicResource Signal}" HorizontalAlignment="Left"
-                            Visibility="{Binding HasService, Converter={StaticResource Visible}}" />
+                            Visibility="{Binding CanUninstall, Converter={StaticResource Visible}}" />
                 </StackPanel>
             </ScrollViewer>
         </Grid>

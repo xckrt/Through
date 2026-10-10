@@ -293,7 +293,9 @@ public sealed partial class MainViewModel : Observable
         }
 
         TuneVisible = true;
-        ModeNote = "Обход настраивает служба Тропы. При первом подборе Windows один раз спросит разрешение администратора.";
+        ModeNote = IsPortable
+            ? "Переносная версия: обход работает, пока открыта Тропа. При включении Windows спросит разрешение администратора."
+            : "Обход настраивает служба Тропы. При первом подборе Windows один раз спросит разрешение администратора.";
         await CheckAsync();
     }
 
@@ -501,7 +503,13 @@ public sealed partial class MainViewModel : Observable
             _client = null;
             await old.DisposeAsync();
         }
-        await InstallServiceAsync();
+        if (IsPortable)
+        {
+            Headline = "Запускаю Тропу";
+            Subline = "Windows спросит разрешение администратора: обход работает с сетевым драйвером. В переносной версии он держится, пока открыта Тропа.";
+            await StartPortableHostAsync();
+        }
+        else await InstallServiceAsync();
         _serviceOutdated = false;
         Log(Headline == "Обновляю службу Тропы" ? "служба обновлена" : "служба установлена");
     }

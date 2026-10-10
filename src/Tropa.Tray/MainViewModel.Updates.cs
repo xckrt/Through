@@ -126,6 +126,12 @@ public sealed partial class MainViewModel
     private async Task InstallUpdateAsync()
     {
         if (_release is not { } r) return;
+        if (IsPortable)
+        {
+            // переносную версию не ставим, а скачиваем новым архивом
+            Process.Start(new ProcessStartInfo($"https://github.com/{Core.TropaBuild.Repo}/releases/latest") { UseShellExecute = true })?.Dispose();
+            return;
+        }
         _updateBusy = true;
         CommandManager.InvalidateRequerySuggested();
         var path = Path.Combine(Path.GetTempPath(), r.SetupName);

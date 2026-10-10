@@ -16,11 +16,11 @@ internal static class Installer
         Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "Tropa");
 
     /// <summary>Журнал установки: окно показывает из него причину, если установка не удалась.</summary>
-    public static FileLog Log { get; } = new(Path.Combine(ServiceHost.DataDir, "install.log"));
+    public static FileLog Log { get; } = new(Path.Combine(ServiceHost.DefaultDataDir, "install.log"));
 
     public static int Install()
     {
-        Directory.CreateDirectory(ServiceHost.DataDir);
+        Directory.CreateDirectory(ServiceHost.DefaultDataDir);
         var exists = Exists();
         if (exists) Stop();
 
@@ -54,7 +54,7 @@ internal static class Installer
         if (!Exists()) return 0;
         Stop();
         // служба при остановке сама возвращает DNS; если она до этого упала, вернём по сохранённому файлу
-        try { new WindowsDnsSwitch(ServiceHost.DataDir, Log).RestoreAsync(CancellationToken.None).GetAwaiter().GetResult(); }
+        try { new WindowsDnsSwitch(ServiceHost.DefaultDataDir, Log).RestoreAsync(CancellationToken.None).GetAwaiter().GetResult(); }
         catch (Exception ex) when (ex is InvalidOperationException or IOException) { Log.Write($"DNS не вернулся: {ex.Message}"); }
         var code = Sc("delete", Name);
         if (code != 0) throw new InvalidOperationException($"sc delete вернул {code}");

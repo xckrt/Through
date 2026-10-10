@@ -1,6 +1,6 @@
 # Сборка установщика: Tropa-Setup одним файлом с программой внутри.
 #   pwsh build/publish.ps1 -Version 1.0.0
-# Результат: artifacts/Tropa-Setup-<версия>.exe и .sha256 рядом.
+# Результат: artifacts/Tropa-Setup-<версия>.exe, Tropa-Portable-<версия>.zip и .sha256 рядом с каждым.
 param([string]$Version = "1.0.0")
 $ErrorActionPreference = "Stop"
 
@@ -16,6 +16,28 @@ dotnet publish (Join-Path $root "src/Tropa.Tray") @common -o $stage
 if ($LASTEXITCODE -ne 0) { throw "publish Tropa.Tray" }
 dotnet publish (Join-Path $root "src/Tropa.Service") @common -o $stage
 if ($LASTEXITCODE -ne 0) { throw "publish Tropa.Service" }
+
+# переносная версия: те же файлы, метка portable и короткая памятка; без установки и службы
+$portableDir = Join-Path $art "portable"
+Copy-Item $stage $portableDir -Recurse
+Set-Content -Encoding utf8 (Join-Path $portableDir "portable") "Эта копия Тропы переносная: данные в папке data рядом, служба не ставится."
+Set-Content -Encoding utf8 (Join-Path $portableDir "ПРОЧТИ.txt") @"
+Тропа $Version, переносная версия.
+
+Запустите Tropa.exe. При включении обхода Windows спросит разрешение администратора:
+winws работает с сетевым драйвером. Обход и прокси Telegram держатся, пока открыта Тропа
+(в том числе свёрнутая в трей), и выключаются вместе с ней. Настройки и подобранные
+стратегии лежат в папке data рядом с программой.
+
+Чтобы обход работал всегда, после перезагрузки и без окна, поставьте обычную версию:
+https://github.com/xckrt/Tropa/releases/latest
+"@
+Add-Type -AssemblyName System.IO.Compression.FileSystem
+$portableZip = Join-Path $art "Tropa-Portable-$Version.zip"
+[System.IO.Compression.ZipFile]::CreateFromDirectory($portableDir, $portableZip, [System.IO.Compression.CompressionLevel]::Optimal, $false)
+$phash = (Get-FileHash $portableZip -Algorithm SHA256).Hash.ToLowerInvariant()
+"$phash  Tropa-Portable-$Version.zip" | Set-Content -Encoding ascii "$portableZip.sha256"
+"переносная: {0:N1} МБ" -f ((Get-Item $portableZip).Length / 1MB)
 
 $payload = Join-Path $art "payload.zip"
 Add-Type -AssemblyName System.IO.Compression.FileSystem

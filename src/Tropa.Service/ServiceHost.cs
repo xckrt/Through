@@ -11,12 +11,16 @@ using Tropa.Engine;
 namespace Tropa.Service;
 
 /// <summary>Собирает службу: каталоги рядом с exe, данные в %ProgramData%\Tropa, канал с ACL, сторож.</summary>
-internal sealed class ServiceHost
+internal sealed class ServiceHost(string? dataDir = null)
 {
-    public static string DataDir { get; } =
+    public static string DefaultDataDir { get; } =
         Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "Tropa");
 
-    private readonly FileLog _log = new(Path.Combine(DataDir, "service.log"));
+    /// <summary>Где профиль, настройки и движок: у службы %ProgramData%\Tropa, у переносной версии — папка data рядом.</summary>
+    public string DataDir { get; } = dataDir ?? DefaultDataDir;
+
+    private FileLog? _logField;
+    private FileLog _log => _logField ??= new(Path.Combine(DataDir, "service.log"));
 
     public async Task RunAsync(CancellationToken ct)
     {

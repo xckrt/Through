@@ -46,6 +46,29 @@ try
             Console.WriteLine(await WindowsNetworkIdentity.CurrentAsync(CancellationToken.None) is { } id ? $"{id.Name}  ({id.Key})" : "сеть не опознана");
             return 0;
 
+        case "portable":
+            // переносная версия: окно запускает это с правами администратора; живёт, пока живо окно (args[1] — его PID)
+            if (!Environment.IsPrivilegedProcess) return Fail("нужны права администратора: winws ставит драйвер WinDivert");
+            if (System.ServiceProcess.ServiceController.GetServices().Any(s => s.ServiceName.Equals(Installer.Name, StringComparison.OrdinalIgnoreCase)))
+                return Fail("Тропа уже установлена как служба: переносная версия рядом с ней не запускается");
+            using (var cts = new CancellationTokenSource())
+            {
+                if (args.Length > 1 && int.TryParse(args[1], out var parent))
+                    _ = Task.Run(async () =>
+                    {
+                        try
+                        {
+                            using var window = Process.GetProcessById(parent);
+                            await window.WaitForExitAsync();
+                        }
+                        catch (ArgumentException) { } // окна уже нет
+                        cts.Cancel();
+                    });
+                var data = args.Length > 2 ? args[2] : Path.Combine(AppContext.BaseDirectory, "data");
+                await new ServiceHost(data).RunAsync(cts.Token);
+            }
+            return 0;
+
         case "run":
             // для отладки: та же служба в консоли, Ctrl+C останавливает и выключает winws
             if (!Environment.IsPrivilegedProcess) return Fail("нужны права администратора: winws ставит драйвер WinDivert");
