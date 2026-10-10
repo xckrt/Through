@@ -30,6 +30,6 @@
   <string name="pc_text">Android does not let an app bypass blocks for other apps without a VPN. If Tropa runs on your computer, turn on \"For the whole home\" there, then on the phone open Wi-Fi → your network → Proxy → Auto and paste the PAC address that Tropa shows.</string>
   <string name="pc_button">Open Wi-Fi settings</string>
   <string name="dns_title">Private DNS</string>
-  <string name="dns_text">If the check says DNS gives a fake address, set Private DNS to one.one.one.one or dns.google. It encrypts DNS for the whole phone.</string>
+  <string name="dns_text">If the check says DNS gives a fake address, set Private DNS to one.one.one.one or dns.google. It encrypts DNS for the whole phone. It is usually under \"Network &amp; internet\" or \"Connection &amp; sharing\" → \"Private DNS\".</string>
   <string name="dns_button">Open network settings</string>
 </resources>
