@@ -32,4 +32,6 @@
   <string name="dns_title">Private DNS</string>
   <string name="dns_text">If the check says DNS gives a fake address, set Private DNS to one.one.one.one or dns.google. It encrypts DNS for the whole phone. It is usually under \"Network &amp; internet\" or \"Connection &amp; sharing\" → \"Private DNS\".</string>
   <string name="dns_button">Open network settings</string>
+  <string name="tile_label">Telegram proxy</string>
+  <string name="pac_copied">Address copied. In Wi-Fi settings: your network → Proxy → Auto, paste it into the URL field.</string>
 </resources>

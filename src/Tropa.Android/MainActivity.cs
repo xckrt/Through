@@ -19,6 +19,9 @@ namespace Tropa.Droid;
 /// </summary>
 [Activity(Label = "@string/app_name", MainLauncher = true, Exported = true, LaunchMode = LaunchMode.SingleTop,
     ConfigurationChanges = ConfigChanges.Orientation | ConfigChanges.ScreenSize | ConfigChanges.UiMode)]
+// tropa://home?pac=… — QR с компьютера для «Для всего дома»: копируем адрес и открываем настройки Wi-Fi
+[IntentFilter([Intent.ActionView], Categories = [Intent.CategoryDefault, Intent.CategoryBrowsable],
+    DataScheme = "tropa", DataHost = "home")]
 public sealed class MainActivity : Activity
 {
     private ImageView _ring = null!;
@@ -54,6 +57,26 @@ public sealed class MainActivity : Activity
         if (OperatingSystem.IsAndroidVersionAtLeast(33))
             RequestPermissions([Android.Manifest.Permission.PostNotifications], 1);
         Render();
+        HandleIntent(Intent);
+    }
+
+    protected override void OnNewIntent(Intent? intent)
+    {
+        base.OnNewIntent(intent);
+        HandleIntent(intent);
+    }
+
+    /// <summary>QR «Для всего дома» с компьютера: копируем адрес PAC в буфер и открываем настройки Wi-Fi.</summary>
+    private void HandleIntent(Intent? intent)
+    {
+        if (intent?.Data is not { Scheme: "tropa", Host: "home" } data) return;
+        var pac = data.GetQueryParameter("pac");
+        if (string.IsNullOrEmpty(pac)) return;
+        ((ClipboardManager)GetSystemService(ClipboardService)!).PrimaryClip =
+            ClipData.NewPlainText("Tropa PAC", pac);
+        Toast.MakeText(this, GetString(Resource.String.pac_copied), ToastLength.Long)!.Show();
+        try { StartActivity(new Intent(Android.Provider.Settings.ActionWifiSettings)); }
+        catch (ActivityNotFoundException) { }
     }
 
     protected override void OnDestroy()
