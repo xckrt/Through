@@ -87,6 +87,9 @@ public sealed record ServiceSettings
     /// <summary>Брать подсказки из общей базы: что чинило сервисы у этого провайдера.</summary>
     public bool UseCommunity { get; init; } = true;
 
+    /// <summary>Сайты, которые обход не трогает: стратегия их ломает (банк, госуслуги, рабочий портал).</summary>
+    public string[] Excluded { get; init; } = [];
+
     /// <summary>Отправлять в общую базу итог подбора (сервис, стратегия, помогла ли). По умолчанию выключено.</summary>
     public bool ShareResults { get; init; }
 }
@@ -172,6 +175,7 @@ public sealed class TropaController(ControllerOptions o) : IAsyncDisposable
         Telegram = TelegramStatus(),
         Network = _network?.Name,
         Speed = _speed,
+        Excluded = _settings.Excluded,
         Week = _week is null ? null : new WeeklyReport(_week, _prevWeek),
         Community = o.Community is null ? null : new CommunityReport(_settings.UseCommunity, _settings.ShareResults),
         KnownNetworks = o.Network is null ? 0 : Networks().Count,
@@ -1292,8 +1296,32 @@ public sealed class TropaController(ControllerOptions o) : IAsyncDisposable
             var (hosts, ports) = _catalog.BypassScope(c.Service);
             companions.Add(new EngineLaunch(new StrategyPreset { Id = c.Id, Treats = [], Args = c.Args }, hosts, ports));
         }
+        // «не трогать»: в каждый профиль, включая QUIC, голос и игровые порты
+        if (_settings.Excluded.Length > 0)
+        {
+            launches = [.. launches.Select(l => l with { Exclude = _settings.Excluded })];
+            companions = [.. companions.Select(l => l with { Exclude = _settings.Excluded })];
+        }
         return (launches, companions);
     }
+
+    /// <summary>Добавить сайт в «не трогать» (с поддоменами) и перезапустить winws, если он работает.</summary>
+    public Task<StatusReport> ExcludeAsync(string site, bool add, CancellationToken ct = default) => Exclusive(async () =>
+    {
+        var host = SiteCheck.NormalizeHost(site) ?? throw new InvalidOperationException("это не похоже на адрес сайта");
+        var domain = SiteCheck.RegistrableDomain(host);
+        var list = _settings.Excluded.ToList();
+        if (add)
+        {
+            if (list.Count >= 200) throw new InvalidOperationException("в «не трогать» уже 200 сайтов");
+            if (!list.Contains(domain)) list.Add(domain);
+        }
+        else list.Remove(domain);
+        SaveSettings(_settings with { Excluded = [.. list.Order()] });
+        _message = add ? $"обход больше не трогает {domain}" : $"{domain} снова обходится как обычно";
+        await RestartEngineIfRunningAsync(ct);
+        return Status();
+    }, ct);
 
     /// <summary>Из группы вариантов стоит выбранный подбором голоса, а без выбора — основной.</summary>
     private bool Chosen(CompanionProfile c) =>

@@ -664,5 +664,15 @@
  "подложный ClientHello, fooling ts (SIMPLE FAKE)": "fake ClientHello, fooling ts (SIMPLE FAKE)",
  "подложный ClientHello, badseq (SIMPLE FAKE ALT)": "fake ClientHello, badseq (SIMPLE FAKE ALT)",
  "подложный пакет + подмена имени на ya.ru (ALT3)": "fake packet + host name swapped to ya.ru (ALT3)",
- "Пускать телефоны из этой Wi-Fi сети: Тропа откроет прокси для устройств из вашей сети (из интернета к нему не попасть). Без секрета из QR-кода к нему не подключиться.": "Let phones on this Wi-Fi connect: Tropa opens the proxy to devices on your network (it is not reachable from the internet). Nobody can connect without the secret from the QR code."
+ "Пускать телефоны из этой Wi-Fi сети: Тропа откроет прокси для устройств из вашей сети (из интернета к нему не попасть). Без секрета из QR-кода к нему не подключиться.": "Let phones on this Wi-Fi connect: Tropa opens the proxy to devices on your network (it is not reachable from the internet). Nobody can connect without the secret from the QR code.",
+ "Не трогать": "Don't touch",
+ "Не трогать {0}": "Don't touch {0}",
+ "Убрать из списка": "Remove from the list",
+ "Адрес сайта, который обход не должен трогать": "Address of a site the bypass must not touch",
+ "Если после включения обхода перестал открываться банк, госуслуги или рабочий портал, добавьте его сюда: обход не будет трогать этот сайт и его поддомены.": "If a bank, government site or work portal stopped opening after the bypass was turned on, add it here: the bypass will leave this site and its subdomains alone.",
+ "Если сайт сломался именно после включения обхода: обход перестанет его трогать": "If the site broke right after the bypass was turned on, the bypass will stop touching it",
+ "обход больше не трогает {0}": "the bypass no longer touches {0}",
+ "{0} снова обходится как обычно": "{0} is bypassed as usual again",
+ "в «не трогать» уже 200 сайтов": "«don't touch» already has 200 sites",
+ "это не похоже на адрес сайта": "this does not look like a site address"
 }

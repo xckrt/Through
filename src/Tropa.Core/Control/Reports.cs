@@ -104,6 +104,9 @@ public sealed record StatusReport
     /// <summary>Скорость видео YouTube без обхода и с ним (последние замеры).</summary>
     public SpeedReport? Speed { get; init; }
 
+    /// <summary>«Не трогать»: сайты вне обхода.</summary>
+    public string[] Excluded { get; init; } = [];
+
     /// <summary>null — в этой сборке база не настроена (пустой community.json).</summary>
     public CommunityReport? Community { get; init; }
 

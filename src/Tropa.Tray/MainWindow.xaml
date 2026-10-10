@@ -441,6 +441,10 @@
                             <Button Content="{Binding SiteBypassLabel}" Style="{StaticResource PrimaryButton}" HorizontalAlignment="Left"
                                     Command="{Binding BypassSiteCommand}" Margin="0,12,0,0"
                                     Visibility="{Binding SiteCanBypass, Converter={StaticResource Visible}}" />
+                            <Button Content="{Binding SiteExcludeLabel}" Style="{StaticResource QuietButton}" HorizontalAlignment="Left"
+                                    Command="{Binding SiteExcludeCommand}" Margin="0,10,0,0" Padding="14,6" FontSize="13"
+                                    ToolTip="{local:Tr 'Если сайт сломался именно после включения обхода: обход перестанет его трогать'}"
+                                    Visibility="{Binding HasSiteResult, Converter={StaticResource Visible}}" />
                             <Button Content="{local:Tr 'Включить защищённый DNS'}" Style="{StaticResource PrimaryButton}" HorizontalAlignment="Left"
                                     Command="{Binding FixSiteDnsCommand}" Margin="0,12,0,0"
                                     Visibility="{Binding SiteCanFixDns, Converter={StaticResource Visible}}" />
@@ -546,6 +550,7 @@
                 </StackPanel>
 
                 <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Focusable="False">
+                <StackPanel>
                     <ItemsControl ItemsSource="{Binding AppRows}" Focusable="False">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate DataType="{x:Type local:AppRowVm}">
@@ -569,6 +574,42 @@
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
+                    <!-- «не трогать»: сайты, которые обход ломает -->
+                    <StackPanel Margin="0,10,0,0">
+                        <TextBlock Text="{local:Tr 'Не трогать'}" Style="{StaticResource SectionTitle}" />
+                        <TextBlock Style="{StaticResource Soft}" TextWrapping="Wrap" Margin="0,0,0,12" MaxWidth="640" HorizontalAlignment="Left"
+                                   Text="{local:Tr 'Если после включения обхода перестал открываться банк, госуслуги или рабочий портал, добавьте его сюда: обход не будет трогать этот сайт и его поддомены.'}" />
+                        <ItemsControl ItemsSource="{Binding ExcludedSites}" Focusable="False">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border CornerRadius="14" Padding="12,4,6,4" Margin="0,0,8,8" Background="{DynamicResource Surface}"
+                                            BorderBrush="{DynamicResource Line}" BorderThickness="1">
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="{Binding}" VerticalAlignment="Center" FontSize="13.5" />
+                                            <Button Content="&#xE711;" FontFamily="{StaticResource Icons}" FontSize="9" Style="{StaticResource QuietButton}"
+                                                    Padding="6,4" Margin="8,0,0,0" BorderThickness="0" ToolTip="{local:Tr 'Убрать из списка'}"
+                                                    Command="{Binding DataContext.RemoveExcludeCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                    CommandParameter="{Binding}" />
+                                        </StackPanel>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                        <DockPanel MaxWidth="520" HorizontalAlignment="Left" Margin="0,4,0,0">
+                            <Button DockPanel.Dock="Right" Content="{local:Tr 'Не трогать'}" Command="{Binding AddExcludeCommand}"
+                                    Style="{StaticResource QuietButton}" Padding="14,6" FontSize="13" Margin="8,0,0,0" />
+                            <TextBox Text="{Binding ExcludeInput, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource FieldBox}" Width="360"
+                                     AutomationProperties.Name="{local:Tr 'Адрес сайта, который обход не должен трогать'}">
+                                <TextBox.InputBindings>
+                                    <KeyBinding Key="Enter" Command="{Binding AddExcludeCommand}" />
+                                </TextBox.InputBindings>
+                            </TextBox>
+                        </DockPanel>
+                    </StackPanel>
+                </StackPanel>
                 </ScrollViewer>
 
                 <!-- правая колонка: заготовки или форма -->

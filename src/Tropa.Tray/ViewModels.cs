@@ -621,6 +621,7 @@ public sealed partial class MainViewModel : Observable
         if (!_tgBusy) ApplyTelegram(s.Telegram);
         RaiseDns();
         RaiseWeek(s);
+        SyncExcluded(s);
         Raise(nameof(ProtectLabel));
         ProtectVisible = s.Profile.Count > 0;
         TuneVisible = true;

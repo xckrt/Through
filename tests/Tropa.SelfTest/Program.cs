@@ -190,6 +190,7 @@ tests.AddRange(VoiceTests.All());
 tests.AddRange(CommunityTests.All());
 tests.AddRange(WeekTests.All());
 tests.AddRange(LocTests.All());
+tests.AddRange(ExcludeTests.All());
 
 var failed = 0;
 foreach (var (name, body) in tests)

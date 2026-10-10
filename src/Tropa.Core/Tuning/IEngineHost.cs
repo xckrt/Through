@@ -3,6 +3,14 @@ namespace Tropa.Core.Tuning;
 /// <summary>Что запустить: пресет, сужённый до хостов и портов одного сервиса.</summary>
 public sealed record EngineLaunch(StrategyPreset Preset, IReadOnlyList<string> Hosts, IReadOnlyList<int> Ports)
 {
+    /// <summary>Сайты, которые обход не трогает никогда (банки, госуслуги, которые ломает стратегия):
+    /// в профиль уходит --hostlist-exclude-domains, а из hostlist они убираются.</summary>
+    public IReadOnlyList<string> Exclude { get; init; } = [];
+
+    /// <summary>Хосты профиля без исключённых доменов и их поддоменов.</summary>
+    public IReadOnlyList<string> EffectiveHosts =>
+        Exclude.Count == 0 ? Hosts : Hosts.Where(h => !Exclude.Any(e => h == e || h.EndsWith("." + e, StringComparison.OrdinalIgnoreCase))).ToList();
+
     /// <summary>Аргументы для winws: hostlist-файл с Hosts пишет сам движок.</summary>
     public IReadOnlyList<string> RenderArgs(string hostlistPath, string engineDir) =>
         Preset.Args
@@ -41,6 +49,7 @@ public sealed record EngineLaunch(StrategyPreset Preset, IReadOnlyList<string> H
                     global.Add(arg);
                 }
             }
+            if (launches[i].Exclude.Count > 0) profile.Add("--hostlist-exclude-domains=" + string.Join(',', launches[i].Exclude));
             profiles.Add(profile);
         }
 

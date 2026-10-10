@@ -37,7 +37,7 @@ internal sealed class FakeEngineHost(Func<string, int, bool> passes) : IEngineHo
     public string? PresetFor(string host)
     {
         lock (_gate)
-            return _active is null ? null : LastLaunches.FirstOrDefault(l => l.Hosts.Contains(host))?.Preset.Id;
+            return _active is null ? null : LastLaunches.FirstOrDefault(l => l.EffectiveHosts.Contains(host))?.Preset.Id;
     }
 
     /// <summary>Имитация падения winws посреди работы.</summary>

@@ -133,6 +133,7 @@ public sealed partial class MainViewModel
     {
         Raise(nameof(SiteCanBypass));
         Raise(nameof(SiteCanFixDns));
+        Raise(nameof(SiteExcludeLabel));
         Raise(nameof(SiteBypassLabel));
         CommandManager.InvalidateRequerySuggested();
     }

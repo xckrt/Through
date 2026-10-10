@@ -163,6 +163,8 @@ public sealed class ControlServer(TropaController controller, string pipeName, F
                     "telegram.lan" => await controller.SetTelegramLanAsync(On(request.Data), ct),
                     "tune.voice" => await controller.TuneVoiceAsync(ct),
                     "speed" => await controller.MeasureSpeedAsync(ct),
+                    "exclude.add" => await controller.ExcludeAsync(Str(request.Data, "site"), add: true, ct),
+                    "exclude.remove" => await controller.ExcludeAsync(Str(request.Data, "site"), add: false, ct),
                     "settings.community" => await controller.SetCommunityAsync(Bool(request.Data, "use"), Bool(request.Data, "share"), ct),
                     // только имя процесса и число секунд; ответ — адреса и имена, которые программа запрашивала
                     "apps.observe" => await controller.ObserveAppAsync(Str(request.Data, "process"), Int(request.Data, "seconds", 20), ct),

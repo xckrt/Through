@@ -35,7 +35,7 @@ public sealed class WinwsEngineHost(WinwsOptions options) : IEngineHost
         {
             var path = Path.Combine(Path.GetTempPath(), $"tropa-hosts-{Guid.NewGuid():N}.txt");
             hostlists.Add(path);
-            await File.WriteAllLinesAsync(path, launch.Hosts, ct);
+            await File.WriteAllLinesAsync(path, launch.EffectiveHosts, ct);
         }
 
         var psi = new ProcessStartInfo(options.ExecutablePath)
