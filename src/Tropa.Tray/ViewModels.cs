@@ -221,6 +221,7 @@ public sealed partial class MainViewModel : Observable
     private IReadOnlyList<TargetReport> _last = [];
     private int _attempts;
     private bool _serviceOutdated;
+    private CancellationTokenSource? _recheckCts;
 
     private string _headline = Loc.T("Проверяю сервисы");
     private string _subline = Loc.T("Обычно это занимает до 15 секунд.");
@@ -418,6 +419,7 @@ public sealed partial class MainViewModel : Observable
         {
             CheckLabel = label;
             IsRunning = false;
+            MaybeAutoRecheck();
         }
     }
 
@@ -489,6 +491,7 @@ public sealed partial class MainViewModel : Observable
         finally
         {
             IsRunning = false;
+            MaybeAutoRecheck();
         }
     }
 
@@ -605,6 +608,7 @@ public sealed partial class MainViewModel : Observable
     private void OnServiceLost()
     {
         _client = null;
+        _recheckCts?.Cancel();
         ProtectVisible = false;
         ModeNote = Loc.T("Связь со службой Тропы потеряна: она остановлена или перезапускается. Доступна только диагностика.");
         CommandManager.InvalidateRequerySuggested();
@@ -629,6 +633,42 @@ public sealed partial class MainViewModel : Observable
         Summarize(s.NetworkDown, s.Protecting);
         if (s.LastCheckAt is { } at) CheckedAt = Loc.F("Проверено в {0:HH:mm}", at.LocalDateTime);
         if (s.Message is { } m && m.StartsWith("не удалось")) Subline = m;
+        MaybeAutoRecheck();
+    }
+
+    /// <summary>
+    /// При запущенной службе и «нет сети» окно само перепроверяет сервисы, пока сеть не вернётся:
+    /// «нет сети» часто мелькает при перезапуске winws или рывке VPN, и висеть с этой надписью не нужно.
+    /// Перепроверка — обычная (через службу), поэтому не спорит с её единственной операцией.
+    /// </summary>
+    private void MaybeAutoRecheck()
+    {
+        if (_client is not null && _status?.NetworkDown == true && !IsRunning && _recheckCts is null)
+        {
+            _recheckCts = CancellationTokenSource.CreateLinkedTokenSource(_cts.Token);
+            _ = AutoRecheckLoopAsync(_recheckCts.Token);
+        }
+    }
+
+    private async Task AutoRecheckLoopAsync(CancellationToken ct)
+    {
+        try
+        {
+            // первую перепроверку делаем почти сразу, дальше реже; минут через 7 перестаём дёргать —
+            // следующий статус от службы запустит цикл снова, если сеть всё ещё не вернулась
+            for (var i = 0; i < 60 && !ct.IsCancellationRequested; i++)
+            {
+                await Task.Delay(TimeSpan.FromSeconds(i == 0 ? 2 : 7), ct);
+                if (IsRunning || _client is null || _status?.NetworkDown != true) return;
+                await CheckAsync();
+                if (_status?.NetworkDown != true) return;
+            }
+        }
+        catch (OperationCanceledException) { }
+        finally
+        {
+            if (_recheckCts?.Token == ct) { _recheckCts.Dispose(); _recheckCts = null; }
+        }
     }
 
     private void UpdateProtection(StatusReport s)
