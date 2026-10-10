@@ -98,6 +98,9 @@ public sealed record ServiceSettings
     /// <summary>Брать подсказки из общей базы: что чинило сервисы у этого провайдера.</summary>
     public bool UseCommunity { get; init; } = true;
 
+    /// <summary>Версия zapret, которая сломала работавшие сервисы: сама служба на неё больше не переходит.</summary>
+    public string? RejectedEngine { get; init; }
+
     /// <summary>Сайты, которые обход не трогает: стратегия их ломает (банк, госуслуги, рабочий портал).</summary>
     public string[] Excluded { get; init; } = [];
 
@@ -354,9 +357,22 @@ public sealed class TropaController(ControllerOptions o) : IAsyncDisposable
         await StartEngineAsync(ct);
     }
 
-    /// <summary>Проверить и поставить новую версию zapret. Если она не запустилась, вернуться на прежнюю.</summary>
-    public Task<EngineUpdateResult> UpdateEngineAsync(CancellationToken ct = default) =>
-        Exclusive(() => UpdateCoreAsync(ct), ct);
+    /// <summary>Проверить и поставить новую версию zapret. Если она не запустилась или сломала то, что работало, —
+    /// вернуться на прежнюю. По кнопке человека пробуем и версию, которая уже ломала: вдруг дело было в сети.</summary>
+    public Task<EngineUpdateResult> UpdateEngineAsync(CancellationToken ct = default) => Exclusive(async () =>
+    {
+        _manualUpdate = true;
+        try { return await UpdateCoreAsync(ct); }
+        finally { _manualUpdate = false; }
+    }, ct);
+
+    private bool _manualUpdate;
+
+    /// <summary>Сервисы, у которых все важные проверки прошли.</summary>
+    private HashSet<string> RequiredOk() =>
+        _targets.Where(t => !t.IsControl).GroupBy(t => t.Service)
+            .Where(g => g.Where(t => !t.Optional).All(t => t.IsOk)).Select(g => g.Key)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
     /// <summary>Общая база: брать подсказки и/или делиться итогами подбора.</summary>
     public Task<StatusReport> SetCommunityAsync(bool use, bool share, CancellationToken ct = default)
@@ -381,6 +397,11 @@ public sealed class TropaController(ControllerOptions o) : IAsyncDisposable
         var old = await EnsureEngineAsync(ct);
         _lastUpdateCheck = o.Clock();
         var next = await o.EngineUpdate(old.Version, ct);
+        if (next is not null && next.Version == _settings.RejectedEngine && !_manualUpdate)
+        {
+            _message = $"zapret {next.Version} уже ломал обход, жду следующую версию";
+            return new(false, old.Version, _message);
+        }
         if (next is null)
         {
             _message = $"zapret {old.Version} — последняя версия";
@@ -388,6 +409,13 @@ public sealed class TropaController(ControllerOptions o) : IAsyncDisposable
         }
 
         var protecting = _session is { HasExited: false };
+        // самотест: что работает на старой версии — должно работать и на новой
+        HashSet<string>? workedBefore = null;
+        if (protecting)
+        {
+            await CheckCoreAsync(ct);
+            if (!_networkDown) workedBefore = RequiredOk();
+        }
         await StopEngineAsync();
         _engine = next;
         if (protecting)
@@ -395,6 +423,21 @@ public sealed class TropaController(ControllerOptions o) : IAsyncDisposable
             try
             {
                 await StartEngineAsync(ct);
+                if (workedBefore is not null)
+                {
+                    await CheckCoreAsync(ct);
+                    var lost = _networkDown ? [] : workedBefore.Except(RequiredOk()).ToList();
+                    if (lost.Count > 0)
+                    {
+                        await StopEngineAsync();
+                        _engine = old;
+                        await StartEngineAsync(ct);
+                        await CheckCoreAsync(ct);
+                        SaveSettings(_settings with { RejectedEngine = next.Version });
+                        _message = $"zapret {next.Version} сломал {string.Join(", ", lost)}, остаюсь на {old.Version}";
+                        return new(false, old.Version, _message);
+                    }
+                }
             }
             catch (Exception ex) when (ex is not OperationCanceledException)
             {
@@ -406,7 +449,7 @@ public sealed class TropaController(ControllerOptions o) : IAsyncDisposable
             }
         }
         o.EngineAccepted?.Invoke(next);
-        _message = $"zapret обновлён: {old.Version} → {next.Version}";
+        _message = $"zapret обновлён: {old.Version} → {next.Version}" + (workedBefore is not null ? ", всё, что работало, работает" : "");
         return new(true, next.Version, _message);
     }
 

@@ -242,6 +242,25 @@ internal static class ControlTests
             Assert(w.Accepted.Count == 0, "неудачная версия не должна запоминаться");
         })),
 
+        ("Обновление zapret: новая версия запустилась, но сломала то, что работало → откат и больше сама не ставится", () => With(async w =>
+        {
+            await w.Controller.TuneAsync();
+            w.Engine2 = new FakeEngineHost((_, _) => false);
+            w.Engine2Breaks = true;
+            w.Update = (_, _) => Task.FromResult<EngineContext?>(new EngineContext(w.Engine2, "v2"));
+
+            var r = await w.Controller.UpdateEngineAsync();
+            Assert(!r.Updated && r.Message.Contains("сломал") && r.Message.Contains("alpha"), r.Message);
+            Assert(w.Engine.Running && !w.Engine2.Running && w.Controller.Status().EngineVersion == "test", "должна вернуться прежняя версия");
+            Assert(w.Accepted.Count == 0, "сломавшая версия не запоминается как принятая");
+            Assert(w.Controller.Status().Targets.Where(t => !t.IsControl).All(t => t.IsOk), "после отката всё снова работает");
+
+            // автообновление ту же версию больше не трогает: она записана как отвергнутая
+            Assert(File.ReadAllText(Path.Combine(w.Dir, "settings.json")).Contains("""
+                "rejectedEngine": "v2"
+                """), "версия должна запомниться как сломавшая");
+        })),
+
         ("Обновление zapret: новее нет → сообщение; автообновление выключено → не проверяет", () => With(async w =>
         {
             await w.Controller.TuneAsync();
@@ -372,6 +391,7 @@ internal static class ControlTests
         public Func<string, CancellationToken, Task<EngineContext?>>? Update { get; set; }
         public List<string> Accepted { get; } = [];
         public volatile bool NothingWorks;
+        public volatile bool Engine2Breaks;
 
         public void Own(FakeServer s) => _servers.Add(s);
 
@@ -423,7 +443,7 @@ internal static class ControlTests
         var engine = new FakeEngineHost((_, _) => false);
         World? w = null;
         bool Uses(string host, string id) =>
-            (engine.PresetFor(host) == id || w!.Engine2?.PresetFor(host) == id) && !w!.NothingWorks;
+            (engine.PresetFor(host) == id || (w!.Engine2?.PresetFor(host) == id && !w.Engine2Breaks)) && !w!.NothingWorks;
 
         var alpha = FakeServer.SniFilter("alpha.test", reset: true,
             () => (Uses("alpha.test", "a") && w!.AlphaPresetWorks) || Uses("alpha.test", "b"));

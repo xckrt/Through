@@ -687,5 +687,8 @@
  "прокси для дома выключен": "the home proxy is off",
  "прокси для дома не запустился: {0}": "the home proxy did not start: {0}",
  "прокси для дома работает: на телефоне Wi-Fi → Прокси → Авто → http://{0}:{1}/proxy.pac": "the home proxy works: on the phone Wi-Fi → Proxy → Auto → http://{0}:{1}/proxy.pac",
- "прокси для дома запущен, но компьютер не в домашней сети (нет частного адреса)": "the home proxy started, but the computer is not on a home network (no private address)"
+ "прокси для дома запущен, но компьютер не в домашней сети (нет частного адреса)": "the home proxy started, but the computer is not on a home network (no private address)",
+ "zapret {0} уже ломал обход, жду следующую версию": "zapret {0} already broke the bypass, waiting for the next version",
+ "zapret {0} сломал {1}, остаюсь на {2}": "zapret {0} broke {1}, staying on {2}",
+ "zapret обновлён: {0} → {1}, всё, что работало, работает": "zapret updated: {0} → {1}, everything that worked still works"
 }
