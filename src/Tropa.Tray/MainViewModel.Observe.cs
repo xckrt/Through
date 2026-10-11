@@ -20,15 +20,26 @@ public sealed record RunningAppVm(string Process, string Title, ImageSource? Ico
 /// </summary>
 public sealed partial class MainViewModel
 {
-    private const int ObserveSeconds = 30;
+    private int _observeSeconds = 30;
     private bool _pickerVisible, _observing;
     private string _observeText = "";
     private DispatcherTimer? _observeTimer;
 
     public ObservableCollection<RunningAppVm> RunningApps { get; } = [];
     public bool PickerVisible { get => _pickerVisible; private set => Set(ref _pickerVisible, value); }
-    public bool Observing { get => _observing; private set { Set(ref _observing, value); CommandManager.InvalidateRequerySuggested(); } }
+    public bool Observing { get => _observing; private set { Set(ref _observing, value); Raise(nameof(NotObserving)); CommandManager.InvalidateRequerySuggested(); } }
+    public bool NotObserving => !_observing;
     public string ObserveText { get => _observeText; private set => Set(ref _observeText, Loc.Msg(value)); }
+
+    /// <summary>Сколько секунд слушать выбранную программу (30 с … 5 минут): для онлайн-игр нужно дольше.</summary>
+    public int ObserveSeconds { get => _observeSeconds; private set => Set(ref _observeSeconds, value); }
+
+    public ICommand SetObserveTimeCommand => _setObserveTime ??= new ParamCommand(p =>
+    {
+        if (!Observing && p is string s && int.TryParse(s, out var sec)) ObserveSeconds = sec;
+        return Task.CompletedTask;
+    });
+    private ICommand? _setObserveTime;
 
     public ICommand OpenPickerCommand => _openPicker ??= new RelayCommand(() =>
     {
@@ -36,7 +47,7 @@ public sealed partial class MainViewModel
         foreach (var app in WindowedApps()) RunningApps.Add(app);
         ObserveText = RunningApps.Count == 0
             ? Loc.T("Не вижу программ с окнами. Запустите игру или приложение и откройте список снова.")
-            : Loc.T("Выберите программу. Тропа послушает её полминуты, пока вы ей пользуетесь, и сама заполнит домены и порты.");
+            : Loc.T("Выберите программу и время. Тропа послушает её, пока вы ей пользуетесь, и сама заполнит домены и порты. Для онлайн-игр берите больше времени — нужно успеть зайти в матч.");
         PickerVisible = true;
         FormVisible = false;
         return Task.CompletedTask;

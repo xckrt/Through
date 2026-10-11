@@ -312,6 +312,8 @@ public sealed partial class MainViewModel
     }
 
     private bool _gameFilter;
+    private int _gameFilterVariant;
+    private int _gameFilterVariants;
 
     /// <summary>Игровой фильтр: широкий диапазон UDP-портов, чтобы работали игры и голос без настройки каждой игры.</summary>
     public bool GameFilter
@@ -319,10 +321,27 @@ public sealed partial class MainViewModel
         get => _gameFilter;
         set
         {
-            if (!Set(ref _gameFilter, value) || _syncingSettings || _client is null) return;
-            _ = CallQuietly("settings.gamefilter", new { on = value });
+            if (!Set(ref _gameFilter, value)) return;
+            Raise(nameof(HasGameVariants));
+            if (_syncingSettings || _client is null) return;
+            _ = CallQuietly("settings.gamefilter", new { on = value, variant = _gameFilterVariant });
         }
     }
+
+    public int GameFilterVariant { get => _gameFilterVariant; private set => Set(ref _gameFilterVariant, value); }
+    public int GameFilterVariants { get => _gameFilterVariants; private set { Set(ref _gameFilterVariants, value); Raise(nameof(HasGameVariants)); } }
+
+    /// <summary>Есть из чего выбирать и фильтр включён: тогда показываем выбор варианта стратегии.</summary>
+    public bool HasGameVariants => _gameFilter && _gameFilterVariants > 1;
+
+    /// <summary>Выбрать вариант игровой стратегии: если игра не идёт, человек перебирает варианты.</summary>
+    public ICommand SetGameVariantCommand => _setGameVariant ??= new ParamCommand(p =>
+    {
+        if (_syncingSettings || _client is null || p is not string s || !int.TryParse(s, out var v) || v == _gameFilterVariant) return Task.CompletedTask;
+        GameFilterVariant = v;
+        return CallQuietly("settings.gamefilter", new { on = true, variant = v });
+    });
+    private ICommand? _setGameVariant;
 
     private bool _communityUse, _communityShare;
 
@@ -485,6 +504,8 @@ public sealed partial class MainViewModel
     {
         _syncingSettings = true;
         AutoUpdate = s.AutoUpdate;
+        GameFilterVariant = s.GameFilterVariant;
+        GameFilterVariants = s.GameFilterVariants;
         GameFilter = s.GameFilter;
         CommunityUse = s.Community?.Use ?? false;
         CommunityShare = s.Community?.Share ?? false;

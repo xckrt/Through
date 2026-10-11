@@ -649,7 +649,22 @@
                                         Style="{StaticResource QuietButton}" Padding="9,7" ToolTip="{local:Tr 'Закрыть'}" Command="{Binding ClosePickerCommand}" />
                                 <TextBlock Text="{local:Tr 'Запущенные программы'}" Style="{StaticResource SectionTitle}" />
                             </DockPanel>
-                            <TextBlock Text="{Binding ObserveText}" Style="{StaticResource Soft}" TextWrapping="Wrap" Margin="0,0,0,12" />
+                            <TextBlock Text="{Binding ObserveText}" Style="{StaticResource Soft}" TextWrapping="Wrap" Margin="0,0,0,10" />
+                            <StackPanel Orientation="Horizontal" Margin="0,0,0,12" IsEnabled="{Binding NotObserving}">
+                                <TextBlock Text="{local:Tr 'Слушать:'}" Style="{StaticResource Soft}" VerticalAlignment="Center" Margin="0,0,10,0" />
+                                <RadioButton Style="{StaticResource Segment}" Content="{local:Tr '30 с'}" GroupName="ObsTime"
+                                             IsChecked="{Binding ObserveSeconds, Mode=OneWay, Converter={StaticResource Is}, ConverterParameter=30}"
+                                             Command="{Binding SetObserveTimeCommand}" CommandParameter="30" />
+                                <RadioButton Style="{StaticResource Segment}" Content="{local:Tr '1 мин'}" GroupName="ObsTime"
+                                             IsChecked="{Binding ObserveSeconds, Mode=OneWay, Converter={StaticResource Is}, ConverterParameter=60}"
+                                             Command="{Binding SetObserveTimeCommand}" CommandParameter="60" />
+                                <RadioButton Style="{StaticResource Segment}" Content="{local:Tr '2 мин'}" GroupName="ObsTime"
+                                             IsChecked="{Binding ObserveSeconds, Mode=OneWay, Converter={StaticResource Is}, ConverterParameter=120}"
+                                             Command="{Binding SetObserveTimeCommand}" CommandParameter="120" />
+                                <RadioButton Style="{StaticResource Segment}" Content="{local:Tr '5 мин'}" GroupName="ObsTime"
+                                             IsChecked="{Binding ObserveSeconds, Mode=OneWay, Converter={StaticResource Is}, ConverterParameter=300}"
+                                             Command="{Binding SetObserveTimeCommand}" CommandParameter="300" />
+                            </StackPanel>
                             <ProgressBar IsIndeterminate="True" Height="3" Margin="0,0,0,12" Foreground="{DynamicResource Pine}"
                                          Background="Transparent" BorderThickness="0"
                                          Visibility="{Binding Observing, Converter={StaticResource Visible}}" />
@@ -928,6 +943,21 @@
                     <ToggleButton Style="{StaticResource Switch}" IsChecked="{Binding GameFilter}" IsEnabled="{Binding HasService}">
                         <TextBlock TextWrapping="Wrap" Text="{local:Tr 'Игровой фильтр: обход для UDP-портов игр и голоса'}" />
                     </ToggleButton>
+                    <StackPanel Margin="0,12,0,0" Visibility="{Binding HasGameVariants, Converter={StaticResource Visible}}">
+                        <TextBlock Style="{StaticResource Soft}" TextWrapping="Wrap" Margin="0,0,0,8"
+                                   Text="{local:Tr 'Стратегия. Если игра всё равно не соединяется или лагает, попробуйте другой вариант — у разных провайдеров работает разный.'}" />
+                        <StackPanel Orientation="Horizontal">
+                            <RadioButton Style="{StaticResource Segment}" Content="{local:Tr 'Вариант 1'}" GroupName="GameVar"
+                                         IsChecked="{Binding GameFilterVariant, Mode=OneWay, Converter={StaticResource Is}, ConverterParameter=0}"
+                                         Command="{Binding SetGameVariantCommand}" CommandParameter="0" />
+                            <RadioButton Style="{StaticResource Segment}" Content="{local:Tr 'Вариант 2'}" GroupName="GameVar"
+                                         IsChecked="{Binding GameFilterVariant, Mode=OneWay, Converter={StaticResource Is}, ConverterParameter=1}"
+                                         Command="{Binding SetGameVariantCommand}" CommandParameter="1" />
+                            <RadioButton Style="{StaticResource Segment}" Content="{local:Tr 'Вариант 3'}" GroupName="GameVar"
+                                         IsChecked="{Binding GameFilterVariant, Mode=OneWay, Converter={StaticResource Is}, ConverterParameter=2}"
+                                         Command="{Binding SetGameVariantCommand}" CommandParameter="2" />
+                        </StackPanel>
+                    </StackPanel>
                     <Rectangle Height="1" Fill="{DynamicResource Line}" Margin="0,26,0,24" />
 
                     <TextBlock Text="{local:Tr 'Обновления Тропы'}" Style="{StaticResource SectionTitle}" />

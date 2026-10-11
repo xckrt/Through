@@ -163,7 +163,7 @@ public sealed class ControlServer(TropaController controller, string pipeName, F
                     "telegram.lan" => await controller.SetTelegramLanAsync(On(request.Data), ct),
                     "homeproxy" => await controller.SetHomeProxyAsync(On(request.Data), ct),
                     "settings.crashes" => await controller.SetShareCrashesAsync(On(request.Data), ct),
-                    "settings.gamefilter" => await controller.SetGameFilterAsync(On(request.Data), ct),
+                    "settings.gamefilter" => await controller.SetGameFilterAsync(On(request.Data), Int(request.Data, "variant", -1) is var gv && gv >= 0 ? gv : null, ct),
                     "tune.voice" => await controller.TuneVoiceAsync(ct),
                     "speed" => await controller.MeasureSpeedAsync(ct),
                     "exclude.add" => await controller.ExcludeAsync(Str(request.Data, "site"), add: true, ct),

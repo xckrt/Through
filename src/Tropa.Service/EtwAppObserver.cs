@@ -93,7 +93,9 @@ internal static class EtwAppObserver
         // Решаем по данным: 443, 80 и 53 есть почти всегда — видны «как есть» или перевёрнутыми
         static int Swap(int p) => (p >> 8 & 0xFF) | (p & 0xFF) << 8;
         var raw = endpoints.Keys.Select(k => k.Item2).ToHashSet();
-        var swap = !raw.Overlaps([443, 80, 53]) && (raw.Overlaps([Swap(443), Swap(80), Swap(53)]) || raw.Count > 0);
+        // переворачиваем порт только при прямом доказательстве: видны перевёрнутые 443/80/53, а прямых нет.
+        // без такого якоря НЕ угадываем — иначе игровой порт вроде 7777 превращается в мусор (баг «что он ищет»)
+        var swap = !raw.Overlaps([443, 80, 53]) && raw.Overlaps([Swap(443), Swap(80), Swap(53)]);
         var fixedEndpoints = endpoints.Keys.Select(k => (k.Item1, Port: swap ? Swap(k.Item2) : k.Item2, k.Item3)).Distinct();
 
         return new ObservedTraffic

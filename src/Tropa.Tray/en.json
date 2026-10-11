@@ -1,4 +1,15 @@
 {
+ "Стратегия. Если игра всё равно не соединяется или лагает, попробуйте другой вариант — у разных провайдеров работает разный.": "Strategy. If a game still won't connect or lags, try another variant — different ISPs need a different one.",
+ "Вариант 1": "Variant 1",
+ "Вариант 2": "Variant 2",
+ "Вариант 3": "Variant 3",
+
+ "Слушать:": "Listen:",
+ "30 с": "30 s",
+ "1 мин": "1 min",
+ "2 мин": "2 min",
+ "5 мин": "5 min",
+
  "Игры и голос": "Games and voice",
  "Игровой фильтр накрывает обходом широкий диапазон UDP-портов, которые используют игры и голосовые чаты. Включите, если тормозят или не соединяются онлайн-игры или голос в Discord — тогда не нужно добавлять каждую игру отдельно. Задевает больше UDP-трафика, поэтому по умолчанию выключен; если что-то из сети начнёт глючить, выключите.": "The game filter bypasses a wide range of UDP ports used by games and voice chats. Turn it on if online games or Discord voice lag or won't connect — then you don't have to add each game separately. It touches more UDP traffic, so it's off by default; if something on the network starts acting up, turn it off.",
  "Игровой фильтр: обход для UDP-портов игр и голоса": "Game filter: bypass for the UDP ports of games and voice",
@@ -167,7 +178,7 @@
  "Вставьте адрес, например rutracker.org или ссылку https://x.com/…": "Paste an address, for example rutracker.org or a link https://x.com/…",
  "Всё открывается": "Everything opens",
  "Всё открывается и так": "Everything opens as it is",
- "Выберите программу. Тропа послушает её полминуты, пока вы ей пользуетесь, и сама заполнит домены и порты.": "Pick a program. Tropa will listen to it for half a minute while you use it and fill in the domains and ports.",
+ "Выберите программу и время. Тропа послушает её, пока вы ей пользуетесь, и сама заполнит домены и порты. Для онлайн-игр берите больше времени — нужно успеть зайти в матч.": "Pick a program and a duration. Tropa will listen to it while you use it and fill in the domains and ports. For online games pick more time — you need to get into a match.",
  "Выбрать запущенную программу": "Pick a running program",
  "Выйти из окна": "Close the window",
  "Выключен": "Off",

@@ -111,6 +111,10 @@ public sealed record StatusReport
     /// <summary>Игровой фильтр: широкий UDP-диапазон для игр и голоса.</summary>
     public bool GameFilter { get; init; }
 
+    /// <summary>Выбранный вариант игрового фильтра и сколько их всего (для перебора, если игра не идёт).</summary>
+    public int GameFilterVariant { get; init; }
+    public int GameFilterVariants { get; init; }
+
     /// <summary>«Не трогать»: сайты вне обхода.</summary>
     public string[] Excluded { get; init; } = [];
 

@@ -118,6 +118,10 @@ public sealed record ServiceSettings
     /// <summary>Игровой фильтр: обход накрывает широкий диапазон UDP-портов, чтобы работали игры и голос
     /// без настройки каждой игры отдельно. По умолчанию выключен: широкий фильтр задевает больше трафика.</summary>
     public bool GameFilter { get; init; }
+
+    /// <summary>Какой вариант игрового фильтра выбран (индекс среди gameFilter-профилей): для разных
+    /// провайдеров и игр работает разная стратегия, человек перебирает их, если игра не идёт.</summary>
+    public int GameFilterVariant { get; init; }
 }
 
 /// <summary>Прокси Telegram: включён ли, на каком порту и с каким секретом (их помнит ссылка в клиенте).</summary>
@@ -204,6 +208,8 @@ public sealed class TropaController(ControllerOptions o) : IAsyncDisposable
         Excluded = _settings.Excluded,
         ShareCrashes = _settings.ShareCrashes,
         GameFilter = _settings.GameFilter,
+        GameFilterVariant = _settings.GameFilterVariant,
+        GameFilterVariants = _presetCatalog.Companions.Count(c => c.GameFilter),
         Home = HomeStatus(),
         Week = _week is null ? null : new WeeklyReport(_week, _prevWeek),
         Community = o.Community is null ? null : new CommunityReport(_settings.UseCommunity, _settings.ShareResults),
@@ -413,12 +419,14 @@ public sealed class TropaController(ControllerOptions o) : IAsyncDisposable
         return Task.FromResult(Status());
     }, ct);
 
-    /// <summary>Игровой фильтр: широкий диапазон UDP-портов, чтобы игры и голос работали без настройки каждой игры.</summary>
-    public Task<StatusReport> SetGameFilterAsync(bool on, CancellationToken ct = default) => Exclusive(async () =>
+    /// <summary>Игровой фильтр: широкий диапазон UDP-портов, чтобы игры и голос работали без настройки каждой игры.
+    /// variant — выбранная стратегия (если null, оставляем прежнюю).</summary>
+    public Task<StatusReport> SetGameFilterAsync(bool on, int? variant = null, CancellationToken ct = default) => Exclusive(async () =>
     {
-        SaveSettings(_settings with { GameFilter = on });
+        var v = Math.Max(0, variant ?? _settings.GameFilterVariant);
+        SaveSettings(_settings with { GameFilter = on, GameFilterVariant = v });
         _message = on
-            ? "игровой фильтр включён: обход накрывает UDP-порты игр и голоса"
+            ? $"игровой фильтр включён (вариант {v + 1}): обход накрывает UDP-порты игр и голоса"
             : "игровой фильтр выключен";
         await RestartEngineIfRunningAsync(ct);
         return Status();
@@ -840,7 +848,8 @@ public sealed class TropaController(ControllerOptions o) : IAsyncDisposable
         if (!await _observeLock.WaitAsync(0, ct)) throw new InvalidOperationException("уже слушаю другую программу");
         try
         {
-            return await observe(name, TimeSpan.FromSeconds(Math.Clamp(seconds, 5, 90)), ct);
+            // до 5 минут: в онлайн-игре нужно успеть зайти в матч, иначе игровой трафик не словить
+            return await observe(name, TimeSpan.FromSeconds(Math.Clamp(seconds, 5, 300)), ct);
         }
         finally
         {
@@ -1515,8 +1524,12 @@ public sealed class TropaController(ControllerOptions o) : IAsyncDisposable
                 Add(app.Key, preset);
 
         // то, что не подбирается, но нужно приложению: QUIC, голос, игровые порты.
-        // Игровой фильтр (широкий UDP) включается отдельной настройкой, а не наличием сервиса.
-        bool Include(CompanionProfile c) => c.GameFilter ? _settings.GameFilter : (c.Always || withStrategy.Contains(c.Service));
+        // Игровой фильтр (широкий UDP) включается настройкой; из нескольких вариантов стоит выбранный.
+        var gameVariants = _presetCatalog.Companions.Where(c => c.GameFilter).ToList();
+        var chosenGame = _settings.GameFilter && gameVariants.Count > 0
+            ? gameVariants[Math.Clamp(_settings.GameFilterVariant, 0, gameVariants.Count - 1)]
+            : null;
+        bool Include(CompanionProfile c) => c.GameFilter ? c == chosenGame : (c.Always || withStrategy.Contains(c.Service));
         foreach (var c in _presetCatalog.Companions.Where(c => Include(c) && exclude?.Contains(c.Service) != true && Chosen(c)))
         {
             var (hosts, ports) = _catalog.BypassScope(c.Service);
