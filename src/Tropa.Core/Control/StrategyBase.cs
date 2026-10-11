@@ -49,6 +49,41 @@ public sealed class StrategyBase(string baseUrl, HttpMessageHandler? handler = n
         }
     }
 
+    public sealed record CatalogOverlay(int Version, IReadOnlyDictionary<string, IReadOnlyList<string>> Services);
+
+    /// <summary>
+    /// Обновляемый список доменов с сервера: сервис → новые домены для обхода. Строго проверяется здесь,
+    /// на входе из недоверенного источника: только нормальные имена, с ограничением по числу. Портов и
+    /// аргументов winws тут нет и быть не может — их Тропа с сервера не берёт. null — сервер не ответил.
+    /// </summary>
+    public async Task<CatalogOverlay?> CatalogAsync(CancellationToken ct)
+    {
+        try
+        {
+            using var http = Client();
+            using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+            cts.CancelAfter(TimeSpan.FromSeconds(6));
+            var r = await http.GetFromJsonAsync<CatalogResponse>($"{BaseUrl}/v1/catalog", Json, cts.Token);
+            if (r?.Services is null) return null;
+            var services = r.Services
+                .Where(kv => IsId(kv.Key) && kv.Value is not null)
+                .Take(30)
+                .ToDictionary(
+                    kv => kv.Key,
+                    kv => (IReadOnlyList<string>)[.. kv.Value!
+                        .Select(d => d.Trim().TrimEnd('.').ToLowerInvariant())
+                        .Where(Tropa.Core.Probing.TargetCatalog.IsValidDomain)
+                        .Distinct().Take(100)]);
+            return new CatalogOverlay(r.Version, services);
+        }
+        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or JsonException or NotSupportedException && !ct.IsCancellationRequested)
+        {
+            return null;
+        }
+    }
+
+    private sealed record CatalogResponse(int Version, Dictionary<string, string[]>? Services);
+
     /// <summary>Что дал подбор: лучшая стратегия (и уточнения) — помогла, остальные попытки — нет.</summary>
     public static List<ReportItem> ItemsFrom(TuneReport report)
     {

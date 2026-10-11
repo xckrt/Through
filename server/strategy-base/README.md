@@ -36,6 +36,7 @@ npx wrangler deploy                            # выведет адрес https
 | `POST /v1/report` | `{tropa, engine, results: [{service, preset, ok}]}` |
 | `GET /v1/alerts` | Ранний сигнал: что у провайдера массово сломалось за 3 часа и что помогло другим |
 | `GET /v1/map` | Провайдеры × сервисы за 7 дней: доля «режут», способ, что помогает |
+| `GET /v1/catalog` | Обновляемый список доменов для обхода: `{version, services:{service:[domains]}}`. Только домены известных сервисов; правится в `src/worker.js`, version повышается при изменении |
 | `POST /v1/crash` | Сводка об ошибке (по согласию): тип и имена методов, без текста и путей |
 | `GET /v1/crashes` | Сводки за 30 дней, только с `Authorization: Bearer <ADMIN_KEY>` |
 

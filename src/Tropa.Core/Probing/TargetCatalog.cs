@@ -1,7 +1,7 @@
 namespace Tropa.Core.Probing;
 
 /// <summary>Набор целей, сгруппированных по сервисам. Хранится в JSON, правится без пересборки.</summary>
-public sealed record TargetCatalog
+public sealed partial record TargetCatalog
 {
     public required Dictionary<string, List<ProbeTarget>> Services { get; init; }
 
@@ -36,4 +36,30 @@ public sealed record TargetCatalog
                       .Distinct();
 
     public static TargetCatalog Load(string path) => TropaJson.Load<TargetCatalog>(path);
+
+    /// <summary>
+    /// Добавить домены к известным сервисам (обновляемый список с сервера). Только добавление и только
+    /// к уже существующим сервисам: порты, цели проверки и стратегии winws не трогаются. Так подмена
+    /// списка на сервере может лишь расширить обход на лишние домены, но не выполнить чужие аргументы.
+    /// </summary>
+    public TargetCatalog WithExtraDomains(IReadOnlyDictionary<string, IReadOnlyList<string>> extra)
+    {
+        if (extra.Count == 0) return this;
+        var domains = Domains.ToDictionary(kv => kv.Key, kv => kv.Value.ToList());
+        foreach (var (service, list) in extra)
+        {
+            if (!Services.ContainsKey(service)) continue; // только известные сервисы
+            var target = domains.TryGetValue(service, out var d) ? d : domains[service] = [];
+            foreach (var dom in list)
+                if (!target.Contains(dom)) target.Add(dom);
+        }
+        return this with { Domains = domains };
+    }
+
+    /// <summary>Строгая проверка домена из недоверенного источника: обычное имя, без мусора и без аргументов.</summary>
+    public static bool IsValidDomain(string d) =>
+        d.Length is > 3 and <= 253 && DomainRe().IsMatch(d);
+
+    [System.Text.RegularExpressions.GeneratedRegex(@"^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?(\.[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?)+$")]
+    private static partial System.Text.RegularExpressions.Regex DomainRe();
 }

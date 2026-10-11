@@ -103,7 +103,29 @@ internal static class CommunityTests
             }
             return Task.CompletedTask;
         }),
+
+        ("Свежий список: берём только валидные домены и только известные сервисы, порты и winws не трогаем", async () =>
+        {
+            var handler = new CatalogHandler("""{"version":3,"services":{"youtube":["new-cdn.googlevideo.com","BAD DOMAIN","--dpi-desync=evil","dup.com","dup.com"],"games":["x.com"]}}""");
+            var overlay = await new StrategyBase("https://base.test", handler).CatalogAsync(CancellationToken.None);
+            Assert(overlay is not null && overlay.Version == 3, $"версия: {overlay?.Version}");
+            var yt = overlay!.Services["youtube"];
+            Assert(yt.Count == 2 && yt.Contains("new-cdn.googlevideo.com") && yt.Contains("dup.com"), $"валидные домены: {string.Join(",", yt)}");
+            Assert(!yt.Any(d => d.Contains(' ') || d.Contains("--")), "мусор и аргументы winws отфильтрованы");
+
+            var cat = new TargetCatalog { Services = new() { ["youtube"] = [] }, Domains = new() { ["youtube"] = ["youtube.com"] } };
+            var merged = cat.WithExtraDomains(overlay.Services);
+            Assert(merged.Domains["youtube"].Contains("new-cdn.googlevideo.com") && merged.Domains["youtube"].Contains("youtube.com"), "домены добавлены к youtube");
+            Assert(!merged.Domains.ContainsKey("games"), "неизвестный сервис не добавляется");
+            Assert(!merged.Ports.ContainsKey("youtube"), "порты с сервера не трогаются");
+        }),
     ];
+
+    private sealed class CatalogHandler(string body) : HttpMessageHandler
+    {
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken ct) =>
+            Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(body, Encoding.UTF8, "application/json") });
+    }
 
     private static StrategyPreset P(string id, int cost) => new() { Id = id, Treats = [Failure.TlsReset], Args = ["--hostlist={hostlist}"], Cost = cost };
 

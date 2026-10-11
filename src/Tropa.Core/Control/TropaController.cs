@@ -171,6 +171,12 @@ public sealed class TropaController(ControllerOptions o) : IAsyncDisposable
     private string? _message;
     private DateTimeOffset? _lastUpdateCheck;
 
+    // обновляемый с сервера список доменов (только добавление к известным сервисам; порты и winws не трогаются)
+    private IReadOnlyDictionary<string, IReadOnlyList<string>> _overlay = new Dictionary<string, IReadOnlyList<string>>();
+    private int _overlayVersion;
+    private DateTimeOffset? _lastCatalogFetch;
+    private string CatalogOverlayPath => Path.Combine(o.DataDir, "catalog-overlay.json");
+
     // прокси Telegram живёт отдельно от _busy: подбор и проверки его не трогают
     private readonly SemaphoreSlim _tgLock = new(1, 1);
     private TelegramProxy? _tg;
@@ -264,8 +270,10 @@ public sealed class TropaController(ControllerOptions o) : IAsyncDisposable
         {
             _message = $"apps.json не прочитался, свои приложения пропущены: {ex.Message}";
         }
+        LoadOverlay();
         RebuildCatalogs();
         _settings = File.Exists(_settingsPath) ? TropaJson.Load<ServiceSettings>(_settingsPath) : new ServiceSettings();
+        _ = UpdateCatalogAsync(ct); // свежий список доменов с сервера — в фоне, не задерживая запуск
         LoadWeek();
         try { _speed = File.Exists(SpeedPath) ? TropaJson.Load<SpeedReport>(SpeedPath) : null; }
         catch (Exception ex) when (ex is IOException or System.Text.Json.JsonException or InvalidDataException) { _speed = null; }
@@ -552,6 +560,8 @@ public sealed class TropaController(ControllerOptions o) : IAsyncDisposable
         // порт мог освободиться: прокси, который должен работать, поднимаем снова
         if (_settings.Telegram.Enabled && _tg is null) await SetTelegramAsync(true, ct);
         if (_settings.SecureDns) await DnsWatchAsync(ct);
+        if (_lastCatalogFetch is null || o.Clock() - _lastCatalogFetch >= TimeSpan.FromHours(12))
+            await UpdateCatalogAsync(ct);
         if (!_settings.Protect || !HasAnythingToProtect()) return;
         if (!await _busy.WaitAsync(0, ct)) return;
         try
@@ -1573,8 +1583,64 @@ public sealed class TropaController(ControllerOptions o) : IAsyncDisposable
 
     private void RebuildCatalogs()
     {
-        _catalog = UserApps.Merge(o.Targets, _apps);
+        _catalog = UserApps.Merge(o.Targets, _apps).WithExtraDomains(_overlay);
         _presetCatalog = UserApps.Merge(o.Presets, _apps);
+    }
+
+    private sealed record OverlayCache(int Version, Dictionary<string, string[]> Services);
+
+    /// <summary>Загрузить кэш списка доменов (на случай офлайна). Домены на всякий случай перепроверяем.</summary>
+    private void LoadOverlay()
+    {
+        try
+        {
+            if (!File.Exists(CatalogOverlayPath)) return;
+            var c = TropaJson.Load<OverlayCache>(CatalogOverlayPath);
+            _overlayVersion = c.Version;
+            _overlay = c.Services.Where(kv => kv.Value is not null).ToDictionary(
+                kv => kv.Key, kv => (IReadOnlyList<string>)[.. kv.Value.Where(TargetCatalog.IsValidDomain)]);
+        }
+        catch (Exception ex) when (ex is IOException or System.Text.Json.JsonException or InvalidDataException) { }
+    }
+
+    private void SaveOverlay(StrategyBase.CatalogOverlay overlay)
+    {
+        try
+        {
+            var cache = new OverlayCache(overlay.Version, overlay.Services.ToDictionary(kv => kv.Key, kv => kv.Value.ToArray()));
+            File.WriteAllText(CatalogOverlayPath, System.Text.Json.JsonSerializer.Serialize(cache));
+        }
+        catch (IOException) { }
+    }
+
+    /// <summary>
+    /// Обновить список доменов для обхода с сервера (новые заблокированные домены известных сервисов).
+    /// Берём только домены, строго проверенные в StrategyBase; порты и аргументы winws с сервера не берём.
+    /// Применяем, только если версия изменилась, и тогда перезапускаем winws под защитой.
+    /// </summary>
+    private async Task UpdateCatalogAsync(CancellationToken ct)
+    {
+        if (!_settings.UseCommunity || o.Community is not { } community) return;
+        _lastCatalogFetch = o.Clock();
+        var overlay = await community.CatalogAsync(ct);
+        if (overlay is null || overlay.Version == _overlayVersion) return;
+
+        if (!await _busy.WaitAsync(0, ct)) return; // занято подбором — обновим в следующий раз
+        try
+        {
+            _overlayVersion = overlay.Version;
+            _overlay = overlay.Services;
+            SaveOverlay(overlay);
+            RebuildCatalogs();
+            _message = "обновлён список сайтов для обхода";
+            await RestartEngineIfRunningAsync(ct);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            _message = $"новый список сайтов не применился: {ex.Message}";
+        }
+        finally { _busy.Release(); }
+        Changed();
     }
 
     private async Task StopEngineAsync()

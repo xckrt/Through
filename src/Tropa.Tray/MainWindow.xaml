@@ -1014,7 +1014,7 @@
                         <TextBlock Style="{StaticResource Soft}" TextWrapping="Wrap" Margin="0,0,0,14"
                                    Text="{local:Tr 'Тропы делятся тем, что помогло: у вашего провайдера YouTube уже чинили — Тропа попробует эту стратегию первой, и подбор займёт секунды. Провайдера сервер узнаёт сам по соединению; Тропа отправляет только «сервис → стратегия → помогла или нет», без IP, адресов сайтов и идентификаторов.'}" />
                         <ToggleButton Style="{StaticResource Switch}" IsChecked="{Binding CommunityUse}" IsEnabled="{Binding HasService}" Margin="0,0,0,14">
-                            <TextBlock TextWrapping="Wrap" Text="{local:Tr 'Брать подсказки из общей базы перед подбором'}" />
+                            <TextBlock TextWrapping="Wrap" Text="{local:Tr 'Брать подсказки из общей базы и обновлять списки сайтов для обхода'}" />
                         </ToggleButton>
                         <ToggleButton Style="{StaticResource Switch}" IsChecked="{Binding CommunityShare}" IsEnabled="{Binding HasService}">
                             <TextBlock TextWrapping="Wrap" Text="{local:Tr 'Делиться итогами своего подбора (помогает другим с тем же провайдером)'}" />

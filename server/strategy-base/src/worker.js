@@ -6,6 +6,7 @@
 //   GET  /v1/alerts       что у этого провайдера массово сломалось под обходом за последние часы и что помогло
 //   POST /v1/report       {tropa, engine, results: [{service, preset, ok}], status: [{service, blocked, protected, preset?, failure?}]}
 //   GET  /v1/map          провайдеры × сервисы за 7 дней: доля «режут», чем, что помогает (для карты блокировок)
+//   GET  /v1/catalog      обновляемый список доменов для обхода: {version, services:{service:[domains]}}
 //   POST /v1/crash        сводка об ошибке (по согласию): {app, version, type, frames[], os} — без сообщений и путей
 //   GET  /v1/crashes      сводка ошибок для разработчика, заголовок Authorization: Bearer <ADMIN_KEY>
 
@@ -27,6 +28,7 @@ export default {
       if (url.pathname === "/v1/alerts" && req.method === "GET") return cors(await alerts(req, env));
       if (url.pathname === "/v1/report" && req.method === "POST") return cors(await report(req, env));
       if (url.pathname === "/v1/map" && req.method === "GET") return cors(await map(env));
+      if (url.pathname === "/v1/catalog" && req.method === "GET") return cors(catalog());
       if (url.pathname === "/v1/crash" && req.method === "POST") return cors(await crash(req, env));
       if (url.pathname === "/v1/crashes" && req.method === "GET") return await crashes(req, env);
       if (url.pathname === "/") return json({ name: "tropa-strategy-base", docs: "https://github.com/xckrt/Tropa" });
@@ -203,6 +205,20 @@ async function crashes(req, env) {
     machines: new Set(String(r.users ?? "").split(",").filter(Boolean)).size, last: new Date(r.lastDay * 86400000).toISOString().slice(0, 10),
   }));
   return json({ days: 30, crashes: out });
+}
+
+// Обновляемый список доменов для обхода: сервис → новые домены для известных Тропе сервисов.
+// Клиент берёт только известные сервисы и строго проверяет каждый домен; порты и аргументы winws
+// отсюда НЕ берутся и взяться не могут. Повышайте version при каждом изменении списка.
+function catalog() {
+  return json({
+    version: 1,
+    services: {
+      // Пример: "youtube": ["новый-заблокированный-домен.com"],
+      // Добавляйте сюда новые заблокированные домены youtube/discord и повышайте version —
+      // у всех Троп список обновится сам, без обновления программы.
+    },
+  });
 }
 
 async function sha256(text) {

@@ -180,7 +180,7 @@
  "Без разрешения администратора Тропа не может настроить обход: winws работает с сетевым драйвером.": "Without administrator permission Tropa cannot set up the bypass: winws works with a network driver.",
  "Без разрешения администратора обход не включить: winws работает с сетевым драйвером.": "Without administrator permission the bypass cannot be turned on: winws works with a network driver.",
  "Блокировки обходятся. Служба держит обход после перезагрузки и сама подбирает заново, если провайдер что-то поменял.": "Blocking is bypassed. The service keeps the bypass after reboot and re-tunes by itself if the ISP changes something.",
- "Брать подсказки из общей базы перед подбором": "Use hints from the shared base before tuning",
+ "Брать подсказки из общей базы и обновлять списки сайтов для обхода": "Use hints from the shared base and keep the bypass site lists updated",
  "Буфер обмена занят": "The clipboard is busy",
  "В окне Тропы что-то пошло не так. Обход это не задело: его держит служба.\n\n": "Something went wrong in the Tropa window. The bypass is not affected: the service keeps it.\n\n",
  "В прошлый раз Тропа упала. Отправите отчёт? Это поможет её починить.": "Tropa crashed last time. Send a report? It will help fix it.",
