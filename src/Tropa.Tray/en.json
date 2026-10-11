@@ -1,4 +1,19 @@
 {
+ "Скрыть": "Hide",
+
+ "Провайдер подменяет DNS — подсовывает чужие адреса. Включите защищённый DNS: запросы пойдут шифрованно, и подменять их больше не смогут.": "Your ISP is spoofing DNS — handing out fake addresses. Turn on secure DNS: your requests go encrypted and can no longer be spoofed.",
+ "Включить защищённый DNS": "Turn on secure DNS",
+ "Похоже, режут голос в Discord или игры по UDP. Включите игровой фильтр — обход накроет игровые UDP-порты.": "Discord voice or UDP games look blocked. Turn on the game filter — the bypass will cover the game UDP ports.",
+ "Включить игровой фильтр": "Turn on the game filter",
+
+ "Подобрать для игры автоматически": "Auto-tune for a game",
+ "Включён вариант {0} из {1}. Зайдите в игру и попробуйте сыграть (зайти в матч). Работает?": "Variant {0} of {1} is on. Open the game and try to play (join a match). Does it work?",
+ "Готово: подошёл вариант {0}. Он и останется включённым.": "Done: variant {0} works and will stay on.",
+ "игровой фильтр: подошёл вариант {0}": "game filter: variant {0} works",
+ "Ни один вариант не подошёл. Попробуйте «Выбрать запущенную программу», выбрать игру и время 5 минут — Тропа настроит обход прямо под неё.": "No variant worked. Try \"Pick a running program\", choose the game and 5 minutes — Tropa will tune the bypass for it directly.",
+ "Работает": "It works",
+ "Не работает — дальше": "Doesn't work — next",
+
  "Стратегия. Если игра всё равно не соединяется или лагает, попробуйте другой вариант — у разных провайдеров работает разный.": "Strategy. If a game still won't connect or lags, try another variant — different ISPs need a different one.",
  "Вариант 1": "Variant 1",
  "Вариант 2": "Variant 2",

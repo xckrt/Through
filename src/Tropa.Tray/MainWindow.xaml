@@ -264,6 +264,20 @@
                                    TextWrapping="Wrap" Margin="0,0,0,24" />
                     </StackPanel>
 
+                    <!-- умная подсказка: нужная функция в нужный момент -->
+                    <Border Style="{StaticResource HomeCard}" Padding="22,16,16,16" Margin="0,0,0,18"
+                            Visibility="{Binding HasHint, Converter={StaticResource Visible}}">
+                        <DockPanel>
+                            <Button DockPanel.Dock="Right" VerticalAlignment="Top" Content="&#xE711;" FontFamily="{StaticResource Icons}" FontSize="9"
+                                    Style="{StaticResource QuietButton}" Padding="8,6" ToolTip="{local:Tr 'Скрыть'}" Command="{Binding DismissHintCommand}" />
+                            <StackPanel>
+                                <TextBlock Text="{Binding HintText}" Style="{StaticResource Soft}" TextWrapping="Wrap" MaxWidth="640" HorizontalAlignment="Left" />
+                                <Button Content="{Binding HintAction}" Command="{Binding ApplyHintCommand}" Style="{StaticResource QuietButton}"
+                                        HorizontalAlignment="Left" Margin="0,10,0,0" />
+                            </StackPanel>
+                        </DockPanel>
+                    </Border>
+
                     <Grid>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*" />
@@ -943,19 +957,34 @@
                     <ToggleButton Style="{StaticResource Switch}" IsChecked="{Binding GameFilter}" IsEnabled="{Binding HasService}">
                         <TextBlock TextWrapping="Wrap" Text="{local:Tr 'Игровой фильтр: обход для UDP-портов игр и голоса'}" />
                     </ToggleButton>
+                    <!-- выбор игровой стратегии: ручной и авто-подбор по очереди -->
                     <StackPanel Margin="0,12,0,0" Visibility="{Binding HasGameVariants, Converter={StaticResource Visible}}">
-                        <TextBlock Style="{StaticResource Soft}" TextWrapping="Wrap" Margin="0,0,0,8"
-                                   Text="{local:Tr 'Стратегия. Если игра всё равно не соединяется или лагает, попробуйте другой вариант — у разных провайдеров работает разный.'}" />
-                        <StackPanel Orientation="Horizontal">
-                            <RadioButton Style="{StaticResource Segment}" Content="{local:Tr 'Вариант 1'}" GroupName="GameVar"
-                                         IsChecked="{Binding GameFilterVariant, Mode=OneWay, Converter={StaticResource Is}, ConverterParameter=0}"
-                                         Command="{Binding SetGameVariantCommand}" CommandParameter="0" />
-                            <RadioButton Style="{StaticResource Segment}" Content="{local:Tr 'Вариант 2'}" GroupName="GameVar"
-                                         IsChecked="{Binding GameFilterVariant, Mode=OneWay, Converter={StaticResource Is}, ConverterParameter=1}"
-                                         Command="{Binding SetGameVariantCommand}" CommandParameter="1" />
-                            <RadioButton Style="{StaticResource Segment}" Content="{local:Tr 'Вариант 3'}" GroupName="GameVar"
-                                         IsChecked="{Binding GameFilterVariant, Mode=OneWay, Converter={StaticResource Is}, ConverterParameter=2}"
-                                         Command="{Binding SetGameVariantCommand}" CommandParameter="2" />
+                        <StackPanel Visibility="{Binding GameAutoActive, Converter={StaticResource IsVisible}, ConverterParameter=False}">
+                            <TextBlock Style="{StaticResource Soft}" TextWrapping="Wrap" Margin="0,0,0,8"
+                                       Text="{local:Tr 'Стратегия. Если игра всё равно не соединяется или лагает, попробуйте другой вариант — у разных провайдеров работает разный.'}" />
+                            <StackPanel Orientation="Horizontal">
+                                <RadioButton Style="{StaticResource Segment}" Content="{local:Tr 'Вариант 1'}" GroupName="GameVar"
+                                             IsChecked="{Binding GameFilterVariant, Mode=OneWay, Converter={StaticResource Is}, ConverterParameter=0}"
+                                             Command="{Binding SetGameVariantCommand}" CommandParameter="0" />
+                                <RadioButton Style="{StaticResource Segment}" Content="{local:Tr 'Вариант 2'}" GroupName="GameVar"
+                                             IsChecked="{Binding GameFilterVariant, Mode=OneWay, Converter={StaticResource Is}, ConverterParameter=1}"
+                                             Command="{Binding SetGameVariantCommand}" CommandParameter="1" />
+                                <RadioButton Style="{StaticResource Segment}" Content="{local:Tr 'Вариант 3'}" GroupName="GameVar"
+                                             IsChecked="{Binding GameFilterVariant, Mode=OneWay, Converter={StaticResource Is}, ConverterParameter=2}"
+                                             Command="{Binding SetGameVariantCommand}" CommandParameter="2" />
+                            </StackPanel>
+                            <Button Content="{local:Tr 'Подобрать для игры автоматически'}" Command="{Binding StartGameAutoCommand}"
+                                    Style="{StaticResource QuietButton}" HorizontalAlignment="Left" Margin="0,10,0,0" />
+                            <TextBlock Style="{StaticResource Soft}" TextWrapping="Wrap" Margin="0,8,0,0"
+                                       Visibility="{Binding HasGameAutoResult, Converter={StaticResource Visible}}" Text="{Binding GameAutoResult}" />
+                        </StackPanel>
+                        <!-- мастер: Тропа включает варианты по очереди -->
+                        <StackPanel Visibility="{Binding GameAutoActive, Converter={StaticResource Visible}}">
+                            <TextBlock Style="{StaticResource Soft}" TextWrapping="Wrap" Margin="0,0,0,10" Text="{Binding GameAutoText}" />
+                            <StackPanel Orientation="Horizontal">
+                                <Button Content="{local:Tr 'Работает'}" Command="{Binding GameAutoWorksCommand}" Style="{StaticResource QuietButton}" Margin="0,0,10,0" />
+                                <Button Content="{local:Tr 'Не работает — дальше'}" Command="{Binding GameAutoNextCommand}" Style="{StaticResource QuietButton}" />
+                            </StackPanel>
                         </StackPanel>
                     </StackPanel>
                     <Rectangle Height="1" Fill="{DynamicResource Line}" Margin="0,26,0,24" />

@@ -262,5 +262,58 @@ public sealed partial class MainViewModel
         Raise(nameof(ZapretNetwork));
         Raise(nameof(HasZapretNetwork));
         Raise(nameof(TgConnectVisible));
+        RefreshHints();
     }
+
+    // ---- умные подсказки: нужная функция в нужный момент, по диагнозу. Скрытую больше не показываем за сессию.
+    private readonly HashSet<string> _dismissedHints = [];
+    private string _hintKind = "", _hintText = "", _hintAction = "";
+
+    public string HintText { get => _hintText; private set => Set(ref _hintText, value); }
+    public string HintAction { get => _hintAction; private set => Set(ref _hintAction, value); }
+    public bool HasHint => _hintKind.Length > 0;
+
+    private void RefreshHints()
+    {
+        (string Kind, string Text, string Action)? pick = null;
+        if (_client is not null && _status is { } s)
+        {
+            // голос Discord — второстепенная цель (Optional), но для подсказки это валидный сигнал: учитываем любые цели
+            bool Fails(Tropa.Core.Probing.Failure f, bool anyTarget = false) => s.Targets.Any(t => (anyTarget || !t.Optional) && t.Failure == f);
+            if (s.Dns is { Enabled: false } && Fails(Tropa.Core.Probing.Failure.DnsBogus))
+                pick = ("dns", Loc.T("Провайдер подменяет DNS — подсовывает чужие адреса. Включите защищённый DNS: запросы пойдут шифрованно, и подменять их больше не смогут."), Loc.T("Включить защищённый DNS"));
+            else if (!s.GameFilter && Fails(Tropa.Core.Probing.Failure.UdpBlocked, anyTarget: true))
+                pick = ("game", Loc.T("Похоже, режут голос в Discord или игры по UDP. Включите игровой фильтр — обход накроет игровые UDP-порты."), Loc.T("Включить игровой фильтр"));
+        }
+        if (pick is { } p && !_dismissedHints.Contains(p.Kind))
+        {
+            _hintKind = p.Kind;
+            HintText = p.Text;
+            HintAction = p.Action;
+        }
+        else _hintKind = "";
+        Raise(nameof(HasHint));
+        CommandManager.InvalidateRequerySuggested();
+    }
+
+    public ICommand ApplyHintCommand => _applyHint ??= new RelayCommand(async () =>
+    {
+        if (_client is null || _hintKind.Length == 0) return;
+        var kind = _hintKind;
+        _dismissedHints.Add(kind);
+        _hintKind = "";
+        Raise(nameof(HasHint));
+        if (kind == "dns") await CallQuietly("dns", new { on = true });
+        else if (kind == "game") await CallQuietly("settings.gamefilter", new { on = true, variant = _gameFilterVariant });
+    }, () => HasHint);
+    private ICommand? _applyHint;
+
+    public ICommand DismissHintCommand => _dismissHint ??= new RelayCommand(() =>
+    {
+        if (_hintKind.Length > 0) _dismissedHints.Add(_hintKind);
+        _hintKind = "";
+        Raise(nameof(HasHint));
+        return Task.CompletedTask;
+    });
+    private ICommand? _dismissHint;
 }

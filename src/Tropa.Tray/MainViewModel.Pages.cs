@@ -343,6 +343,68 @@ public sealed partial class MainViewModel
     });
     private ICommand? _setGameVariant;
 
+    // ---- авто-подбор игровой стратегии: Тропа включает варианты по очереди, человек говорит, заработало ли
+    private int _gameAutoStep; // 0 — не идёт, иначе номер проверяемого варианта (с 1)
+    private string _gameAutoResult = "";
+
+    public bool GameAutoActive => _gameAutoStep > 0;
+    public string GameAutoText => _gameAutoStep > 0
+        ? Loc.F("Включён вариант {0} из {1}. Зайдите в игру и попробуйте сыграть (зайти в матч). Работает?", _gameAutoStep, _gameFilterVariants)
+        : "";
+    public string GameAutoResult { get => _gameAutoResult; private set { Set(ref _gameAutoResult, value); Raise(nameof(HasGameAutoResult)); } }
+    public bool HasGameAutoResult => _gameAutoResult.Length > 0;
+
+    private void SetGameStep(int step)
+    {
+        _gameAutoStep = step;
+        Raise(nameof(GameAutoActive));
+        Raise(nameof(GameAutoText));
+        Raise(nameof(HasGameVariants));
+        CommandManager.InvalidateRequerySuggested();
+    }
+
+    /// <summary>Начать авто-подбор: включаем первый вариант и просим человека проверить игру.</summary>
+    public ICommand StartGameAutoCommand => _startGameAuto ??= new RelayCommand(async () =>
+    {
+        if (_client is null || _gameFilterVariants < 1) return;
+        GameAutoResult = "";
+        GameFilterVariant = 0;
+        await CallQuietly("settings.gamefilter", new { on = true, variant = 0 });
+        SetGameStep(1);
+    }, () => !GameAutoActive && HasService && _gameFilterVariants > 1);
+    private ICommand? _startGameAuto;
+
+    /// <summary>Заработало: оставляем текущий вариант.</summary>
+    public ICommand GameAutoWorksCommand => _gameAutoWorks ??= new RelayCommand(() =>
+    {
+        GameAutoResult = Loc.F("Готово: подошёл вариант {0}. Он и останется включённым.", _gameAutoStep);
+        Raise(nameof(HasGameAutoResult));
+        Log(Loc.F("игровой фильтр: подошёл вариант {0}", _gameAutoStep));
+        SetGameStep(0);
+        return Task.CompletedTask;
+    }, () => GameAutoActive);
+    private ICommand? _gameAutoWorks;
+
+    /// <summary>Не заработало: следующий вариант, а если они кончились — подсказываем ручной путь.</summary>
+    public ICommand GameAutoNextCommand => _gameAutoNext ??= new RelayCommand(async () =>
+    {
+        if (_client is null) return;
+        if (_gameAutoStep < _gameFilterVariants)
+        {
+            var next = _gameAutoStep; // текущий шаг (с 1) = индекс следующего варианта (с 0)
+            GameFilterVariant = next;
+            await CallQuietly("settings.gamefilter", new { on = true, variant = next });
+            SetGameStep(_gameAutoStep + 1);
+        }
+        else
+        {
+            GameAutoResult = Loc.T("Ни один вариант не подошёл. Попробуйте «Выбрать запущенную программу», выбрать игру и время 5 минут — Тропа настроит обход прямо под неё.");
+            Raise(nameof(HasGameAutoResult));
+            SetGameStep(0);
+        }
+    }, () => GameAutoActive);
+    private ICommand? _gameAutoNext;
+
     private bool _communityUse, _communityShare;
 
     /// <summary>Общая база настроена в этой сборке (адрес в community.json).</summary>

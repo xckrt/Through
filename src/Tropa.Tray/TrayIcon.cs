@@ -32,6 +32,8 @@ public sealed class TrayIcon : IDisposable
 
         _icon = new Forms.NotifyIcon { ContextMenuStrip = menu, Visible = true };
         _icon.MouseClick += (_, e) => { if (e.Button == Forms.MouseButtons.Left) Open?.Invoke(); };
+        // клик по уведомлению открывает окно — там и кнопка «Подобрать заново», и подсказки
+        _icon.BalloonTipClicked += (_, _) => Open?.Invoke();
         Update(Pill.NoService, Loc.T("Тропа"), protecting: false, canToggle: false);
     }
 
