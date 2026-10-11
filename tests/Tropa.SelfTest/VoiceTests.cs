@@ -66,6 +66,46 @@ internal static class VoiceTests
                 Directory.Delete(dir, true);
             }
         }),
+
+        ("Игровой фильтр: компаньон включается настройкой и уходит при выключении", async () =>
+        {
+            var engine = new FakeEngineHost((_, _) => true);
+            using var voice = new FakeVoice(() => true);
+            var dir = Path.Combine(Path.GetTempPath(), $"tropa-game-{Guid.NewGuid():N}");
+            Directory.CreateDirectory(dir);
+            try
+            {
+                new TuningProfile { Services = new() { ["discord"] = new ServiceProfile { PresetId = "a", Complete = true } } }
+                    .Save(Path.Combine(dir, "profile.json"));
+                File.WriteAllText(Path.Combine(dir, "settings.json"), "{\"protect\":true}");
+                await using var c = new TropaController(new ControllerOptions
+                {
+                    Targets = new TargetCatalog { Services = new() { ["discord"] = [Target] }, Domains = new() { ["discord"] = ["discord.test"] } },
+                    Presets = new PresetCatalog
+                    {
+                        Presets = [new StrategyPreset { Id = "a", Treats = [Failure.TlsReset], Args = ["--hostlist={hostlist}"] }],
+                        Companions = [new CompanionProfile { Id = "game-filter", Service = "games", GameFilter = true, Args = ["--wf-udp=1024-65535"] }],
+                    },
+                    Engine = _ => Task.FromResult(new EngineContext(engine, "test")),
+                    DataDir = dir,
+                    Probe = Opts(voice.Port),
+                });
+                await c.StartAsync();
+                Assert(!engine.Active.Contains("game-filter"), $"по умолчанию выключен: {string.Join(",", engine.Active)}");
+
+                await c.SetGameFilterAsync(true);
+                Assert(engine.Active.Contains("game-filter") && engine.Active.Contains("a"),
+                    $"включили — должен работать вместе со стратегией: {string.Join(",", engine.Active)}");
+                Assert(c.Status().GameFilter, "в статусе отмечен включённым");
+
+                await c.SetGameFilterAsync(false);
+                Assert(!engine.Active.Contains("game-filter"), $"выключили — должен уйти: {string.Join(",", engine.Active)}");
+            }
+            finally
+            {
+                Directory.Delete(dir, true);
+            }
+        }),
     ];
 
     private static readonly ProbeTarget Target = new() { Name = "discord voice", Host = "voice.test", Voice = true, Optional = true, Role = "голос" };

@@ -108,6 +108,9 @@ public sealed record StatusReport
 
     public bool ShareCrashes { get; init; }
 
+    /// <summary>Игровой фильтр: широкий UDP-диапазон для игр и голоса.</summary>
+    public bool GameFilter { get; init; }
+
     /// <summary>«Не трогать»: сайты вне обхода.</summary>
     public string[] Excluded { get; init; } = [];
 

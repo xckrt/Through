@@ -922,6 +922,14 @@
                     </StackPanel>
                     <Rectangle Height="1" Fill="{DynamicResource Line}" Margin="0,26,0,24" />
 
+                    <TextBlock Text="{local:Tr 'Игры и голос'}" Style="{StaticResource SectionTitle}" />
+                    <TextBlock Style="{StaticResource Soft}" TextWrapping="Wrap" Margin="0,0,0,14"
+                               Text="{local:Tr 'Игровой фильтр накрывает обходом широкий диапазон UDP-портов, которые используют игры и голосовые чаты. Включите, если тормозят или не соединяются онлайн-игры или голос в Discord — тогда не нужно добавлять каждую игру отдельно. Задевает больше UDP-трафика, поэтому по умолчанию выключен; если что-то из сети начнёт глючить, выключите.'}" />
+                    <ToggleButton Style="{StaticResource Switch}" IsChecked="{Binding GameFilter}" IsEnabled="{Binding HasService}">
+                        <TextBlock TextWrapping="Wrap" Text="{local:Tr 'Игровой фильтр: обход для UDP-портов игр и голоса'}" />
+                    </ToggleButton>
+                    <Rectangle Height="1" Fill="{DynamicResource Line}" Margin="0,26,0,24" />
+
                     <TextBlock Text="{local:Tr 'Обновления Тропы'}" Style="{StaticResource SectionTitle}" />
                     <TextBlock Text="{Binding VersionText}" FontSize="15" Margin="0,0,0,4" />
                     <TextBlock Text="{Binding AppUpdateText}" Style="{StaticResource Soft}" Margin="0,0,0,14" />

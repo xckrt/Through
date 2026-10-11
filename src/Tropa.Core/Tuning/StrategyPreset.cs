@@ -42,6 +42,9 @@ public sealed record CompanionProfile
 
     /// <summary>Запасной вариант группы: включается, только если подбор голоса выбрал его.</summary>
     public bool Alternative { get; init; }
+
+    /// <summary>Игровой фильтр: включается, только если в настройках включён «Игровой фильтр» (широкий UDP).</summary>
+    public bool GameFilter { get; init; }
 }
 
 /// <summary>Набор пресетов. Хранится в JSON, обновляется без релиза программы.</summary>

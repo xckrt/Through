@@ -311,6 +311,19 @@ public sealed partial class MainViewModel
         }
     }
 
+    private bool _gameFilter;
+
+    /// <summary>Игровой фильтр: широкий диапазон UDP-портов, чтобы работали игры и голос без настройки каждой игры.</summary>
+    public bool GameFilter
+    {
+        get => _gameFilter;
+        set
+        {
+            if (!Set(ref _gameFilter, value) || _syncingSettings || _client is null) return;
+            _ = CallQuietly("settings.gamefilter", new { on = value });
+        }
+    }
+
     private bool _communityUse, _communityShare;
 
     /// <summary>Общая база настроена в этой сборке (адрес в community.json).</summary>
@@ -472,6 +485,7 @@ public sealed partial class MainViewModel
     {
         _syncingSettings = true;
         AutoUpdate = s.AutoUpdate;
+        GameFilter = s.GameFilter;
         CommunityUse = s.Community?.Use ?? false;
         CommunityShare = s.Community?.Share ?? false;
         Raise(nameof(HasCommunity));

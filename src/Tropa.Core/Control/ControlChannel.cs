@@ -69,7 +69,7 @@ internal sealed class LineReader(Stream stream)
 /// <summary>
 /// Сервер канала службы. Методы: status, check, tune {services?}, protect {on},
 /// apps, apps.add {AppDefinition}, apps.remove {key}, engine.update, settings.autoUpdate {on},
-/// telegram {on}, telegram.check, dns {on}, apps.observe {process, seconds}.
+/// settings.gamefilter {on}, telegram {on}, telegram.check, dns {on}, apps.observe {process, seconds}.
 /// По каналу принимаются только имена сервисов и действия: аргументы winws и пути
 /// приходят из файлов рядом со службой, а не от клиента.
 /// </summary>
@@ -163,6 +163,7 @@ public sealed class ControlServer(TropaController controller, string pipeName, F
                     "telegram.lan" => await controller.SetTelegramLanAsync(On(request.Data), ct),
                     "homeproxy" => await controller.SetHomeProxyAsync(On(request.Data), ct),
                     "settings.crashes" => await controller.SetShareCrashesAsync(On(request.Data), ct),
+                    "settings.gamefilter" => await controller.SetGameFilterAsync(On(request.Data), ct),
                     "tune.voice" => await controller.TuneVoiceAsync(ct),
                     "speed" => await controller.MeasureSpeedAsync(ct),
                     "exclude.add" => await controller.ExcludeAsync(Str(request.Data, "site"), add: true, ct),

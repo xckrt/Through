@@ -1,4 +1,10 @@
 {
+ "Игры и голос": "Games and voice",
+ "Игровой фильтр накрывает обходом широкий диапазон UDP-портов, которые используют игры и голосовые чаты. Включите, если тормозят или не соединяются онлайн-игры или голос в Discord — тогда не нужно добавлять каждую игру отдельно. Задевает больше UDP-трафика, поэтому по умолчанию выключен; если что-то из сети начнёт глючить, выключите.": "The game filter bypasses a wide range of UDP ports used by games and voice chats. Turn it on if online games or Discord voice lag or won't connect — then you don't have to add each game separately. It touches more UDP traffic, so it's off by default; if something on the network starts acting up, turn it off.",
+ "Игровой фильтр: обход для UDP-портов игр и голоса": "Game filter: bypass for the UDP ports of games and voice",
+ "игровой фильтр включён: обход накрывает UDP-порты игр и голоса": "game filter on: the bypass now covers the UDP ports of games and voice",
+ "игровой фильтр выключен": "game filter off",
+
  "\n\n…отчёт сокращён: полный текст Тропа скопировала в буфер обмена, вставьте его сюда.": "\n\n…report shortened: Tropa copied the full text to the clipboard, paste it here.",
  " (Windows один раз спросит разрешение).": " (Windows will ask for permission once).",
  " (список регионов не открылся, проверены известные адреса)": " (the region list did not open, known addresses were checked)",

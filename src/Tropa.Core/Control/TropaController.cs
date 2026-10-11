@@ -114,6 +114,10 @@ public sealed record ServiceSettings
 
     /// <summary>Отправлять в общую базу итог подбора (сервис, стратегия, помогла ли). По умолчанию выключено.</summary>
     public bool ShareResults { get; init; }
+
+    /// <summary>Игровой фильтр: обход накрывает широкий диапазон UDP-портов, чтобы работали игры и голос
+    /// без настройки каждой игры отдельно. По умолчанию выключен: широкий фильтр задевает больше трафика.</summary>
+    public bool GameFilter { get; init; }
 }
 
 /// <summary>Прокси Telegram: включён ли, на каком порту и с каким секретом (их помнит ссылка в клиенте).</summary>
@@ -199,6 +203,7 @@ public sealed class TropaController(ControllerOptions o) : IAsyncDisposable
         Speed = _speed,
         Excluded = _settings.Excluded,
         ShareCrashes = _settings.ShareCrashes,
+        GameFilter = _settings.GameFilter,
         Home = HomeStatus(),
         Week = _week is null ? null : new WeeklyReport(_week, _prevWeek),
         Community = o.Community is null ? null : new CommunityReport(_settings.UseCommunity, _settings.ShareResults),
@@ -406,6 +411,17 @@ public sealed class TropaController(ControllerOptions o) : IAsyncDisposable
         SaveSettings(_settings with { AutoUpdate = on });
         _message = on ? "zapret будет обновляться сам" : "автообновление zapret выключено";
         return Task.FromResult(Status());
+    }, ct);
+
+    /// <summary>Игровой фильтр: широкий диапазон UDP-портов, чтобы игры и голос работали без настройки каждой игры.</summary>
+    public Task<StatusReport> SetGameFilterAsync(bool on, CancellationToken ct = default) => Exclusive(async () =>
+    {
+        SaveSettings(_settings with { GameFilter = on });
+        _message = on
+            ? "игровой фильтр включён: обход накрывает UDP-порты игр и голоса"
+            : "игровой фильтр выключен";
+        await RestartEngineIfRunningAsync(ct);
+        return Status();
     }, ct);
 
     private async Task<EngineUpdateResult> UpdateCoreAsync(CancellationToken ct)
@@ -1490,8 +1506,10 @@ public sealed class TropaController(ControllerOptions o) : IAsyncDisposable
             if (_presetCatalog.Treating(new HashSet<Failure> { Failure.TlsReset, Failure.TlsTimeout }, app.Key).FirstOrDefault() is { } preset)
                 Add(app.Key, preset);
 
-        // то, что не подбирается, но нужно приложению: QUIC, голос, игровые порты
-        foreach (var c in _presetCatalog.Companions.Where(c => (c.Always || withStrategy.Contains(c.Service)) && exclude?.Contains(c.Service) != true && Chosen(c)))
+        // то, что не подбирается, но нужно приложению: QUIC, голос, игровые порты.
+        // Игровой фильтр (широкий UDP) включается отдельной настройкой, а не наличием сервиса.
+        bool Include(CompanionProfile c) => c.GameFilter ? _settings.GameFilter : (c.Always || withStrategy.Contains(c.Service));
+        foreach (var c in _presetCatalog.Companions.Where(c => Include(c) && exclude?.Contains(c.Service) != true && Chosen(c)))
         {
             var (hosts, ports) = _catalog.BypassScope(c.Service);
             companions.Add(new EngineLaunch(new StrategyPreset { Id = c.Id, Treats = [], Args = c.Args }, hosts, ports));
