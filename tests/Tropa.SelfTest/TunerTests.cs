@@ -28,6 +28,19 @@ internal static class TunerTests
             Assert(s.Plan.Diagnosis.Single().Failure == Failure.TlsReset, "диагноз ставится без обхода");
         }),
 
+        ("Tuner: проигравший кандидат не гоняется лишний раз, победитель проверяется полностью", async () =>
+        {
+            var maxN = new Dictionary<string, int>();
+            var engine = new FakeEngineHost((id, n) => { lock (maxN) maxN[id] = Math.Max(maxN.GetValueOrDefault(id), n); return id == "b"; });
+            await using var srv = FakeServer.SniFilter(Host, reset: true, engine.AllowConnection);
+            var s = (await new Tuner(engine, opts).TuneAsync(Catalog(srv.Port), Presets())).Services.Single();
+
+            Assert(s.Best?.Preset.Id == "b", $"best={s.Best?.Preset.Id}");
+            // «a» проигрывает на первом же прогоне → второй пропускаем; «b» (победитель) проходит оба
+            Assert(maxN.GetValueOrDefault("a") < maxN.GetValueOrDefault("b"),
+                $"проигравший должен гоняться меньше победителя: a={maxN.GetValueOrDefault("a")} b={maxN.GetValueOrDefault("b")}");
+        }),
+
         ("Tuner: пресет, чинящий один прогон из двух, не выбирается", async () =>
         {
             var engine = new FakeEngineHost((id, n) => id == "a" ? n == 1 : id == "b");

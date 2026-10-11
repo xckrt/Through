@@ -183,7 +183,10 @@ public sealed class Tuner(IEngineHost engine, ProbeOptions? options = null, int 
 
         foreach (var preset in plan.Candidates)
         {
-            var attempt = await AttemptAsync(plan.Service, null, [new EngineLaunch(preset, hosts, ports)], probeTargets, ct);
+            // досрочно бросаем кандидата, как только он уже не может обойти лучшего: «воркст из N прогонов»
+            // только ухудшается, так что если он не бьёт порог даже сейчас, остальные прогоны его не спасут
+            var attempt = await AttemptAsync(plan.Service, null, [new EngineLaunch(preset, hosts, ports)], probeTargets, ct,
+                s => s.CompareTo(best?.Score ?? baseline) > 0);
             attempts.Add(attempt);
             progress?.Report(attempt);
             if (attempt.Error is not null) continue;
@@ -212,7 +215,8 @@ public sealed class Tuner(IEngineHost engine, ProbeOptions? options = null, int 
             foreach (var preset in plan.Candidates)
             {
                 var launches = Launches(overrides.Append(new HostOverride(target.Host, preset)), main, ports);
-                var attempt = await AttemptAsync(plan.Service, target.Host, launches, probe, ct);
+                // уточнение берём только идеальное: как только прогон не идеален, дальше гонять незачем
+                var attempt = await AttemptAsync(plan.Service, target.Host, launches, probe, ct, s => s.IsPerfect);
                 attempts.Add(attempt);
                 progress?.Report(attempt);
                 if (attempt.Error is null && attempt.Score.IsPerfect)
@@ -244,9 +248,14 @@ public sealed class Tuner(IEngineHost engine, ProbeOptions? options = null, int 
         return list;
     }
 
-    /// <summary>Попытка: launches[0] — то, что сейчас пробуем (для уточнения — стратегия хоста).</summary>
+    /// <summary>
+    /// Попытка: launches[0] — то, что сейчас пробуем (для уточнения — стратегия хоста).
+    /// <paramref name="keepRunning"/> получает «воркст из уже сделанных прогонов»: вернёт false — лишние
+    /// прогоны пропускаем (их результат не изменится в лучшую сторону).
+    /// </summary>
     private async Task<TuneAttempt> AttemptAsync(
-        string service, string? host, IReadOnlyList<EngineLaunch> launches, List<ProbeTarget> probeTargets, CancellationToken ct)
+        string service, string? host, IReadOnlyList<EngineLaunch> launches, List<ProbeTarget> probeTargets,
+        CancellationToken ct, Func<TuneScore, bool>? keepRunning = null)
     {
         var tried = host is null ? launches[0].Preset : launches.First(l => l.Hosts.Contains(host)).Preset;
         IEngineSession session;
@@ -260,16 +269,19 @@ public sealed class Tuner(IEngineHost engine, ProbeOptions? options = null, int 
         }
 
         var runs = new List<IReadOnlyList<ProbeResult>>();
+        var worst = new List<ProbeResult>();
         await using (session)
         {
             for (var i = 0; i < runsPerPreset; i++)
+            {
                 runs.Add(await _attempt.RunAsync(probeTargets, ct));
+                worst = Enumerable.Range(0, probeTargets.Count)
+                    .Where(j => !probeTargets[j].IsControl)
+                    .Select(j => runs.Select(run => run[j]).MinBy(TuneScore.Rank)!)
+                    .ToList();
+                if (keepRunning is not null && !keepRunning(TuneScore.Of(worst))) break;
+            }
         }
-
-        var worst = Enumerable.Range(0, probeTargets.Count)
-            .Where(i => !probeTargets[i].IsControl)
-            .Select(i => runs.Select(run => run[i]).MinBy(TuneScore.Rank)!)
-            .ToList();
         return new TuneAttempt { Service = service, Host = host, Preset = tried, Score = TuneScore.Of(worst), Results = worst };
     }
 }
