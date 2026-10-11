@@ -1,4 +1,11 @@
 {
+ "Сохранить диагностику в файл": "Save diagnostics to a file",
+ "Сохранить диагностику": "Save diagnostics",
+ "(диагностика собрана вручную)": "(diagnostics collected manually)",
+ "диагностика сохранена в файл": "diagnostics saved to a file",
+ "не удалось сохранить диагностику: {0}": "couldn't save diagnostics: {0}",
+ "Откроется черновик issue на GitHub с версиями и журналами — или сохраните тот же отчёт в файл и пришлите его любым способом. Вы увидите весь текст; без вашего нажатия Тропа ничего никуда не шлёт.": "A GitHub issue draft opens with versions and logs — or save the same report to a file and send it any way you like. You see the full text; Tropa sends nothing anywhere without your click.",
+
  "Скрыть": "Hide",
 
  "Провайдер подменяет DNS — подсовывает чужие адреса. Включите защищённый DNS: запросы пойдут шифрованно, и подменять их больше не смогут.": "Your ISP is spoofing DNS — handing out fake addresses. Turn on secure DNS: your requests go encrypted and can no longer be spoofed.",

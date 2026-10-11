@@ -71,6 +71,32 @@ public sealed partial class MainViewModel
     });
     private ICommand? _report;
 
+    /// <summary>Собрать диагностику в файл: версии, система, журналы окна и службы — чтобы отправить любым способом.</summary>
+    public ICommand SaveDiagnosticsCommand => _saveDiag ??= new RelayCommand(() =>
+    {
+        var report = CrashReports.Build(Loc.T("(диагностика собрана вручную)"), LogLinesText(), StatusLine());
+        var dialog = new Microsoft.Win32.SaveFileDialog
+        {
+            FileName = $"Tropa-diagnostic-{DateTime.Now:yyyy-MM-dd-HHmm}.txt",
+            Filter = "Текст (*.txt)|*.txt",
+            Title = Loc.T("Сохранить диагностику"),
+        };
+        if (dialog.ShowDialog() != true) return Task.CompletedTask;
+        try
+        {
+            System.IO.File.WriteAllText(dialog.FileName, report);
+            Log(Loc.T("диагностика сохранена в файл"));
+            try { Process.Start(new ProcessStartInfo("explorer.exe", $"/select,\"{dialog.FileName}\"") { UseShellExecute = true })?.Dispose(); }
+            catch (Exception) { }
+        }
+        catch (Exception ex) when (ex is System.IO.IOException or UnauthorizedAccessException)
+        {
+            Log(Loc.F("не удалось сохранить диагностику: {0}", ex.Message), error: true);
+        }
+        return Task.CompletedTask;
+    });
+    private ICommand? _saveDiag;
+
     /// <summary>При запуске: сначала незакрытые падения (важнее), потом обновления.</summary>
     private async Task StartBannersAsync()
     {

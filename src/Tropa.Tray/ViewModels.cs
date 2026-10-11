@@ -654,11 +654,12 @@ public sealed partial class MainViewModel : Observable
     {
         try
         {
-            // первую перепроверку делаем почти сразу, дальше реже; минут через 7 перестаём дёргать —
-            // следующий статус от службы запустит цикл снова, если сеть всё ещё не вернулась
-            for (var i = 0; i < 60 && !ct.IsCancellationRequested; i++)
+            // нарастающая пауза: первая проверка почти сразу, дальше всё реже, чтобы не дёргать окно и сеть
+            // зря, пока сети нет. Минут через ~20 перестаём; следующий статус от службы запустит цикл снова.
+            int[] gaps = [2, 6, 12, 24, 45];
+            for (var i = 0; i < 30 && !ct.IsCancellationRequested; i++)
             {
-                await Task.Delay(TimeSpan.FromSeconds(i == 0 ? 2 : 7), ct);
+                await Task.Delay(TimeSpan.FromSeconds(gaps[Math.Min(i, gaps.Length - 1)]), ct);
                 if (IsRunning || _client is null || _status?.NetworkDown != true) return;
                 await CheckAsync();
                 if (_status?.NetworkDown != true) return;

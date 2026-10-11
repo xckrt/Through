@@ -1067,10 +1067,14 @@
                         <TextBlock TextWrapping="Wrap" MaxWidth="640"
                                    Text="{local:Tr 'Отправлять сводки об ошибках: тип ошибки и имена методов Тропы, версии Тропы и Windows. Без текста ошибок, путей, адресов сайтов и имён — помогает чинить то, что ломается у многих.'}" />
                     </ToggleButton>
-                    <Button Content="{local:Tr 'Сообщить о проблеме'}" Command="{Binding ReportProblemCommand}" Style="{StaticResource QuietButton}"
-                            HorizontalAlignment="Left" Margin="0,0,0,10" />
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+                        <Button Content="{local:Tr 'Сообщить о проблеме'}" Command="{Binding ReportProblemCommand}" Style="{StaticResource QuietButton}"
+                                HorizontalAlignment="Left" Margin="0,0,10,0" />
+                        <Button Content="{local:Tr 'Сохранить диагностику в файл'}" Command="{Binding SaveDiagnosticsCommand}" Style="{StaticResource QuietButton}"
+                                HorizontalAlignment="Left" />
+                    </StackPanel>
                     <TextBlock Style="{StaticResource Soft}" FontSize="12.5" Margin="0,0,0,14"
-                               Text="{local:Tr 'Откроется черновик issue на GitHub с версиями и журналами. Вы увидите весь текст до отправки; без вашего нажатия Тропа ничего никуда не шлёт.'}" />
+                               Text="{local:Tr 'Откроется черновик issue на GitHub с версиями и журналами — или сохраните тот же отчёт в файл и пришлите его любым способом. Вы увидите весь текст; без вашего нажатия Тропа ничего никуда не шлёт.'}" />
                     <Button Content="{local:Tr 'Удалить службу Тропы'}" Command="{Binding UninstallServiceCommand}" Style="{StaticResource QuietButton}"
                             Foreground="{DynamicResource Signal}" HorizontalAlignment="Left"
                             Visibility="{Binding CanUninstall, Converter={StaticResource Visible}}" />
