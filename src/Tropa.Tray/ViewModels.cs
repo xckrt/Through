@@ -290,10 +290,24 @@ public sealed partial class MainViewModel : Observable
     {
         HookHome();
         _ = StartBannersAsync();
-        if (_pipeName is not null && await ConnectAsync(TimeSpan.FromMilliseconds(400)) is { } status)
+        // служба могла быть занята/перезапускаться: пробуем подключиться не 400 мс, а ещё пару секунд,
+        // иначе окно покажет «не настроено», хотя обход на самом деле уже работает в службе
+        if (_pipeName is not null)
         {
-            if (status.State == ControllerState.Idle) await CheckAsync();
-            return;
+            if (await ConnectAsync(TimeSpan.FromMilliseconds(400)) is { } status)
+            {
+                if (status.State == ControllerState.Idle) await CheckAsync();
+                return;
+            }
+            for (var i = 0; i < 3 && _client is null; i++)
+            {
+                await Task.Delay(TimeSpan.FromMilliseconds(500), _cts.Token);
+                if (await ConnectAsync(TimeSpan.FromMilliseconds(500)) is { } late)
+                {
+                    if (late.State == ControllerState.Idle) await CheckAsync();
+                    return;
+                }
+            }
         }
 
         TuneVisible = true;
@@ -301,6 +315,34 @@ public sealed partial class MainViewModel : Observable
             ? Loc.T("Переносная версия: обход работает, пока открыта Тропа. При включении Windows спросит разрешение администратора.")
             : Loc.T("Обход настраивает служба Тропы. При первом подборе Windows один раз спросит разрешение администратора.");
         await CheckAsync();
+        KeepConnecting(20); // служба могла ещё запускаться/устанавливаться — продолжаем ловить её в фоне
+    }
+
+    private CancellationTokenSource? _reconnectCts;
+
+    /// <summary>Пока службы нет, несколько секунд пробуем подключиться в фоне: окно само поймает её,
+    /// когда она поднимется (запуск, установка, перезапуск при обновлении), а не повиснет в «не настроено».</summary>
+    private void KeepConnecting(int attempts)
+    {
+        if (_client is not null || _pipeName is null || _reconnectCts is not null) return;
+        _reconnectCts = CancellationTokenSource.CreateLinkedTokenSource(_cts.Token);
+        _ = ReconnectLoopAsync(attempts, _reconnectCts.Token);
+    }
+
+    private async Task ReconnectLoopAsync(int attempts, CancellationToken ct)
+    {
+        try
+        {
+            for (var i = 0; i < attempts && _client is null && !ct.IsCancellationRequested; i++)
+            {
+                await Task.Delay(TimeSpan.FromSeconds(1), ct);
+                if (_client is not null) return;
+                if (await ConnectAsync(TimeSpan.FromMilliseconds(500)) is { State: ControllerState.Idle } && !IsRunning)
+                    await CheckAsync();
+            }
+        }
+        catch (OperationCanceledException) { }
+        finally { if (_reconnectCts?.Token == ct) { _reconnectCts.Dispose(); _reconnectCts = null; } }
     }
 
     /// <summary>Подключиться к службе и подписаться на её события. null, если служба не отвечает.</summary>
@@ -323,6 +365,7 @@ public sealed partial class MainViewModel : Observable
             var status = await client.CallAsync<StatusReport>("status", ct: _cts.Token);
             // служба из прошлой версии Тропы: обновим её при следующем подборе
             _serviceOutdated = status.Build != Core.TropaBuild.Id;
+            TuneVisible = false; // подключились к живой службе — режим «не настроено» снимаем
             ApplyStatus(status);
             CommandManager.InvalidateRequerySuggested();
             return status;
@@ -612,6 +655,8 @@ public sealed partial class MainViewModel : Observable
         ProtectVisible = false;
         ModeNote = Loc.T("Связь со службой Тропы потеряна: она остановлена или перезапускается. Доступна только диагностика.");
         CommandManager.InvalidateRequerySuggested();
+        // служба перезапускается (обновление, падение) — ловим её снова, чтобы окно вернулось в строй само
+        KeepConnecting(30);
     }
 
     private void ApplyStatus(StatusReport s)
