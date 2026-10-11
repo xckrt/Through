@@ -1370,14 +1370,22 @@ public sealed class TropaController(ControllerOptions o) : IAsyncDisposable
         }
         // диагноз подбираемых сервисов ставится без их обхода: свой же winws испортил бы картину
         await StopEngineAsync();
-        // заодно «до»: скорость YouTube без обхода, чтобы потом показать разницу
-        if (services is null || services.Contains("youtube", StringComparer.OrdinalIgnoreCase))
-            await MeasureCoreAsync(withBypass: false, ct);
+        var community = _settings.UseCommunity ? o.Community : null;
         try
         {
+            // «до»: скорость YouTube без обхода, и заодно подсказки общей базы — обе операции идут без обхода,
+            // поэтому тянем их параллельно: до базы на заблокированной сети достучаться бывает долго (до 6 с),
+            // и это ожидание прячется за замером, а не добавляется к нему
+            var measure = services is null || services.Contains("youtube", StringComparer.OrdinalIgnoreCase)
+                ? MeasureCoreAsync(withBypass: false, ct)
+                : Task.CompletedTask;
+            var recTask = community is null ? Task.FromResult<StrategyBase.Recommendation?>(null) : community.RecommendAsync(ct);
+            await Task.WhenAll(measure, recTask);
+            var rec = await recTask;
+
             var engine = await EnsureEngineAsync(ct);
             IReadOnlyDictionary<string, string[]>? preferred = null;
-            if (o.Community is { } community && _settings.UseCommunity && await community.RecommendAsync(ct) is { } rec)
+            if (rec is not null)
             {
                 preferred = rec.Services;
                 if (hint is not null)
