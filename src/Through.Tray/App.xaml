@@ -26,7 +26,7 @@
             <Setter Property="Control.Template">
                 <Setter.Value>
                     <ControlTemplate>
-                        <Rectangle Margin="-3" Stroke="{DynamicResource Ink}" StrokeThickness="2" RadiusX="4" RadiusY="4" />
+                        <Rectangle Margin="-3" Stroke="{DynamicResource Pine}" StrokeThickness="2" RadiusX="8" RadiusY="8" />
                     </ControlTemplate>
                 </Setter.Value>
             </Setter>
@@ -46,7 +46,7 @@
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
-                        <Border x:Name="Bg" Background="{TemplateBinding Background}" CornerRadius="3" Padding="{TemplateBinding Padding}">
+                        <Border x:Name="Bg" Background="{TemplateBinding Background}" CornerRadius="14" Padding="{TemplateBinding Padding}">
                             <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" VerticalAlignment="Center" />
                         </Border>
                         <ControlTemplate.Triggers>
@@ -76,7 +76,7 @@
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
                         <Border x:Name="Bg" Background="{TemplateBinding Background}" BorderBrush="{DynamicResource Line}"
-                                BorderThickness="1" CornerRadius="3" Padding="{TemplateBinding Padding}">
+                                BorderThickness="1" CornerRadius="12" Padding="{TemplateBinding Padding}">
                             <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" VerticalAlignment="Center" />
                         </Border>
                         <ControlTemplate.Triggers>
@@ -102,7 +102,7 @@
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="ToggleButton">
-                        <Border x:Name="Bg" Background="Transparent" CornerRadius="3" Padding="10,8" Margin="-10,0">
+                        <Border x:Name="Bg" Background="Transparent" CornerRadius="10" Padding="10,8" Margin="-10,0">
                             <ContentPresenter />
                         </Border>
                         <ControlTemplate.Triggers>
@@ -192,7 +192,7 @@
                 <Setter.Value>
                     <ControlTemplate TargetType="RadioButton">
                         <Border x:Name="Bg" Background="Transparent" BorderBrush="{DynamicResource Line}" BorderThickness="1"
-                                CornerRadius="3" Padding="16,8" Margin="0,0,8,0">
+                                CornerRadius="10" Padding="16,8" Margin="0,0,8,0">
                             <ContentPresenter />
                         </Border>
                         <ControlTemplate.Triggers>
@@ -290,7 +290,7 @@
                 <Setter.Value>
                     <ControlTemplate TargetType="TextBox">
                         <Border x:Name="Box" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"
-                                BorderThickness="1" CornerRadius="3">
+                                BorderThickness="1" CornerRadius="10">
                             <ScrollViewer x:Name="PART_ContentHost" Margin="{TemplateBinding Padding}" />
                         </Border>
                         <ControlTemplate.Triggers>
