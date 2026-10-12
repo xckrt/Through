@@ -31,7 +31,7 @@ export default {
       if (url.pathname === "/v1/catalog" && req.method === "GET") return cors(catalog());
       if (url.pathname === "/v1/crash" && req.method === "POST") return cors(await crash(req, env));
       if (url.pathname === "/v1/crashes" && req.method === "GET") return await crashes(req, env);
-      if (url.pathname === "/") return json({ name: "tropa-strategy-base", docs: "https://github.com/xckrt/Tropa" });
+      if (url.pathname === "/") return json({ name: "tropa-strategy-base", docs: "https://github.com/xckrt/Through" });
       return json({ error: "not found" }, 404);
     } catch (e) {
       return json({ error: "internal" }, 500);

@@ -25,7 +25,7 @@ npx wrangler secret put ADMIN_KEY              # ключ для чтения с
 npx wrangler deploy                            # выведет адрес https://tropa-strategy-base.<аккаунт>.workers.dev
 ```
 
-Адрес вписывается в `src/Tropa.Cli/community.json` (`"url"`), и со следующего релиза Сквозь начнёт им пользоваться.
+Адрес вписывается в `src/Through.Cli/community.json` (`"url"`), и со следующего релиза Сквозь начнёт им пользоваться.
 Пока `url` пустой, база выключена.
 
 ## API
