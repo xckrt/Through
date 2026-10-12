@@ -643,8 +643,8 @@
                     <ItemsControl ItemsSource="{Binding AppRows}" Focusable="False">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate DataType="{x:Type local:AppRowVm}">
-                                <StackPanel>
-                                    <DockPanel Margin="0,4">
+                                <Border Style="{StaticResource HomeCard}" Padding="22,16,22,16" Margin="0,0,0,12">
+                                    <DockPanel>
                                         <Button DockPanel.Dock="Right" Content="{local:Tr 'Удалить'}" Style="{StaticResource QuietButton}" Padding="14,6"
                                                 FontSize="13" VerticalAlignment="Center"
                                                 Command="{Binding DataContext.RemoveAppCommand, RelativeSource={RelativeSource AncestorType=Window}}"
@@ -658,13 +658,13 @@
                                             <TextBlock Text="{Binding Details}" Foreground="{DynamicResource InkSoft}" FontSize="13" Margin="0,3,0,0" />
                                         </StackPanel>
                                     </DockPanel>
-                                    <Rectangle Height="1" Fill="{DynamicResource Line}" Margin="0,12,0,12" />
-                                </StackPanel>
+                                </Border>
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
                     <!-- «не трогать»: сайты, которые обход ломает -->
-                    <StackPanel Margin="0,10,0,0">
+                    <Border Style="{StaticResource HomeCard}" Padding="24,18,24,20" Margin="0,2,0,0">
+                    <StackPanel>
                         <TextBlock Text="{local:Tr 'Не трогать'}" Style="{StaticResource SectionTitle}" />
                         <TextBlock Style="{StaticResource Soft}" TextWrapping="Wrap" Margin="0,0,0,12" MaxWidth="640" HorizontalAlignment="Left"
                                    Text="{local:Tr 'Если после включения обхода перестал открываться банк, госуслуги или рабочий портал, добавьте его сюда: обход не будет трогать этот сайт и его поддомены.'}" />
@@ -698,6 +698,7 @@
                             </TextBox>
                         </DockPanel>
                     </StackPanel>
+                    </Border>
                 </StackPanel>
                 </ScrollViewer>
 
@@ -909,6 +910,7 @@
 
                 <!-- правая колонка: дата-центры и счётчики -->
                 <ScrollViewer Grid.Row="1" Grid.Column="2" VerticalScrollBarVisibility="Auto" Focusable="False">
+                    <Border Style="{StaticResource HomeCard}" Padding="24,20,24,22" VerticalAlignment="Top">
                     <StackPanel>
                         <TextBlock Text="{local:Tr 'Дата-центры'}" Style="{StaticResource SectionTitle}" />
                         <ItemsControl ItemsSource="{Binding DcRows}" Focusable="False" Margin="0,0,0,22">
@@ -934,6 +936,7 @@
                         <TextBlock Style="{StaticResource Soft}" FontSize="12.5" Margin="0,22,0,0" TextWrapping="Wrap"
                                    Text="{local:Tr 'Порт tg-ws-proxy от Flowseal (MIT), переписан на C# и работает в службе Сквозь без Python.'}" />
                     </StackPanel>
+                    </Border>
                 </ScrollViewer>
             </Grid>
 
@@ -954,9 +957,11 @@
                                    Text="{local:Tr 'Что Сквозь делала с момента открытия окна: попытки подбора, перезапуски, обновления.'}" />
                     </StackPanel>
                 </DockPanel>
-                <TextBlock Grid.Row="1" Style="{StaticResource Soft}" Text="{local:Tr 'Пока тихо. События появятся, когда служба что-нибудь сделает.'}"
+                <Border Grid.Row="1" Style="{StaticResource HomeCard}" Padding="26,20,18,18">
+                <Grid>
+                <TextBlock Style="{StaticResource Soft}" Text="{local:Tr 'Пока тихо. События появятся, когда служба что-нибудь сделает.'}"
                            Visibility="{Binding LogLines.Count, Converter={StaticResource WhenEmpty}}" />
-                <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Focusable="False">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" Focusable="False">
                     <ItemsControl ItemsSource="{Binding LogLines}" Focusable="False">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate DataType="{x:Type local:LogLine}">
@@ -981,14 +986,18 @@
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
                 </ScrollViewer>
+                </Grid>
+                </Border>
             </Grid>
 
             <!-- ======== Настройки ======== -->
             <ScrollViewer x:Name="SettingsPage" Grid.Row="2" VerticalScrollBarVisibility="Auto" Focusable="False"
                           Visibility="{Binding Page, Converter={StaticResource IsVisible}, ConverterParameter=Settings}">
                 <StackPanel Margin="48,26,48,26" MaxWidth="720" HorizontalAlignment="Left">
-                    <TextBlock Text="{local:Tr 'Настройки'}" Style="{StaticResource PageTitle}" Margin="0,0,0,24" />
+                    <TextBlock Text="{local:Tr 'Настройки'}" Style="{StaticResource PageTitle}" Margin="0,0,0,20" />
 
+                    <Border Style="{StaticResource HomeCard}" Padding="26,22,26,24" Margin="0,0,0,16">
+                    <StackPanel>
                     <TextBlock Text="{local:Tr 'Защита'}" Style="{StaticResource SectionTitle}" />
                     <TextBlock Style="{StaticResource Soft}" Text="{Binding ModeNote}" Margin="0,0,0,12"
                                Visibility="{Binding HasModeNote, Converter={StaticResource Visible}}" />
@@ -997,8 +1006,11 @@
                                 Visibility="{Binding ProtectVisible, Converter={StaticResource Visible}}" Margin="0,0,10,0" />
                         <Button Content="{local:Tr 'Подобрать обход заново'}" Command="{Binding TuneCommand}" Style="{StaticResource QuietButton}" />
                     </StackPanel>
-                    <Rectangle Height="1" Fill="{DynamicResource Line}" Margin="0,26,0,24" />
+                    </StackPanel>
+                    </Border>
 
+                    <Border Style="{StaticResource HomeCard}" Padding="26,22,26,24" Margin="0,0,0,16">
+                    <StackPanel>
                     <TextBlock Text="{local:Tr 'Игры и голос'}" Style="{StaticResource SectionTitle}" />
                     <TextBlock Style="{StaticResource Soft}" TextWrapping="Wrap" Margin="0,0,0,14"
                                Text="{local:Tr 'Игровой фильтр накрывает обходом широкий диапазон UDP-портов, которые используют игры и голосовые чаты. Включите, если тормозят или не соединяются онлайн-игры или голос в Discord — тогда не нужно добавлять каждую игру отдельно. Задевает больше UDP-трафика, поэтому по умолчанию выключен; если что-то из сети начнёт глючить, выключите.'}" />
@@ -1035,8 +1047,11 @@
                             </StackPanel>
                         </StackPanel>
                     </StackPanel>
-                    <Rectangle Height="1" Fill="{DynamicResource Line}" Margin="0,26,0,24" />
+                    </StackPanel>
+                    </Border>
 
+                    <Border Style="{StaticResource HomeCard}" Padding="26,22,26,24" Margin="0,0,0,16">
+                    <StackPanel>
                     <TextBlock Text="{local:Tr 'Обновления Сквозь'}" Style="{StaticResource SectionTitle}" />
                     <TextBlock Text="{Binding VersionText}" FontSize="15" Margin="0,0,0,4" />
                     <TextBlock Text="{Binding AppUpdateText}" Style="{StaticResource Soft}" Margin="0,0,0,14" />
@@ -1045,8 +1060,11 @@
                                    Text="{local:Tr 'Проверять новые версии Сквозь на github.com/xckrt/Through и предлагать обновиться (сама Сквозь без спроса не обновляется)'}" />
                     </ToggleButton>
                     <Button Content="{local:Tr 'Проверить сейчас'}" Command="{Binding CheckAppUpdateCommand}" Style="{StaticResource QuietButton}" HorizontalAlignment="Left" />
-                    <Rectangle Height="1" Fill="{DynamicResource Line}" Margin="0,26,0,24" />
+                    </StackPanel>
+                    </Border>
 
+                    <Border Style="{StaticResource HomeCard}" Padding="26,22,26,24" Margin="0,0,0,16">
+                    <StackPanel>
                     <TextBlock Text="{local:Tr 'Обновления zapret'}" Style="{StaticResource SectionTitle}" />
                     <TextBlock Text="{Binding EngineText}" FontSize="15" Margin="0,0,0,4" />
                     <TextBlock Text="{Binding UpdateText}" Style="{StaticResource Soft}" Margin="0,0,0,14" />
@@ -1055,9 +1073,12 @@
                                    Text="{local:Tr 'Обновлять автоматически: раз в сутки Сквозь ищет новый релиз bol-van/zapret, сверяет хеши и переходит на него, а если он не запустится, возвращается к прежнему'}" />
                     </ToggleButton>
                     <Button Content="{local:Tr 'Проверить сейчас'}" Command="{Binding CheckUpdatesCommand}" Style="{StaticResource QuietButton}" HorizontalAlignment="Left" />
-                    <Rectangle Height="1" Fill="{DynamicResource Line}" Margin="0,26,0,24" />
+                    </StackPanel>
+                    </Border>
 
-                    <StackPanel Visibility="{Binding HasCommunity, Converter={StaticResource Visible}}">
+                    <Border Style="{StaticResource HomeCard}" Padding="26,22,26,24" Margin="0,0,0,16"
+                            Visibility="{Binding HasCommunity, Converter={StaticResource Visible}}">
+                    <StackPanel>
                         <TextBlock Text="{local:Tr 'Общая база стратегий'}" Style="{StaticResource SectionTitle}" />
                         <TextBlock Style="{StaticResource Soft}" TextWrapping="Wrap" Margin="0,0,0,14"
                                    Text="{local:Tr 'Сквозь делятся тем, что помогло: у вашего провайдера YouTube уже чинили — Сквозь попробует эту стратегию первой, и подбор займёт секунды. Провайдера сервер узнаёт сам по соединению; Сквозь отправляет только «сервис → стратегия → помогла или нет», без IP, адресов сайтов и идентификаторов.'}" />
@@ -1067,9 +1088,11 @@
                         <ToggleButton Style="{StaticResource Switch}" IsChecked="{Binding CommunityShare}" IsEnabled="{Binding HasService}">
                             <TextBlock TextWrapping="Wrap" Text="{local:Tr 'Делиться итогами своего подбора (помогает другим с тем же провайдером)'}" />
                         </ToggleButton>
-                        <Rectangle Height="1" Fill="{DynamicResource Line}" Margin="0,26,0,24" />
                     </StackPanel>
+                    </Border>
 
+                    <Border Style="{StaticResource HomeCard}" Padding="26,22,26,24" Margin="0,0,0,16">
+                    <StackPanel>
                     <TextBlock Text="{local:Tr 'Окно'}" Style="{StaticResource SectionTitle}" />
                     <TextBlock Text="{local:Tr 'Тема'}" Style="{StaticResource FieldLabel}" Margin="0,0,0,8" />
                     <StackPanel Orientation="Horizontal" Margin="0,0,0,18">
@@ -1105,8 +1128,11 @@
                     <ToggleButton Style="{StaticResource Switch}" IsChecked="{Binding MinimizeToTray}">
                         <TextBlock TextWrapping="Wrap" Text="{local:Tr 'Закрывать в трей: защиту держит служба, окно можно открыть значком у часов'}" />
                     </ToggleButton>
-                    <Rectangle Height="1" Fill="{DynamicResource Line}" Margin="0,26,0,24" />
+                    </StackPanel>
+                    </Border>
 
+                    <Border Style="{StaticResource HomeCard}" Padding="26,22,26,24" Margin="0,0,0,16">
+                    <StackPanel>
                     <TextBlock Text="{local:Tr 'О программе'}" Style="{StaticResource SectionTitle}" />
                     <TextBlock Text="{Binding BuildText}" Style="{StaticResource Soft}" />
                     <TextBlock Style="{StaticResource Soft}" Margin="0,4,0,14"
@@ -1126,6 +1152,8 @@
                     <Button Content="{local:Tr 'Удалить службу Сквозь'}" Command="{Binding UninstallServiceCommand}" Style="{StaticResource QuietButton}"
                             Foreground="{DynamicResource Signal}" HorizontalAlignment="Left"
                             Visibility="{Binding CanUninstall, Converter={StaticResource Visible}}" />
+                    </StackPanel>
+                    </Border>
                 </StackPanel>
             </ScrollViewer>
         </Grid>
