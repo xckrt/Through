@@ -1622,11 +1622,13 @@ public sealed class ThroughController(ControllerOptions o) : IAsyncDisposable
         {
             if (!File.Exists(CatalogOverlayPath)) return;
             var c = ThroughJson.Load<OverlayCache>(CatalogOverlayPath);
+            if (c.Services is null) return; // старый/чужой формат файла — не падаем, просто без оверлея
             _overlayVersion = c.Version;
             _overlay = c.Services.Where(kv => kv.Value is not null).ToDictionary(
-                kv => kv.Key, kv => (IReadOnlyList<string>)[.. kv.Value.Where(TargetCatalog.IsValidDomain)]);
+                kv => kv.Key, kv => (IReadOnlyList<string>)[.. (kv.Value ?? []).Where(TargetCatalog.IsValidDomain)]);
         }
-        catch (Exception ex) when (ex is IOException or System.Text.Json.JsonException or InvalidDataException) { }
+        // оверлей — необязательное улучшение: любая беда с файлом не должна ронять службу
+        catch (Exception) { }
     }
 
     private void SaveOverlay(StrategyBase.CatalogOverlay overlay)
@@ -1634,7 +1636,8 @@ public sealed class ThroughController(ControllerOptions o) : IAsyncDisposable
         try
         {
             var cache = new OverlayCache(overlay.Version, overlay.Services.ToDictionary(kv => kv.Key, kv => kv.Value.ToArray()));
-            File.WriteAllText(CatalogOverlayPath, System.Text.Json.JsonSerializer.Serialize(cache));
+            // теми же настройками, что и чтение (camelCase): иначе файл не прочитается обратно
+            File.WriteAllText(CatalogOverlayPath, System.Text.Json.JsonSerializer.Serialize(cache, ThroughJson.Options));
         }
         catch (IOException) { }
     }

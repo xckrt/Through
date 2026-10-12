@@ -1,7 +1,7 @@
 <Project>
   <!-- одна версия на все проекты: её показывает окно, по ней проверяются обновления, ею помечен установщик -->
   <PropertyGroup>
-    <Version>1.2.7</Version>
+    <Version>1.2.8</Version>
     <Product>Сквозь</Product>
     <Company>Through</Company>
     <Copyright>MIT, github.com/xckrt/Through</Copyright>

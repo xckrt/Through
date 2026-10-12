@@ -119,6 +119,51 @@ internal static class CommunityTests
             Assert(!merged.Domains.ContainsKey("games"), "неизвестный сервис не добавляется");
             Assert(!merged.Ports.ContainsKey("youtube"), "порты с сервера не трогаются");
         }),
+
+        ("Кэш оверлея: старый/битый файл не роняет службу, свой формат пишется camelCase и читается обратно", async () =>
+        {
+            var dir = Path.Combine(Path.GetTempPath(), $"through-overlay-{Guid.NewGuid():N}");
+            Directory.CreateDirectory(dir);
+            try
+            {
+                var overlayPath = Path.Combine(dir, "catalog-overlay.json");
+                // ровно то, что писала служба 1.2.6/1.2.7 (PascalCase) и падала на старте: Services читался как null
+                File.WriteAllText(overlayPath, """{"Version":1,"Services":{}}""");
+                // база включена с первого старта, чтобы сработал фоновый UpdateCatalog и перезаписал кэш
+                File.WriteAllText(Path.Combine(dir, "settings.json"), """{"useCommunity":true}""");
+
+                var engine = new FakeEngineHost((_, _) => false);
+                var baseHandler = new CatalogHandler("""{"version":5,"services":{"youtube":["extra.googlevideo.com"]}}""");
+                ControllerOptions Opts2() => new()
+                {
+                    Targets = new TargetCatalog { Services = new() { ["youtube"] = [new ProbeTarget { Name = "yt", Host = "yt.test" }] }, Domains = new() { ["youtube"] = ["youtube.com"] } },
+                    Presets = new PresetCatalog { Presets = [P("a", 1)] },
+                    Engine = _ => Task.FromResult(new EngineContext(engine, "test")),
+                    DataDir = dir,
+                    Probe = Opts,
+                    Community = new StrategyBase("https://base.test", baseHandler),
+                };
+
+                // старый файл не должен ронять StartAsync (раньше — ArgumentNullException и краш-цикл)
+                await using (var c = new ThroughController(Opts2()))
+                {
+                    await c.StartAsync();
+                    for (var i = 0; i < 40 && !File.ReadAllText(overlayPath).Contains("extra.googlevideo.com"); i++) await Task.Delay(100);
+                }
+
+                var saved = File.ReadAllText(overlayPath);
+                Assert(saved.Contains("\"services\"") && !saved.Contains("\"Services\""), $"кэш пишется нашим форматом (camelCase): {saved}");
+                Assert(saved.Contains("extra.googlevideo.com"), "домен из базы сохранён в кэш");
+
+                // свежий контроллер читает свой же файл без краша
+                await using (var c2 = new ThroughController(Opts2()))
+                    await c2.StartAsync();
+            }
+            finally
+            {
+                Directory.Delete(dir, true);
+            }
+        }),
     ];
 
     private sealed class CatalogHandler(string body) : HttpMessageHandler
