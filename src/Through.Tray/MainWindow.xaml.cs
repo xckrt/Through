@@ -49,6 +49,14 @@ public partial class MainWindow : Window
             if (e.PropertyName == nameof(MainViewModel.Page) && _vm.Page == Pages.Overview) AnimateHome();
         };
 
+        // живой отклик: карточка приподнимается под курсором
+        foreach (var card in new FrameworkElement[] { ZapretCard, TgCard, DnsCard, HomeCard })
+        {
+            var c = card;
+            c.MouseEnter += (_, _) => Lift(c, -5);
+            c.MouseLeave += (_, _) => Lift(c, 0);
+        }
+
         // проверка запускается сама: открыл окно и сразу видишь картину
         Loaded += async (_, _) =>
         {
@@ -82,22 +90,54 @@ public partial class MainWindow : Window
         Activate();
     }
 
-    /// <summary>Заголовок и карточки поднимаются и проявляются лесенкой. Без анимаций в Windows — сразу на месте.</summary>
+    /// <summary>Заголовок, сцена и карточки проявляются лесенкой сверху вниз; сцена ещё и чуть «наезжает».
+    /// Без анимаций в Windows — сразу на месте.</summary>
     private void AnimateHome()
     {
         if (!SystemParameters.ClientAreaAnimation) return;
-        var delay = 0;
-        foreach (var el in new FrameworkElement[] { HomeHead, ZapretCard, TgCard, DnsCard, HomeCard })
+        // сцена-герой врывается с лёгким приближением, остальное — просто поднимается лесенкой
+        Rise(HomeHead, 0);
+        Rise(HomeHero, 90, scaleFrom: 0.94);
+        var delay = 170;
+        foreach (var el in new FrameworkElement[] { HomeHintCard, ZapretCard, TgCard, DnsCard, HomeCard })
         {
-            var shift = new TranslateTransform(0, 18);
-            el.RenderTransform = shift;
-            var begin = TimeSpan.FromMilliseconds(delay);
-            var ease = new CubicEase { EasingMode = EasingMode.EaseOut };
-            el.Opacity = 0;
-            el.BeginAnimation(OpacityProperty, new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(420)) { BeginTime = begin, EasingFunction = ease });
-            shift.BeginAnimation(TranslateTransform.YProperty, new DoubleAnimation(18, 0, TimeSpan.FromMilliseconds(520)) { BeginTime = begin, EasingFunction = ease });
-            delay += 90;
+            Rise(el, delay);
+            delay += 85;
         }
+    }
+
+    /// <summary>Один элемент: проявляется и поднимается снизу, по желанию — с лёгким приближением.</summary>
+    private static void Rise(FrameworkElement el, double beginMs, double scaleFrom = 1)
+    {
+        var ease = new CubicEase { EasingMode = EasingMode.EaseOut };
+        var begin = TimeSpan.FromMilliseconds(beginMs);
+        var move = new TranslateTransform(0, 22);
+        if (scaleFrom != 1)
+        {
+            el.RenderTransformOrigin = new Point(0.5, 0.5);
+            var scale = new ScaleTransform(scaleFrom, scaleFrom);
+            el.RenderTransform = new TransformGroup { Children = { scale, move } };
+            var pop = new DoubleAnimation(scaleFrom, 1, TimeSpan.FromMilliseconds(600)) { BeginTime = begin, EasingFunction = ease };
+            scale.BeginAnimation(ScaleTransform.ScaleXProperty, pop);
+            scale.BeginAnimation(ScaleTransform.ScaleYProperty, pop);
+        }
+        else el.RenderTransform = move;
+        el.Opacity = 0;
+        el.BeginAnimation(OpacityProperty, new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(440)) { BeginTime = begin, EasingFunction = ease });
+        move.BeginAnimation(TranslateTransform.YProperty, new DoubleAnimation(22, 0, TimeSpan.FromMilliseconds(560)) { BeginTime = begin, EasingFunction = ease });
+    }
+
+    /// <summary>Карточка слегка приподнимается под курсором — живой отклик. Переиспользует тот же сдвиг, что и вход.</summary>
+    private static void Lift(FrameworkElement el, double y)
+    {
+        if (!SystemParameters.ClientAreaAnimation) return;
+        if (el.RenderTransform is not TranslateTransform t)
+        {
+            t = new TranslateTransform();
+            el.RenderTransform = t;
+        }
+        t.BeginAnimation(TranslateTransform.YProperty,
+            new DoubleAnimation(y, TimeSpan.FromMilliseconds(170)) { EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut } });
     }
 
     private void Minimize(object sender, RoutedEventArgs e) => WindowState = WindowState.Minimized;

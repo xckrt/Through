@@ -265,13 +265,13 @@
                     </StackPanel>
 
                     <!-- фирменная сцена «прорыв сквозь стену»: поток идёт сквозь, когда обход включён -->
-                    <Border Style="{StaticResource HomeCard}" Padding="0" Margin="0,0,0,18" ClipToBounds="True">
-                        <local:BreakthroughView Height="148"
+                    <Border x:Name="HomeHero" Style="{StaticResource HomeCard}" Padding="0" Margin="0,0,0,18" ClipToBounds="True">
+                        <local:BreakthroughView Height="172"
                                                 On="{Binding ZapretOrb, Converter={StaticResource Is}, ConverterParameter=On}" />
                     </Border>
 
                     <!-- умная подсказка: нужная функция в нужный момент -->
-                    <Border Style="{StaticResource HomeCard}" Padding="22,16,16,16" Margin="0,0,0,18"
+                    <Border x:Name="HomeHintCard" Style="{StaticResource HomeCard}" Padding="22,16,16,16" Margin="0,0,0,18"
                             Visibility="{Binding HasHint, Converter={StaticResource Visible}}">
                         <DockPanel>
                             <Button DockPanel.Dock="Right" VerticalAlignment="Top" Content="&#xE711;" FontFamily="{StaticResource Icons}" FontSize="9"
