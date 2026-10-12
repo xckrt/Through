@@ -2,7 +2,7 @@
 
 ## tg-ws-proxy
 
-`src/Tropa.Core/Telegram/` — перенос логики [Flowseal/tg-ws-proxy](https://github.com/Flowseal/tg-ws-proxy)
+`src/Through.Core/Telegram/` — перенос логики [Flowseal/tg-ws-proxy](https://github.com/Flowseal/tg-ws-proxy)
 с Python на C#: разбор MTProto init, перешифровка, WebSocket к Telegram Web, пул, запасные пути
 через Cloudflare и закодированный список доменов Cloudflare.
 

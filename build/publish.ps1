@@ -1,8 +1,8 @@
-﻿# Сборка установщика: Tropa-Setup одним файлом с программой внутри.
+﻿# Сборка установщика: Through-Setup одним файлом с программой внутри.
 #   pwsh build/publish.ps1 -Version 1.0.0                    всё сразу
 #   pwsh build/publish.ps1 -Version 1.0.0 -Step stage        только программа в artifacts/stage (её подписывают)
 #   pwsh build/publish.ps1 -Version 1.0.0 -Step package      из готового stage: переносная версия и установщик
-# Результат: artifacts/Tropa-Setup-<версия>.exe, Tropa-Portable-<версия>.zip и .sha256 рядом с каждым.
+# Результат: artifacts/Through-Setup-<версия>.exe, Through-Portable-<версия>.zip и .sha256 рядом с каждым.
 param([string]$Version = "1.0.0", [ValidateSet("all", "stage", "package")][string]$Step = "all")
 $ErrorActionPreference = "Stop"
 
@@ -16,10 +16,10 @@ if ($Step -ne "package") {
 
     # окно и служба самодостаточные (.NET внутри): у пользователя ничего не нужно ставить заранее
     $common = @("-c", "Release", "-r", "win-x64", "--self-contained", "true", "-p:Version=$Version", "-p:DebugType=none")
-    dotnet publish (Join-Path $root "src/Tropa.Tray") @common -o $stage
-    if ($LASTEXITCODE -ne 0) { throw "publish Tropa.Tray" }
-    dotnet publish (Join-Path $root "src/Tropa.Service") @common -o $stage
-    if ($LASTEXITCODE -ne 0) { throw "publish Tropa.Service" }
+    dotnet publish (Join-Path $root "src/Through.Tray") @common -o $stage
+    if ($LASTEXITCODE -ne 0) { throw "publish Through.Tray" }
+    dotnet publish (Join-Path $root "src/Through.Service") @common -o $stage
+    if ($LASTEXITCODE -ne 0) { throw "publish Through.Service" }
     if ($Step -eq "stage") { "stage готов: ${stage}"; return }
 }
 if (-not (Test-Path $stage)) { throw "нет ${stage}, сначала -Step stage" }
@@ -27,7 +27,7 @@ foreach ($leftover in "portable", "setup", "payload.zip") {
     $path = Join-Path $art $leftover
     if (Test-Path $path) { Remove-Item -Recurse -Force $path }
 }
-Get-ChildItem $art -Filter "Tropa-*" -File | Remove-Item -Force
+Get-ChildItem $art -Filter "Through-*" -File | Remove-Item -Force
 
 # переносная версия: те же файлы, метка portable и короткая памятка; без установки и службы
 $portableDir = Join-Path $art "portable"
@@ -36,19 +36,19 @@ Set-Content -Encoding utf8 (Join-Path $portableDir "portable") "Эта копи�
 Set-Content -Encoding utf8 (Join-Path $portableDir "ПРОЧТИ.txt") @"
 Тропа $Version, переносная версия.
 
-Запустите Tropa.exe. При включении обхода Windows спросит разрешение администратора:
+Запустите Through.exe. При включении обхода Windows спросит разрешение администратора:
 winws работает с сетевым драйвером. Обход и прокси Telegram держатся, пока открыта Тропа
 (в том числе свёрнутая в трей), и выключаются вместе с ней. Настройки и подобранные
 стратегии лежат в папке data рядом с программой.
 
 Чтобы обход работал всегда, после перезагрузки и без окна, поставьте обычную версию:
-https://github.com/xckrt/Tropa/releases/latest
+https://github.com/xckrt/Through/releases/latest
 "@
 Add-Type -AssemblyName System.IO.Compression.FileSystem
-$portableZip = Join-Path $art "Tropa-Portable-$Version.zip"
+$portableZip = Join-Path $art "Through-Portable-$Version.zip"
 [System.IO.Compression.ZipFile]::CreateFromDirectory($portableDir, $portableZip, [System.IO.Compression.CompressionLevel]::Optimal, $false)
 $phash = (Get-FileHash $portableZip -Algorithm SHA256).Hash.ToLowerInvariant()
-"$phash  Tropa-Portable-$Version.zip" | Set-Content -Encoding ascii "$portableZip.sha256"
+"$phash  Through-Portable-$Version.zip" | Set-Content -Encoding ascii "$portableZip.sha256"
 "переносная: {0:N1} МБ" -f ((Get-Item $portableZip).Length / 1MB)
 
 $payload = Join-Path $art "payload.zip"
@@ -58,12 +58,12 @@ Add-Type -AssemblyName System.IO.Compression.FileSystem
 
 # установщик — один exe на .NET Framework 4.8 (он есть в каждой Windows 10/11), payload.zip внутри
 $setupOut = Join-Path $art "setup"
-dotnet build (Join-Path $root "src/Tropa.Setup") -c Release "-p:Version=$Version" "-p:PayloadPath=$payload" -o $setupOut
-if ($LASTEXITCODE -ne 0) { throw "build Tropa.Setup" }
+dotnet build (Join-Path $root "src/Through.Setup") -c Release "-p:Version=$Version" "-p:PayloadPath=$payload" -o $setupOut
+if ($LASTEXITCODE -ne 0) { throw "build Through.Setup" }
 
-$setup = Join-Path $art "Tropa-Setup-$Version.exe"
-Move-Item (Join-Path $setupOut "Tropa.Setup.exe") $setup
+$setup = Join-Path $art "Through-Setup-$Version.exe"
+Move-Item (Join-Path $setupOut "Through.Setup.exe") $setup
 $hash = (Get-FileHash $setup -Algorithm SHA256).Hash.ToLowerInvariant()
-"$hash  Tropa-Setup-$Version.exe" | Set-Content -Encoding ascii "$setup.sha256"
+"$hash  Through-Setup-$Version.exe" | Set-Content -Encoding ascii "$setup.sha256"
 "установщик: {0} ({1:N1} МБ)" -f $setup, ((Get-Item $setup).Length / 1MB)
 "sha256: $hash"

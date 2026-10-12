@@ -1,6 +1,6 @@
 # Тропа
 
-**Русский** · [English](README.en.md) · [Сайт](https://xckrt.github.io/Tropa/)
+**Русский** · [English](README.en.md) · [Сайт](https://xckrt.github.io/Through/)
 
 Тропа — программа для Windows, которая сама разбирается, что и как режет провайдер, и настраивает обход:
 YouTube, Discord (вместе с голосом), Telegram, игры и любые сайты. Нажимаете одну кнопку — дальше Тропа держит
@@ -10,14 +10,14 @@ YouTube, Discord (вместе с голосом), Telegram, игры и люб�
 
 ## Установка
 
-Скачайте **Tropa-Setup-x.y.z.exe** со страницы [релизов](https://github.com/xckrt/Tropa/releases/latest) и
+Скачайте **Through-Setup-x.y.z.exe** со страницы [релизов](https://github.com/xckrt/Through/releases/latest) и
 запустите. Windows один раз спросит разрешение администратора: Тропа ставит службу, которая держит обход.
 .NET ставить не нужно. Удаляется Тропа как обычная программа.
 
-Или одной командой: `winget install xckrt.Tropa` (обычная версия) либо
-`scoop bucket add tropa https://github.com/xckrt/Tropa` и `scoop install tropa` (переносная).
+Или одной командой: `winget install xckrt.Through` (обычная версия) либо
+`scoop bucket add through https://github.com/xckrt/Through` и `scoop install through` (переносная).
 
-Без установки — **Tropa-Portable-x.y.z.zip**: распакуйте и запустите `Tropa.exe`. Обход работает, пока открыта
+Без установки — **Through-Portable-x.y.z.zip**: распакуйте и запустите `Through.exe`. Обход работает, пока открыта
 Тропа, данные хранятся в папке `data` рядом.
 
 ## Что умеет
@@ -52,7 +52,7 @@ YouTube, Discord (вместе с голосом), Telegram, игры и люб�
 
 | Куда | Зачем | Что уходит |
 | --- | --- | --- |
-| github.com (bol-van/zapret, xckrt/Tropa, Flowseal) | скачать zapret, проверить обновления, списки доменов Cloudflare для Telegram | обычный HTTPS-запрос |
+| github.com (bol-van/zapret, xckrt/Through, Flowseal) | скачать zapret, проверить обновления, списки доменов Cloudflare для Telegram | обычный HTTPS-запрос |
 | сайты из проверки (youtube.com, discord.com, …) | понять, что режут | то же, что браузер |
 | 1.1.1.1, 8.8.8.8, 9.9.9.9 | защищённый DNS, если он включён | DNS-запросы внутри HTTPS |
 | www.youtube.com, googlevideo.com | замер скорости YouTube по кнопке и при подборе | загрузка куска публичного ролика |
@@ -70,12 +70,12 @@ YouTube, Discord (вместе с голосом), Telegram, игры и люб�
 
 ```
 dotnet build
-dotnet run --project tests/Tropa.SelfTest                 # тесты, интернет не нужен
-dotnet run --project src/Tropa.Tray                       # окно
-dotnet run --project src/Tropa.Cli -- --only youtube      # проверка в консоли
-dotnet run --project src/Tropa.Cli -- --telegram          # прокси Telegram: все DC
-dotnet run --project src/Tropa.Cli -- --dns               # защищённый DNS
-dotnet run --project src/Tropa.Cli -- --speed             # скорость YouTube
+dotnet run --project tests/Through.SelfTest                 # тесты, интернет не нужен
+dotnet run --project src/Through.Tray                       # окно
+dotnet run --project src/Through.Cli -- --only youtube      # проверка в консоли
+dotnet run --project src/Through.Cli -- --telegram          # прокси Telegram: все DC
+dotnet run --project src/Through.Cli -- --dns               # защищённый DNS
+dotnet run --project src/Through.Cli -- --speed             # скорость YouTube
 ```
 
 Установщик и переносная версия: `pwsh build/publish.ps1 -Version 1.2.0`. Релиз собирает GitHub Actions по тегу `v*`.

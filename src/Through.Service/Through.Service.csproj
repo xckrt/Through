@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\Through.Core\Through.Core.csproj" />
+    <ProjectReference Include="..\Through.Engine\Through.Engine.csproj" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AssemblyName>Through.Service</AssemblyName>
+    <RootNamespace>Through.Service</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- ServiceBase: пакет Microsoft, в .NET 8 вынесен из общей библиотеки -->
+    <PackageReference Include="System.ServiceProcess.ServiceController" Version="8.0.1" />
+    <!-- ETW: подслушать, куда ходит выбранная программа (DNS-Client и Kernel-Network), для «добавить приложение» -->
+    <PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent" Version="3.2.6" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\Through.Cli\targets.json" Link="targets.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\Through.Cli\presets.json" Link="presets.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\Through.Cli\engine.json" Link="engine.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\Through.Cli\community.json" Link="community.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+</Project>

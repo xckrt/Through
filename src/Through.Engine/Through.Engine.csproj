@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\Through.Core\Through.Core.csproj" />
+  </ItemGroup>
+
+  <!-- net8.0, а не net8.0-windows: кроме запуска процесса тут ничего Windows-специфичного нет,
+       и кроссплатформенные тесты могут гонять хост против фейкового winws -->
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+</Project>

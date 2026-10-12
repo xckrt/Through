@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="app_name">Through</string>
+  <string name="tagline">Telegram without a VPN, and a check of what your network blocks</string>
+  <string name="tg_title">Telegram</string>
+  <string name="tg_toggle">Turn the Telegram proxy on or off</string>
+  <string name="tg_on">Working</string>
+  <string name="tg_off">Off</string>
+  <string name="tg_on_detail">Proxy on 127.0.0.1:%1$d. Tap \"Connect in Telegram\" once, after that Telegram uses it by itself.</string>
+  <string name="tg_off_detail">Tap the button: Through starts a proxy on this phone that takes Telegram around the block, on Wi-Fi and mobile data.</string>
+  <string name="tg_error">Could not start the proxy: %1$s</string>
+  <string name="tg_connect">Connect in Telegram</string>
+  <string name="tg_check">Check data centres</string>
+  <string name="no_telegram">Telegram is not installed</string>
+  <string name="channel_telegram">Telegram proxy</string>
+  <string name="notify_title">Telegram proxy is on</string>
+  <string name="notify_text">Telegram goes through Through. Tap to open.</string>
+  <string name="check_title">What is blocked here</string>
+  <string name="check_text">Checks YouTube and Discord stage by stage, the same way Through does on a PC, and tells how the connection is cut.</string>
+  <string name="check_button">Check this network</string>
+  <string name="checking">Checking…</string>
+  <string name="no_network">No internet at all: this is not a block.</string>
+  <string name="f_sni">cut by name (SNI)</string>
+  <string name="f_freeze">freezes after ~16 KB (TSPU)</string>
+  <string name="f_dns">DNS gives a fake address</string>
+  <string name="f_address">the address is blocked</string>
+  <string name="f_voice">voice (UDP) is blocked</string>
+  <string name="f_other">does not open</string>
+  <string name="pc_title">YouTube and Discord through your PC</string>
+  <string name="pc_text">Android does not let an app bypass blocks for other apps without a VPN. If Through runs on your computer, turn on \"For the whole home\" there, then on the phone open Wi-Fi → your network → Proxy → Auto and paste the PAC address that Through shows.</string>
+  <string name="pc_button">Open Wi-Fi settings</string>
+  <string name="dns_title">Private DNS</string>
+  <string name="dns_text">If the check says DNS gives a fake address, set Private DNS to one.one.one.one or dns.google. It encrypts DNS for the whole phone. It is usually under \"Network &amp; internet\" or \"Connection &amp; sharing\" → \"Private DNS\".</string>
+  <string name="dns_button">Open network settings</string>
+  <string name="tile_label">Telegram proxy</string>
+  <string name="pac_copied">Address copied. In Wi-Fi settings: your network → Proxy → Auto, paste it into the URL field.</string>
+</resources>

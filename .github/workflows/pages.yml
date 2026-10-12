@@ -1,6 +1,6 @@
 name: pages
 
-# сайт проекта из папки site/ → https://xckrt.github.io/Tropa/
+# сайт проекта из папки site/ → https://xckrt.github.io/Through/
 # один раз: Settings → Pages → Source: GitHub Actions
 on:
   push:

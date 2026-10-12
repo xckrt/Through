@@ -1,0 +1,108 @@
+<Application x:Class="Through.Setup.App"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Application.Resources>
+        <!-- та же «топокарта», что в окне Тропы -->
+        <SolidColorBrush x:Key="Paper" Color="#EEF1EC" />
+        <SolidColorBrush x:Key="Surface" Color="#E3E8E1" />
+        <SolidColorBrush x:Key="Chrome" Color="#E4E9E2" />
+        <SolidColorBrush x:Key="Ink" Color="#1C2A2E" />
+        <SolidColorBrush x:Key="InkSoft" Color="#56645F" />
+        <SolidColorBrush x:Key="Line" Color="#C9D2CB" />
+        <SolidColorBrush x:Key="Fog" Color="#9AA59F" />
+        <SolidColorBrush x:Key="Pine" Color="#2E7D5B" />
+        <SolidColorBrush x:Key="PineDark" Color="#23634A" />
+        <SolidColorBrush x:Key="Signal" Color="#C8322B" />
+        <FontFamily x:Key="Display">Bahnschrift, Segoe UI</FontFamily>
+        <FontFamily x:Key="DisplayNarrow">Bahnschrift SemiCondensed, Bahnschrift, Segoe UI</FontFamily>
+        <FontFamily x:Key="Body">Segoe UI Variable Text, Segoe UI</FontFamily>
+        <FontFamily x:Key="Icons">Segoe Fluent Icons, Segoe MDL2 Assets</FontFamily>
+        <BooleanToVisibilityConverter x:Key="Visible" />
+
+        <Style x:Key="FocusRing">
+            <Setter Property="Control.Template">
+                <Setter.Value>
+                    <ControlTemplate>
+                        <Rectangle Margin="-3" Stroke="{StaticResource Ink}" StrokeThickness="2" RadiusX="4" RadiusY="4" />
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="Primary" TargetType="Button">
+            <Setter Property="FontFamily" Value="{StaticResource Display}" />
+            <Setter Property="FontSize" Value="15" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Foreground" Value="White" />
+            <Setter Property="Background" Value="{StaticResource Pine}" />
+            <Setter Property="Padding" Value="24,10" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="FocusVisualStyle" Value="{StaticResource FocusRing}" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bg" Background="{TemplateBinding Background}" CornerRadius="3" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bg" Property="Background" Value="{StaticResource PineDark}" />
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="Bg" Property="Background" Value="{StaticResource Line}" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="Quiet" TargetType="Button" BasedOn="{StaticResource Primary}">
+            <Setter Property="Foreground" Value="{StaticResource Ink}" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="FontWeight" Value="Normal" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bg" Background="{TemplateBinding Background}" BorderBrush="{StaticResource Line}"
+                                BorderThickness="1" CornerRadius="3" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bg" Property="Background" Value="{StaticResource Surface}" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="Switch" TargetType="CheckBox">
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Foreground" Value="{StaticResource Ink}" />
+            <Setter Property="FontSize" Value="14" />
+            <Setter Property="Margin" Value="0,0,0,12" />
+            <Setter Property="FocusVisualStyle" Value="{StaticResource FocusRing}" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="CheckBox">
+                        <DockPanel Background="Transparent">
+                            <Border x:Name="Track" DockPanel.Dock="Left" Width="40" Height="22" CornerRadius="11"
+                                    Background="{StaticResource Line}" Margin="0,0,14,0">
+                                <Ellipse x:Name="Knob" Width="16" Height="16" Fill="White" HorizontalAlignment="Left" Margin="3,0" />
+                            </Border>
+                            <ContentPresenter VerticalAlignment="Center" />
+                        </DockPanel>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="Track" Property="Background" Value="{StaticResource Pine}" />
+                                <Setter TargetName="Knob" Property="HorizontalAlignment" Value="Right" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Application.Resources>
+</Application>

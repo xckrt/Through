@@ -7,7 +7,7 @@
 <meta name="description" content="Тропа сама находит, как провайдер режет YouTube, Discord и Telegram, и настраивает обход. Бесплатно, открытый код, Windows.">
 <meta property="og:title" content="Тропа — обход блокировок одной кнопкой">
 <meta property="og:description" content="YouTube, Discord с голосом, Telegram, игры. Сама подбирает стратегию zapret и держит её.">
-<meta property="og:image" content="https://xckrt.github.io/Tropa/img/overview-dark.png">
+<meta property="og:image" content="https://xckrt.github.io/Through/img/overview-dark.png">
 <link rel="icon" href="img/favicon.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -115,7 +115,7 @@
 <body>
 <div class="wrap">
   <header>
-    <a class="brand" href="#"><span class="mark" aria-hidden="true"></span><span lang="ru">Тропа</span><span lang="en">Tropa</span></a>
+    <a class="brand" href="#"><span class="mark" aria-hidden="true"></span><span lang="ru">Тропа</span><span lang="en">Through</span></a>
     <div class="switches">
       <a class="pill" href="map.html" style="text-decoration:none"><span lang="ru">Карта блокировок</span><span lang="en">Blocking map</span></a>
       <button class="pill" id="lang" type="button" aria-label="Язык / Language">EN</button>
@@ -128,13 +128,13 @@
       <h1 lang="ru">Обход блокировок <em>одной кнопкой</em></h1>
       <h1 lang="en">Get around blocking <em>with one button</em></h1>
       <p class="lead" lang="ru">Тропа сама разбирается, как провайдер режет YouTube, Discord и Telegram, подбирает стратегию zapret и держит её — после перезагрузки, при смене сети, когда провайдер что-то поменял.</p>
-      <p class="lead" lang="en">Tropa figures out how your ISP blocks YouTube, Discord and Telegram, picks a zapret strategy and keeps it working — across reboots, network changes and whatever the ISP changes next.</p>
+      <p class="lead" lang="en">Through figures out how your ISP blocks YouTube, Discord and Telegram, picks a zapret strategy and keeps it working — across reboots, network changes and whatever the ISP changes next.</p>
       <div class="cta">
-        <a class="btn primary" href="https://github.com/xckrt/Tropa/releases/latest">
+        <a class="btn primary" href="https://github.com/xckrt/Through/releases/latest">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 3v12m0 0-5-5m5 5 5-5M4 20h16"/></svg>
           <span lang="ru">Скачать для Windows</span><span lang="en">Download for Windows</span>
         </a>
-        <a class="btn quiet" href="https://github.com/xckrt/Tropa">GitHub</a>
+        <a class="btn quiet" href="https://github.com/xckrt/Through">GitHub</a>
       </div>
       <p class="note" lang="ru">Windows 10 и 11 · бесплатно и с открытым кодом (MIT) · есть переносная версия без установки</p>
       <p class="note" lang="en">Windows 10 and 11 · free and open source (MIT) · portable version available · English and Russian</p>
@@ -158,13 +158,13 @@
       <button class="pill" type="button" data-shot="img/overview-light.png"><span lang="ru">Светлая</span><span lang="en">Light</span></button>
       <button class="pill" type="button" data-shot="img/diagnostics-dark.png"><span lang="ru">Подробная проверка</span><span lang="en">Detailed check</span></button>
     </div>
-    <img id="shot" src="img/overview-dark.png" alt="Окно Тропы / Tropa window" loading="lazy" width="1650" height="1170">
+    <img id="shot" src="img/overview-dark.png" alt="Окно Тропы / Through window" loading="lazy" width="1650" height="1170">
   </div>
 
   <section class="section">
     <h2 lang="ru">Как это работает</h2><h2 lang="en">How it works</h2>
     <div class="steps">
-      <div class="step"><span lang="ru"><b>Проверка по этапам.</b> DNS → TCP → TLS → HTTP → передача: Тропа видит, где именно рвётся соединение — RST по имени сайта, тихий дроп, «заморозка на 16 КБ», подмена DNS.</span><span lang="en"><b>Stage-by-stage check.</b> DNS → TCP → TLS → HTTP → transfer: Tropa sees exactly where the connection breaks — SNI reset, silent drop, the 16 KB freeze, DNS spoofing.</span></div>
+      <div class="step"><span lang="ru"><b>Проверка по этапам.</b> DNS → TCP → TLS → HTTP → передача: Тропа видит, где именно рвётся соединение — RST по имени сайта, тихий дроп, «заморозка на 16 КБ», подмена DNS.</span><span lang="en"><b>Stage-by-stage check.</b> DNS → TCP → TLS → HTTP → transfer: Through sees exactly where the connection breaks — SNI reset, silent drop, the 16 KB freeze, DNS spoofing.</span></div>
       <div class="step"><span lang="ru"><b>Подбор под диагноз.</b> Пробует только стратегии, которые лечат найденное, от простых к сложным, и каждую проверяет трижды — случайная удача не пройдёт.</span><span lang="en"><b>Tuning for the diagnosis.</b> Only strategies that treat what was found, cheap ones first, each checked three times so a lucky run doesn't count.</span></div>
       <div class="step"><span lang="ru"><b>Держит сама.</b> Служба проверяет сервисы раз в 10 минут и переподбирает то, что сломалось, не трогая остальное.</span><span lang="en"><b>Keeps it working.</b> The service checks every 10 minutes and re-tunes only what broke, leaving the rest alone.</span></div>
     </div>
@@ -176,16 +176,16 @@
     <p class="sub" lang="en">Everything is a toggle in the window. No .bat files, no hand-picked strategies, no "run as administrator".</p>
     <div class="grid">
       <div class="card"><div class="ico">▶</div><h3 lang="ru">YouTube и Discord</h3><h3 lang="en">YouTube and Discord</h3><p lang="ru">Видео без тормозов, Discord с голосом. Голос проверяется UDP-пакетом на настоящие голосовые серверы.</p><p lang="en">Smooth video, Discord with voice. Voice is checked with a real UDP packet to Discord's voice servers.</p></div>
-      <div class="card"><div class="ico">✈</div><h3>Telegram</h3><p lang="ru">Встроенный прокси через WebSocket веб-версии и Cloudflare. Тропа сама добавляет его в Telegram и проверяет каждый дата-центр.</p><p lang="en">Built-in proxy over Telegram Web's WebSocket and Cloudflare. Tropa adds it to Telegram and checks every datacenter.</p></div>
-      <div class="card"><div class="ico">⛨</div><h3 lang="ru">Защищённый DNS</h3><h3 lang="en">Secure DNS</h3><p lang="ru">DNS-over-HTTPS для всей системы. Если DoH ляжет, Тропа вернёт прежний DNS — интернет не встанет.</p><p lang="en">System-wide DNS-over-HTTPS. If DoH goes down, Tropa restores your old DNS so the internet keeps working.</p></div>
-      <div class="card"><div class="ico">◎</div><h3 lang="ru">Любая игра</h3><h3 lang="en">Any game</h3><p lang="ru">Выберите запущенную программу — Тропа полминуты слушает, куда она ходит, и сама соберёт домены и порты.</p><p lang="en">Pick a running program — Tropa listens for half a minute and collects its domains and ports itself.</p></div>
-      <div class="card"><div class="ico">⇄</div><h3 lang="ru">Профили сетей</h3><h3 lang="en">Per-network profiles</h3><p lang="ru">Дома одна стратегия, на телефонном интернете другая. Тропа узнаёт сеть и переключается сама.</p><p lang="en">Home Wi-Fi and phone hotspot get different strategies. Tropa recognizes the network and switches.</p></div>
-      <div class="card"><div class="ico">↯</div><h3 lang="ru">Общая база</h3><h3 lang="en">Shared base</h3><p lang="ru">По желанию Тропы делятся тем, что помогло у их провайдера, — у следующих подбор займёт секунды.</p><p lang="en">Opt in and Tropa installs share what worked on their ISP, so tuning takes seconds for the next user.</p></div>
+      <div class="card"><div class="ico">✈</div><h3>Telegram</h3><p lang="ru">Встроенный прокси через WebSocket веб-версии и Cloudflare. Тропа сама добавляет его в Telegram и проверяет каждый дата-центр.</p><p lang="en">Built-in proxy over Telegram Web's WebSocket and Cloudflare. Through adds it to Telegram and checks every datacenter.</p></div>
+      <div class="card"><div class="ico">⛨</div><h3 lang="ru">Защищённый DNS</h3><h3 lang="en">Secure DNS</h3><p lang="ru">DNS-over-HTTPS для всей системы. Если DoH ляжет, Тропа вернёт прежний DNS — интернет не встанет.</p><p lang="en">System-wide DNS-over-HTTPS. If DoH goes down, Through restores your old DNS so the internet keeps working.</p></div>
+      <div class="card"><div class="ico">◎</div><h3 lang="ru">Любая игра</h3><h3 lang="en">Any game</h3><p lang="ru">Выберите запущенную программу — Тропа полминуты слушает, куда она ходит, и сама соберёт домены и порты.</p><p lang="en">Pick a running program — Through listens for half a minute and collects its domains and ports itself.</p></div>
+      <div class="card"><div class="ico">⇄</div><h3 lang="ru">Профили сетей</h3><h3 lang="en">Per-network profiles</h3><p lang="ru">Дома одна стратегия, на телефонном интернете другая. Тропа узнаёт сеть и переключается сама.</p><p lang="en">Home Wi-Fi and phone hotspot get different strategies. Through recognizes the network and switches.</p></div>
+      <div class="card"><div class="ico">↯</div><h3 lang="ru">Общая база</h3><h3 lang="en">Shared base</h3><p lang="ru">По желанию Тропы делятся тем, что помогло у их провайдера, — у следующих подбор займёт секунды.</p><p lang="en">Opt in and Through installs share what worked on their ISP, so tuning takes seconds for the next user.</p></div>
     </div>
   </section>
 
   <section class="section">
-    <h2 lang="ru">Что Тропа отправляет в сеть</h2><h2 lang="en">What Tropa sends over the network</h2>
+    <h2 lang="ru">Что Тропа отправляет в сеть</h2><h2 lang="en">What Through sends over the network</h2>
     <p class="sub" lang="ru">Ничего без вашего ведома. Ни IP, ни адресов сайтов, ни идентификаторов.</p>
     <p class="sub" lang="en">Nothing behind your back. No IPs, no site addresses, no identifiers.</p>
     <div class="table-wrap"><table>
@@ -199,17 +199,17 @@
 
   <section class="section">
     <h2>FAQ</h2>
-    <details><summary lang="ru">Это VPN?</summary><summary lang="en">Is this a VPN?</summary><p lang="ru">Нет. Трафик идёт напрямую, как обычно; Тропа лишь меняет, как выглядят первые пакеты соединения, чтобы DPI провайдера их не узнал. Поэтому скорость не падает, а сайты видят ваш обычный адрес.</p><p lang="en">No. Traffic goes directly as usual; Tropa only changes how the first packets of a connection look so the ISP's DPI doesn't recognize them. Speed stays the same, and sites see your usual address.</p></details>
-    <details><summary lang="ru">Почему антивирус ругается?</summary><summary lang="en">Why does my antivirus complain?</summary><p lang="ru">zapret ставит сетевой драйвер WinDivert — это нормально для такой программы, но некоторые антивирусы помечают его. Тропа качает zapret только из официальных релизов bol-van и сверяет SHA-256.</p><p lang="en">zapret installs the WinDivert network driver — normal for this kind of tool, but some antiviruses flag it. Tropa downloads zapret only from official bol-van releases and verifies SHA-256.</p></details>
-    <details><summary lang="ru">А если блокируют по адресу сервера?</summary><summary lang="en">What if the server's IP is blocked?</summary><p lang="ru">Тропа честно скажет «заблокирован по адресу»: настройка DPI тут не поможет, нужен VPN или прокси. Для Telegram прокси уже встроен.</p><p lang="en">Tropa will tell you "blocked by address": DPI tricks can't help, you need a VPN or proxy. For Telegram the proxy is built in.</p></details>
+    <details><summary lang="ru">Это VPN?</summary><summary lang="en">Is this a VPN?</summary><p lang="ru">Нет. Трафик идёт напрямую, как обычно; Тропа лишь меняет, как выглядят первые пакеты соединения, чтобы DPI провайдера их не узнал. Поэтому скорость не падает, а сайты видят ваш обычный адрес.</p><p lang="en">No. Traffic goes directly as usual; Through only changes how the first packets of a connection look so the ISP's DPI doesn't recognize them. Speed stays the same, and sites see your usual address.</p></details>
+    <details><summary lang="ru">Почему антивирус ругается?</summary><summary lang="en">Why does my antivirus complain?</summary><p lang="ru">zapret ставит сетевой драйвер WinDivert — это нормально для такой программы, но некоторые антивирусы помечают его. Тропа качает zapret только из официальных релизов bol-van и сверяет SHA-256.</p><p lang="en">zapret installs the WinDivert network driver — normal for this kind of tool, but some antiviruses flag it. Through downloads zapret only from official bol-van releases and verifies SHA-256.</p></details>
+    <details><summary lang="ru">А если блокируют по адресу сервера?</summary><summary lang="en">What if the server's IP is blocked?</summary><p lang="ru">Тропа честно скажет «заблокирован по адресу»: настройка DPI тут не поможет, нужен VPN или прокси. Для Telegram прокси уже встроен.</p><p lang="en">Through will tell you "blocked by address": DPI tricks can't help, you need a VPN or proxy. For Telegram the proxy is built in.</p></details>
     <details><summary lang="ru">Как удалить?</summary><summary lang="en">How do I uninstall it?</summary><p lang="ru">Как любую программу — через «Приложения и возможности». Служба остановится, DNS вернётся прежний.</p><p lang="en">Like any app — via Apps &amp; Features. The service stops and your DNS is restored.</p></details>
   </section>
 
   <footer>
-    <p><a href="https://github.com/xckrt/Tropa/blob/main/PRIVACY.md"><span lang="ru">Политика конфиденциальности</span><span lang="en">Privacy policy</span></a> ·
+    <p><a href="https://github.com/xckrt/Through/blob/main/PRIVACY.md"><span lang="ru">Политика конфиденциальности</span><span lang="en">Privacy policy</span></a> ·
     Free code signing provided by <a href="https://about.signpath.io">SignPath.io</a>, certificate by <a href="https://signpath.org">SignPath Foundation</a>.</p>
     <span lang="ru">Тропа · MIT · движок <a href="https://github.com/bol-van/zapret">zapret</a> (bol-van), стратегии и прокси Telegram — по мотивам <a href="https://github.com/Flowseal">Flowseal</a></span>
-    <span lang="en">Tropa · MIT · engine <a href="https://github.com/bol-van/zapret">zapret</a> (bol-van), strategies and Telegram proxy based on <a href="https://github.com/Flowseal">Flowseal</a>'s work</span>
+    <span lang="en">Through · MIT · engine <a href="https://github.com/bol-van/zapret">zapret</a> (bol-van), strategies and Telegram proxy based on <a href="https://github.com/Flowseal">Flowseal</a>'s work</span>
   </footer>
 </div>
 
@@ -220,7 +220,7 @@
   function setLang(l) {
     root.lang = l;
     document.getElementById("lang").textContent = l === "ru" ? "EN" : "RU";
-    document.title = l === "ru" ? "Тропа — обход блокировок одной кнопкой" : "Tropa — get around blocking with one button";
+    document.title = l === "ru" ? "Тропа — обход блокировок одной кнопкой" : "Through — get around blocking with one button";
     store.set("lang", l);
   }
   setLang(store.get("lang") || ((navigator.language || "ru").toLowerCase().startsWith("ru") ? "ru" : "en"));

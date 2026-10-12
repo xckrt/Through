@@ -14,6 +14,6 @@ jobs:
         with:
           dotnet-version: 8.0.x
       - name: Сборка
-        run: dotnet build Tropa.sln -c Release
+        run: dotnet build Through.sln -c Release
       - name: Тесты (локальные «злые» серверы, интернет не нужен)
-        run: dotnet run --project tests/Tropa.SelfTest -c Release --no-build
+        run: dotnet run --project tests/Through.SelfTest -c Release --no-build

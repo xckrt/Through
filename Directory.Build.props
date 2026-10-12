@@ -3,9 +3,9 @@
   <PropertyGroup>
     <Version>1.2.5</Version>
     <Product>Тропа</Product>
-    <Company>Tropa</Company>
-    <Copyright>MIT, github.com/xckrt/Tropa</Copyright>
-    <RepositoryUrl>https://github.com/xckrt/Tropa</RepositoryUrl>
+    <Company>Through</Company>
+    <Copyright>MIT, github.com/xckrt/Through</Copyright>
+    <RepositoryUrl>https://github.com/xckrt/Through</RepositoryUrl>
     <!-- без хвоста +commit в версии: её сравнивают с тегами релизов -->
     <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
   </PropertyGroup>

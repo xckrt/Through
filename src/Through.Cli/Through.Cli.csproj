@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\Through.Core\Through.Core.csproj" />
+    <ProjectReference Include="..\Through.Engine\Through.Engine.csproj" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AssemblyName>through-probe</AssemblyName>
+    <RootNamespace>Through.Cli</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Update="targets.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Update="presets.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Update="engine.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+</Project>

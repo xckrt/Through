@@ -1,0 +1,43 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\Through.Core\Through.Core.csproj" />
+    <!-- служба лежит рядом с окном: окно само ставит её одной кнопкой -->
+    <ProjectReference Include="..\Through.Service\Through.Service.csproj" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <!-- только ради значка в трее (NotifyIcon); глобальные using WinForms убраны, чтобы не путались с WPF -->
+    <UseWindowsForms>true</UseWindowsForms>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AssemblyName>Through</AssemblyName>
+    <RootNamespace>Through.Tray</RootNamespace>
+    <!-- знак Тропы: метка «бело-красно-белая» на табличке и пунктир тропы; рисует IconArt.cs -->
+    <ApplicationIcon>through.ico</ApplicationIcon>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Resource Include="through.ico" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Remove="System.Windows.Forms" />
+    <Using Remove="System.Drawing" />
+  </ItemGroup>
+
+  <!-- каталоги общие с CLI: правятся в одном месте -->
+  <ItemGroup>
+    <None Include="..\Through.Cli\targets.json" Link="targets.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\Through.Cli\presets.json" Link="presets.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\Through.Cli\engine.json" Link="engine.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- английский интерфейс: ключ — русская строка из кода, значение — перевод (Loc) -->
+    <EmbeddedResource Include="en.json" LogicalName="Through.Tray.en.json" />
+  </ItemGroup>
+</Project>

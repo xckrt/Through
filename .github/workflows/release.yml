@@ -17,7 +17,7 @@ jobs:
     env:
       SIGNPATH_API_TOKEN: ${{ secrets.SIGNPATH_API_TOKEN }}
       SIGNPATH_ORG: ${{ vars.SIGNPATH_ORGANIZATION_ID }}
-      SIGNPATH_PROJECT: ${{ vars.SIGNPATH_PROJECT_SLUG || 'Tropa' }}
+      SIGNPATH_PROJECT: ${{ vars.SIGNPATH_PROJECT_SLUG || 'Through' }}
       SIGNPATH_POLICY: ${{ vars.SIGNPATH_POLICY_SLUG || 'release-signing' }}
       WINGET_TOKEN: ${{ secrets.WINGET_TOKEN }}
     steps:
@@ -32,13 +32,13 @@ jobs:
         run: '"version=$("${{ github.ref_name }}".TrimStart("v"))" >> $env:GITHUB_OUTPUT'
 
       - name: Тесты
-        run: dotnet run --project tests/Tropa.SelfTest -c Release
+        run: dotnet run --project tests/Through.SelfTest -c Release
 
       - name: Программа
         shell: pwsh
         run: ./build/publish.ps1 -Version ${{ steps.v.outputs.version }} -Step stage
 
-      # ---- подпись программы: Tropa.exe, Tropa.Service.exe и сборки Тропы (конфигурация app в SignPath)
+      # ---- подпись программы: Through.exe, Through.Service.exe и сборки Тропы (конфигурация app в SignPath)
       - name: Неподписанная программа
         id: app
         if: env.SIGNPATH_API_TOKEN != ''
@@ -71,7 +71,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: setup-unsigned
-          path: artifacts/Tropa-Setup-${{ steps.v.outputs.version }}.exe
+          path: artifacts/Through-Setup-${{ steps.v.outputs.version }}.exe
 
       - name: Подпись установщика
         if: env.SIGNPATH_API_TOKEN != ''
@@ -90,11 +90,11 @@ jobs:
         shell: pwsh
         run: |
           $v = "${{ steps.v.outputs.version }}"
-          foreach ($f in "Tropa-Setup-$v.exe", "Tropa-Portable-$v.zip") {
+          foreach ($f in "Through-Setup-$v.exe", "Through-Portable-$v.zip") {
             $h = (Get-FileHash "artifacts/$f" -Algorithm SHA256).Hash.ToLowerInvariant()
             "$h  $f" | Set-Content -Encoding ascii "artifacts/$f.sha256"
           }
-          $sig = (Get-AuthenticodeSignature "artifacts/Tropa-Setup-$v.exe").Status
+          $sig = (Get-AuthenticodeSignature "artifacts/Through-Setup-$v.exe").Status
           "подпись установщика: $sig"
 
       - name: Манифесты winget и Scoop
@@ -107,20 +107,20 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           $v = "${{ steps.v.outputs.version }}"
-          $sha = (Get-Content "artifacts/Tropa-Setup-$v.exe.sha256").Split(" ")[0]
-          $psha = (Get-Content "artifacts/Tropa-Portable-$v.zip.sha256").Split(" ")[0]
-          $signed = (Get-AuthenticodeSignature "artifacts/Tropa-Setup-$v.exe").Status -eq "Valid"
+          $sha = (Get-Content "artifacts/Through-Setup-$v.exe.sha256").Split(" ")[0]
+          $psha = (Get-Content "artifacts/Through-Portable-$v.zip.sha256").Split(" ")[0]
+          $signed = (Get-AuthenticodeSignature "artifacts/Through-Setup-$v.exe").Status -eq "Valid"
           $signNote = "Free code signing provided by [SignPath.io](https://about.signpath.io), certificate by [SignPath Foundation](https://signpath.org)."
           $notes = @"
           ## Установка
 
-          Скачайте **Tropa-Setup-$v.exe** и запустите. Windows один раз спросит разрешение администратора:
+          Скачайте **Through-Setup-$v.exe** и запустите. Windows один раз спросит разрешение администратора:
           Тропа ставит службу, которая держит обход после перезагрузки. Дальше откройте Тропу и нажмите
           «Подобрать обход».
 
           Уже стоит Тропа — она сама предложит обновиться.
 
-          Без установки: **Tropa-Portable-$v.zip** — распакуйте и запустите Tropa.exe. Обход работает,
+          Без установки: **Through-Portable-$v.zip** — распакуйте и запустите Through.exe. Обход работает,
           пока открыта Тропа; данные лежат в папке data рядом.
 
           SHA-256 установщика: ``$sha``
@@ -130,8 +130,8 @@ jobs:
           Тропа скачивает zapret из официальных релизов [bol-van/zapret](https://github.com/bol-van/zapret)
           и сверяет хеши; бинарей zapret в этом репозитории нет.
           "@
-          gh release create "${{ github.ref_name }}" "artifacts/Tropa-Setup-$v.exe" "artifacts/Tropa-Setup-$v.exe.sha256" `
-            "artifacts/Tropa-Portable-$v.zip" "artifacts/Tropa-Portable-$v.zip.sha256" `
+          gh release create "${{ github.ref_name }}" "artifacts/Through-Setup-$v.exe" "artifacts/Through-Setup-$v.exe.sha256" `
+            "artifacts/Through-Portable-$v.zip" "artifacts/Through-Portable-$v.zip.sha256" `
             --title "Тропа $v" --notes $notes
 
       # Scoop: бакет лежит в этом репозитории, после релиза в нём новая версия и хеш
@@ -143,7 +143,7 @@ jobs:
           git fetch origin main
           git checkout -B bucket-update origin/main
           ./build/packages.ps1 -Version ${{ steps.v.outputs.version }} | Out-Null
-          git add bucket/tropa.json
+          git add bucket/through.json
           git diff --cached --quiet || (git commit -m "Scoop: Тропа ${{ steps.v.outputs.version }}" && git push origin HEAD:main)
 
       # winget: PR в microsoft/winget-pkgs от имени владельца токена (секрет WINGET_TOKEN, classic PAT с public_repo)
@@ -179,15 +179,15 @@ jobs:
         run: |
           $v = "${{ github.ref_name }}".TrimStart("v")
           if ($env:ANDROID_KEYSTORE) {
-            $ks = Join-Path $env:RUNNER_TEMP "tropa.jks"
+            $ks = Join-Path $env:RUNNER_TEMP "through.jks"
             [IO.File]::WriteAllBytes($ks, [Convert]::FromBase64String($env:ANDROID_KEYSTORE))
             $env:TROPA_KEYSTORE = $ks
           }
-          dotnet publish src/Tropa.Android -c Release -p:Version=$v -o artifacts/android
+          dotnet publish src/Through.Android -c Release -p:Version=$v -o artifacts/android
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
-          Copy-Item artifacts/android/com.xckrt.tropa-Signed.apk "artifacts/Tropa-Android-$v.apk"
-          $h = (Get-FileHash "artifacts/Tropa-Android-$v.apk" -Algorithm SHA256).Hash.ToLowerInvariant()
-          "$h  Tropa-Android-$v.apk" | Set-Content -Encoding ascii "artifacts/Tropa-Android-$v.apk.sha256"
+          Copy-Item artifacts/android/com.xckrt.through-Signed.apk "artifacts/Through-Android-$v.apk"
+          $h = (Get-FileHash "artifacts/Through-Android-$v.apk" -Algorithm SHA256).Hash.ToLowerInvariant()
+          "$h  Through-Android-$v.apk" | Set-Content -Encoding ascii "artifacts/Through-Android-$v.apk.sha256"
 
       - name: APK в релиз
         if: env.ANDROID_KEYSTORE != ''
@@ -196,4 +196,4 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           $v = "${{ github.ref_name }}".TrimStart("v")
-          gh release upload "${{ github.ref_name }}" "artifacts/Tropa-Android-$v.apk" "artifacts/Tropa-Android-$v.apk.sha256"
+          gh release upload "${{ github.ref_name }}" "artifacts/Through-Android-$v.apk" "artifacts/Through-Android-$v.apk.sha256"
