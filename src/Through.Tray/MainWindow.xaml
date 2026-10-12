@@ -2,7 +2,7 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:local="clr-namespace:Through.Tray"
-        Title="{local:Tr 'Тропа'}" Width="1100" Height="780" MinWidth="940" MinHeight="580"
+        Title="{local:Tr 'Сквозь'}" Width="1100" Height="780" MinWidth="940" MinHeight="580"
         WindowStartupLocation="CenterScreen" Icon="through.ico"
         Background="{DynamicResource Paper}" Foreground="{DynamicResource Ink}"
         FontFamily="{StaticResource Body}" FontSize="14" UseLayoutRounding="True">
@@ -162,7 +162,7 @@
     </Window.Resources>
 
     <WindowChrome.WindowChrome>
-        <!-- своя рамка: заголовок Тропы вместо системного, края окна по-прежнему тянутся -->
+        <!-- своя рамка: заголовок Сквозь вместо системного, края окна по-прежнему тянутся -->
         <WindowChrome CaptionHeight="52" ResizeBorderThickness="6" GlassFrameThickness="0,0,0,1"
                       CornerRadius="0" UseAeroCaptionButtons="False" />
     </WindowChrome.WindowChrome>
@@ -186,7 +186,7 @@
                                 <Rectangle Fill="White" />
                             </UniformGrid>
                         </Border>
-                        <TextBlock Text="{local:Tr 'Тропа'}" FontFamily="{StaticResource Display}" FontSize="17" FontWeight="SemiBold"
+                        <TextBlock Text="{local:Tr 'Сквозь'}" FontFamily="{StaticResource Display}" FontSize="17" FontWeight="SemiBold"
                                    Margin="10,0,0,1" VerticalAlignment="Center" />
                     </StackPanel>
 
@@ -237,7 +237,7 @@
                 </DockPanel>
             </Border>
 
-            <!-- ======== полоса уведомлений: новая версия или «в прошлый раз Тропа упала» ======== -->
+            <!-- ======== полоса уведомлений: новая версия или «в прошлый раз Сквозь упала» ======== -->
             <Border Grid.Row="1" Background="{DynamicResource Surface}" BorderBrush="{DynamicResource Line}" BorderThickness="0,0,0,1"
                     Padding="48,10" Visibility="{Binding HasBanner, Converter={StaticResource Visible}}">
                 <DockPanel>
@@ -416,9 +416,9 @@
                                 <StackPanel Margin="18,2,0,0" MaxWidth="640">
                                     <TextBlock Text="{Binding HomePac}" FontFamily="{StaticResource Display}" FontSize="17" FontWeight="SemiBold" />
                                     <TextBlock Style="{StaticResource Soft}" TextWrapping="Wrap" Margin="0,6,0,0"
-                                               Text="{local:Tr 'Наведите телефон с Тропой на QR: она скопирует адрес и откроет настройки Wi-Fi, останется вставить и выбрать «Авто». Вручную: Wi-Fi → эта сеть → Прокси → Авто, вставьте адрес. На iPhone и ТВ впишите адрес сами.'}" />
+                                               Text="{local:Tr 'Наведите телефон с Сквозь на QR: она скопирует адрес и откроет настройки Wi-Fi, останется вставить и выбрать «Авто». Вручную: Wi-Fi → эта сеть → Прокси → Авто, вставьте адрес. На iPhone и ТВ впишите адрес сами.'}" />
                                     <TextBlock Style="{StaticResource Soft}" FontSize="12.5" TextWrapping="Wrap" Margin="0,6,0,0"
-                                               Text="{local:Tr 'Работает, пока компьютер включён и Тропа запущена. Чужие из интернета подключиться не могут: пускаются только устройства из этой сети.'}" />
+                                               Text="{local:Tr 'Работает, пока компьютер включён и Сквозь запущена. Чужие из интернета подключиться не могут: пускаются только устройства из этой сети.'}" />
                                 </StackPanel>
                             </StackPanel>
                         </StackPanel>
@@ -587,7 +587,7 @@
                 <StackPanel Grid.ColumnSpan="3" Margin="0,0,0,22">
                     <TextBlock Text="{local:Tr 'Приложения'}" Style="{StaticResource PageTitle}" />
                     <TextBlock Style="{StaticResource Soft}" FontSize="15" MaxWidth="700" HorizontalAlignment="Left" Margin="0,6,0,0"
-                               Text="{local:Tr 'Тропа обходит блокировки для этих сервисов. Если игра или сайт работает плохо, добавьте его: Тропа подберёт стратегию и будет держать её.'}" />
+                               Text="{local:Tr 'Сквозь обходит блокировки для этих сервисов. Если игра или сайт работает плохо, добавьте его: Сквозь подберёт стратегию и будет держать её.'}" />
                 </StackPanel>
 
                 <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Focusable="False">
@@ -709,7 +709,7 @@
                                 <TextBlock Text="{local:Tr 'Выбрать запущенную программу'}" />
                             </Button>
                             <TextBlock Style="{StaticResource Soft}" Margin="0,4,0,14"
-                                       Text="{local:Tr 'Тропа сама подслушает, куда ходит игра, и соберёт домены и порты. Или начните с заготовки:'}" />
+                                       Text="{local:Tr 'Сквозь сама подслушает, куда ходит игра, и соберёт домены и порты. Или начните с заготовки:'}" />
                             <ItemsControl ItemsSource="{Binding Templates}" Focusable="False">
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate DataType="{x:Type local:AppTemplate}">
@@ -787,7 +787,7 @@
                 <StackPanel Grid.ColumnSpan="3" Margin="0,0,0,26">
                     <TextBlock Text="Telegram" Style="{StaticResource PageTitle}" />
                     <TextBlock Style="{StaticResource Soft}" FontSize="15" MaxWidth="720" HorizontalAlignment="Left" Margin="0,6,0,0" TextWrapping="Wrap"
-                               Text="{local:Tr 'Тропа держит для Telegram локальный прокси: трафик уходит через WebSocket веб-версии Telegram, который режут реже, а если и его нет — через Cloudflare. Работает внутри службы, окно можно закрыть.'}" />
+                               Text="{local:Tr 'Сквозь держит для Telegram локальный прокси: трафик уходит через WebSocket веб-версии Telegram, который режут реже, а если и его нет — через Cloudflare. Работает внутри службы, окно можно закрыть.'}" />
                 </StackPanel>
 
                 <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Focusable="False">
@@ -833,14 +833,14 @@
                         <StackPanel Margin="28,6,0,0" Visibility="{Binding TgOn, Converter={StaticResource Visible}}">
                             <TextBlock Text="{local:Tr 'Как это устроено'}" Style="{StaticResource SectionTitle}" />
                             <TextBlock Style="{StaticResource Soft}" TextWrapping="Wrap" MaxWidth="640" HorizontalAlignment="Left" Margin="0,0,0,6">
-                                <Run Text="{local:Tr 'Адрес прокси: '}" /><Run Text="{Binding TgAddress, Mode=OneWay}" FontWeight="SemiBold" Foreground="{DynamicResource Ink}" /><Run Text="{local:Tr '. Telegram шифрует всё сам, Тропа лишь перекладывает его пакеты в WebSocket и не видит переписку.'}" />
+                                <Run Text="{local:Tr 'Адрес прокси: '}" /><Run Text="{Binding TgAddress, Mode=OneWay}" FontWeight="SemiBold" Foreground="{DynamicResource Ink}" /><Run Text="{local:Tr '. Telegram шифрует всё сам, Сквозь лишь перекладывает его пакеты в WebSocket и не видит переписку.'}" />
                             </TextBlock>
                             <TextBlock Style="{StaticResource Soft}" TextWrapping="Wrap" MaxWidth="640" HorizontalAlignment="Left" Margin="0,0,0,18"
                                        Text="{local:Tr 'Чтобы Telegram снова ходил напрямую, отключите прокси в его настройках.'}" />
                             <TextBlock Text="{local:Tr 'Телефон'}" Style="{StaticResource SectionTitle}" />
                             <ToggleButton Style="{StaticResource Switch}" IsChecked="{Binding TgLanOn, Mode=OneWay}" Command="{Binding TgLanCommand}" Margin="0,0,0,12">
                                 <TextBlock TextWrapping="Wrap" MaxWidth="560"
-                                           Text="{local:Tr 'Пускать телефоны из этой Wi-Fi сети: Тропа откроет прокси для устройств из вашей сети (из интернета к нему не попасть). Без секрета из QR-кода к нему не подключиться.'}" />
+                                           Text="{local:Tr 'Пускать телефоны из этой Wi-Fi сети: Сквозь откроет прокси для устройств из вашей сети (из интернета к нему не попасть). Без секрета из QR-кода к нему не подключиться.'}" />
                             </ToggleButton>
                             <StackPanel Orientation="Horizontal" Margin="0,0,0,20" Visibility="{Binding HasTgQr, Converter={StaticResource Visible}}">
                                 <Border CornerRadius="14" Background="White" Padding="6" BorderBrush="{DynamicResource Line}" BorderThickness="1">
@@ -884,7 +884,7 @@
                         </StackPanel>
 
                         <TextBlock Style="{StaticResource Soft}" FontSize="12.5" Margin="0,22,0,0" TextWrapping="Wrap"
-                                   Text="{local:Tr 'Порт tg-ws-proxy от Flowseal (MIT), переписан на C# и работает в службе Тропы без Python.'}" />
+                                   Text="{local:Tr 'Порт tg-ws-proxy от Flowseal (MIT), переписан на C# и работает в службе Сквозь без Python.'}" />
                     </StackPanel>
                 </ScrollViewer>
             </Grid>
@@ -903,7 +903,7 @@
                     <StackPanel>
                         <TextBlock Text="{local:Tr 'Журнал'}" Style="{StaticResource PageTitle}" />
                         <TextBlock Style="{StaticResource Soft}" FontSize="15" Margin="0,6,0,0"
-                                   Text="{local:Tr 'Что Тропа делала с момента открытия окна: попытки подбора, перезапуски, обновления.'}" />
+                                   Text="{local:Tr 'Что Сквозь делала с момента открытия окна: попытки подбора, перезапуски, обновления.'}" />
                     </StackPanel>
                 </DockPanel>
                 <TextBlock Grid.Row="1" Style="{StaticResource Soft}" Text="{local:Tr 'Пока тихо. События появятся, когда служба что-нибудь сделает.'}"
@@ -978,7 +978,7 @@
                             <TextBlock Style="{StaticResource Soft}" TextWrapping="Wrap" Margin="0,8,0,0"
                                        Visibility="{Binding HasGameAutoResult, Converter={StaticResource Visible}}" Text="{Binding GameAutoResult}" />
                         </StackPanel>
-                        <!-- мастер: Тропа включает варианты по очереди -->
+                        <!-- мастер: Сквозь включает варианты по очереди -->
                         <StackPanel Visibility="{Binding GameAutoActive, Converter={StaticResource Visible}}">
                             <TextBlock Style="{StaticResource Soft}" TextWrapping="Wrap" Margin="0,0,0,10" Text="{Binding GameAutoText}" />
                             <StackPanel Orientation="Horizontal">
@@ -989,12 +989,12 @@
                     </StackPanel>
                     <Rectangle Height="1" Fill="{DynamicResource Line}" Margin="0,26,0,24" />
 
-                    <TextBlock Text="{local:Tr 'Обновления Тропы'}" Style="{StaticResource SectionTitle}" />
+                    <TextBlock Text="{local:Tr 'Обновления Сквозь'}" Style="{StaticResource SectionTitle}" />
                     <TextBlock Text="{Binding VersionText}" FontSize="15" Margin="0,0,0,4" />
                     <TextBlock Text="{Binding AppUpdateText}" Style="{StaticResource Soft}" Margin="0,0,0,14" />
                     <ToggleButton Style="{StaticResource Switch}" IsChecked="{Binding CheckAppUpdates}" Margin="0,0,0,14">
                         <TextBlock TextWrapping="Wrap"
-                                   Text="{local:Tr 'Проверять новые версии Тропы на github.com/xckrt/Through и предлагать обновиться (сама Тропа без спроса не обновляется)'}" />
+                                   Text="{local:Tr 'Проверять новые версии Сквозь на github.com/xckrt/Through и предлагать обновиться (сама Сквозь без спроса не обновляется)'}" />
                     </ToggleButton>
                     <Button Content="{local:Tr 'Проверить сейчас'}" Command="{Binding CheckAppUpdateCommand}" Style="{StaticResource QuietButton}" HorizontalAlignment="Left" />
                     <Rectangle Height="1" Fill="{DynamicResource Line}" Margin="0,26,0,24" />
@@ -1004,7 +1004,7 @@
                     <TextBlock Text="{Binding UpdateText}" Style="{StaticResource Soft}" Margin="0,0,0,14" />
                     <ToggleButton Style="{StaticResource Switch}" IsChecked="{Binding AutoUpdate}" IsEnabled="{Binding HasService}" Margin="0,0,0,14">
                         <TextBlock TextWrapping="Wrap"
-                                   Text="{local:Tr 'Обновлять автоматически: раз в сутки Тропа ищет новый релиз bol-van/zapret, сверяет хеши и переходит на него, а если он не запустится, возвращается к прежнему'}" />
+                                   Text="{local:Tr 'Обновлять автоматически: раз в сутки Сквозь ищет новый релиз bol-van/zapret, сверяет хеши и переходит на него, а если он не запустится, возвращается к прежнему'}" />
                     </ToggleButton>
                     <Button Content="{local:Tr 'Проверить сейчас'}" Command="{Binding CheckUpdatesCommand}" Style="{StaticResource QuietButton}" HorizontalAlignment="Left" />
                     <Rectangle Height="1" Fill="{DynamicResource Line}" Margin="0,26,0,24" />
@@ -1012,7 +1012,7 @@
                     <StackPanel Visibility="{Binding HasCommunity, Converter={StaticResource Visible}}">
                         <TextBlock Text="{local:Tr 'Общая база стратегий'}" Style="{StaticResource SectionTitle}" />
                         <TextBlock Style="{StaticResource Soft}" TextWrapping="Wrap" Margin="0,0,0,14"
-                                   Text="{local:Tr 'Тропы делятся тем, что помогло: у вашего провайдера YouTube уже чинили — Тропа попробует эту стратегию первой, и подбор займёт секунды. Провайдера сервер узнаёт сам по соединению; Тропа отправляет только «сервис → стратегия → помогла или нет», без IP, адресов сайтов и идентификаторов.'}" />
+                                   Text="{local:Tr 'Сквозь делятся тем, что помогло: у вашего провайдера YouTube уже чинили — Сквозь попробует эту стратегию первой, и подбор займёт секунды. Провайдера сервер узнаёт сам по соединению; Сквозь отправляет только «сервис → стратегия → помогла или нет», без IP, адресов сайтов и идентификаторов.'}" />
                         <ToggleButton Style="{StaticResource Switch}" IsChecked="{Binding CommunityUse}" IsEnabled="{Binding HasService}" Margin="0,0,0,14">
                             <TextBlock TextWrapping="Wrap" Text="{local:Tr 'Брать подсказки из общей базы и обновлять списки сайтов для обхода'}" />
                         </ToggleButton>
@@ -1049,7 +1049,7 @@
                     </StackPanel>
                     <ToggleButton Style="{StaticResource Switch}" IsChecked="{Binding Autostart}" Margin="0,0,0,14"
                                   Visibility="{Binding NotPortable, Converter={StaticResource Visible}}">
-                        <TextBlock TextWrapping="Wrap" Text="{local:Tr 'Запускать Тропу вместе с Windows (сразу в трей)'}" />
+                        <TextBlock TextWrapping="Wrap" Text="{local:Tr 'Запускать Сквозь вместе с Windows (сразу в трей)'}" />
                     </ToggleButton>
                     <ToggleButton Style="{StaticResource Switch}" IsChecked="{Binding Notify}" Margin="0,0,0,14">
                         <TextBlock TextWrapping="Wrap" Text="{local:Tr 'Уведомлять, когда служба сама что-то сделала: подобрала заново, обновила zapret, не смогла включить защиту'}" />
@@ -1065,7 +1065,7 @@
                                Text="{local:Tr 'Движок: zapret от bol-van, стратегии и шаблоны Flowseal/zapret-discord-youtube (MIT).'}" />
                     <ToggleButton Style="{StaticResource Switch}" IsChecked="{Binding ShareCrashes}" Margin="0,0,0,14">
                         <TextBlock TextWrapping="Wrap" MaxWidth="640"
-                                   Text="{local:Tr 'Отправлять сводки об ошибках: тип ошибки и имена методов Тропы, версии Тропы и Windows. Без текста ошибок, путей, адресов сайтов и имён — помогает чинить то, что ломается у многих.'}" />
+                                   Text="{local:Tr 'Отправлять сводки об ошибках: тип ошибки и имена методов Сквозь, версии Сквозь и Windows. Без текста ошибок, путей, адресов сайтов и имён — помогает чинить то, что ломается у многих.'}" />
                     </ToggleButton>
                     <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
                         <Button Content="{local:Tr 'Сообщить о проблеме'}" Command="{Binding ReportProblemCommand}" Style="{StaticResource QuietButton}"
@@ -1074,8 +1074,8 @@
                                 HorizontalAlignment="Left" />
                     </StackPanel>
                     <TextBlock Style="{StaticResource Soft}" FontSize="12.5" Margin="0,0,0,14"
-                               Text="{local:Tr 'Откроется черновик issue на GitHub с версиями и журналами — или сохраните тот же отчёт в файл и пришлите его любым способом. Вы увидите весь текст; без вашего нажатия Тропа ничего никуда не шлёт.'}" />
-                    <Button Content="{local:Tr 'Удалить службу Тропы'}" Command="{Binding UninstallServiceCommand}" Style="{StaticResource QuietButton}"
+                               Text="{local:Tr 'Откроется черновик issue на GitHub с версиями и журналами — или сохраните тот же отчёт в файл и пришлите его любым способом. Вы увидите весь текст; без вашего нажатия Сквозь ничего никуда не шлёт.'}" />
+                    <Button Content="{local:Tr 'Удалить службу Сквозь'}" Command="{Binding UninstallServiceCommand}" Style="{StaticResource QuietButton}"
                             Foreground="{DynamicResource Signal}" HorizontalAlignment="Left"
                             Visibility="{Binding CanUninstall, Converter={StaticResource Visible}}" />
                 </StackPanel>

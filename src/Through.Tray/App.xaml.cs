@@ -29,9 +29,9 @@ public partial class App : Application
         CrashReports.Save(e.Exception, Loc.T("окно"));
         e.Handled = true;
         MessageBox.Show(
-            Loc.T("В окне Тропы что-то пошло не так. Обход это не задело: его держит служба.\n\n") +
-            Loc.T("Отчёт сохранён, при следующем запуске Тропа предложит отправить его разработчику.\n\n") +
+            Loc.T("В окне Сквозь что-то пошло не так. Обход это не задело: его держит служба.\n\n") +
+            Loc.T("Отчёт сохранён, при следующем запуске Сквозь предложит отправить его разработчику.\n\n") +
             e.Exception.Message,
-            Loc.T("Тропа"), MessageBoxButton.OK, MessageBoxImage.Warning);
+            Loc.T("Сквозь"), MessageBoxButton.OK, MessageBoxImage.Warning);
     }
 }

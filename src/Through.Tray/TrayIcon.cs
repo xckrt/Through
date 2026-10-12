@@ -24,7 +24,7 @@ public sealed class TrayIcon : IDisposable
         _protect = new Forms.ToolStripMenuItem(Loc.T("Включить защиту"), null, (_, _) => ToggleProtection?.Invoke());
         _telegram = new Forms.ToolStripMenuItem(Loc.T("Включить прокси Telegram"), null, (_, _) => ToggleTelegram?.Invoke());
         var menu = new Forms.ContextMenuStrip();
-        menu.Items.Add(new Forms.ToolStripMenuItem(Loc.T("Открыть Тропу"), null, (_, _) => Open?.Invoke()) { Font = new Font(Forms.Control.DefaultFont, FontStyle.Bold) });
+        menu.Items.Add(new Forms.ToolStripMenuItem(Loc.T("Открыть Сквозь"), null, (_, _) => Open?.Invoke()) { Font = new Font(Forms.Control.DefaultFont, FontStyle.Bold) });
         menu.Items.Add(_protect);
         menu.Items.Add(_telegram);
         menu.Items.Add(new Forms.ToolStripSeparator());
@@ -34,7 +34,7 @@ public sealed class TrayIcon : IDisposable
         _icon.MouseClick += (_, e) => { if (e.Button == Forms.MouseButtons.Left) Open?.Invoke(); };
         // клик по уведомлению открывает окно — там и кнопка «Подобрать заново», и подсказки
         _icon.BalloonTipClicked += (_, _) => Open?.Invoke();
-        Update(Pill.NoService, Loc.T("Тропа"), protecting: false, canToggle: false);
+        Update(Pill.NoService, Loc.T("Сквозь"), protecting: false, canToggle: false);
     }
 
     public void Update(Pill pill, string text, bool protecting, bool canToggle)
@@ -52,7 +52,7 @@ public sealed class TrayIcon : IDisposable
         old?.Dispose();
 
         // подсказка у значка ограничена 63 символами
-        var tip = Loc.F("Тропа: {0}", text);
+        var tip = Loc.F("Сквозь: {0}", text);
         _icon.Text = tip.Length > 63 ? tip[..63] : tip;
         _protect.Text = protecting ? Loc.T("Выключить защиту") : Loc.T("Включить защиту");
         _protect.Enabled = canToggle;
@@ -67,7 +67,7 @@ public sealed class TrayIcon : IDisposable
 
     public void Hint(string title, string text) => _icon.ShowBalloonTip(4000, title, text, Forms.ToolTipIcon.None);
 
-    /// <summary>Знак Тропы под размер значков в трее (16 при 100 %, больше на крупном масштабе).</summary>
+    /// <summary>Знак Сквозь под размер значков в трее (16 при 100 %, больше на крупном масштабе).</summary>
     private static Icon Draw(Color stripe)
     {
         using var bmp = IconArt.Draw(Forms.SystemInformation.SmallIconSize.Width, stripe);

@@ -9,7 +9,7 @@ namespace Through.Service;
 /// <summary>
 /// DNS адаптеров Windows: указать 127.0.0.1 и ::1 (там слушает SecureDnsServer) и вернуть прежнее.
 /// Прежние настройки — в dns-restore.json: файл переживает падение службы, и при следующем старте или удалении
-/// Тропы DNS вернётся, даже если служба умерла посреди работы.
+/// Сквозь DNS вернётся, даже если служба умерла посреди работы.
 /// </summary>
 internal sealed class WindowsDnsSwitch(string dataDir, FileLog log) : IDnsSwitch
 {

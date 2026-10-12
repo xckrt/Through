@@ -17,7 +17,7 @@ public sealed partial class MainViewModel
     public string? HomePac => _status?.Home?.PacUrl;
     public bool HasHomePac => HomePac is not null;
 
-    /// <summary>Ссылка для QR: ведёт в Тропу на телефоне, та копирует адрес PAC и открывает настройки Wi-Fi.</summary>
+    /// <summary>Ссылка для QR: ведёт в Сквозь на телефоне, та копирует адрес PAC и открывает настройки Wi-Fi.</summary>
     public string? HomeAppLink => HomePac is { } pac ? $"through://home?pac={Uri.EscapeDataString(pac)}" : null;
 
     public string HomeText => _status?.Home switch

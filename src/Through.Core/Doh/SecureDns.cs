@@ -292,6 +292,6 @@ public interface IDnsSwitch
     /// <summary>Указать адаптерам 127.0.0.1 / ::1, запомнив прежние настройки. Возвращает, сколько адаптеров переключено.</summary>
     Task<int> PointToLocalAsync(CancellationToken ct);
 
-    /// <summary>Вернуть то, что было до Тропы.</summary>
+    /// <summary>Вернуть то, что было до Сквозь.</summary>
     Task RestoreAsync(CancellationToken ct);
 }

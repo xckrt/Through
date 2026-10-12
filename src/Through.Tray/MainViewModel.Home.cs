@@ -163,7 +163,7 @@ public sealed partial class MainViewModel
         var pending = services.Count == 0 || services.Any(s => s.Health == Health.Pending);
         var broken = services.Where(s => s.Health == Health.Blocked).Select(s => s.Title).ToList();
         var slow = services.Where(s => s.Health == Health.Slow).Select(s => s.Title).ToList();
-        var tuning = _status?.State == ControllerState.Tuning || Headline == Loc.T("Подбираю обход") || Headline == Loc.T("Устанавливаю службу Тропы") || Headline == Loc.T("Обновляю службу Тропы") || Headline == Loc.T("Запускаю Тропу");
+        var tuning = _status?.State == ControllerState.Tuning || Headline == Loc.T("Подбираю обход") || Headline == Loc.T("Устанавливаю службу Сквозь") || Headline == Loc.T("Обновляю службу Сквозь") || Headline == Loc.T("Запускаю Сквозь");
         var netDown = _status?.NetworkDown == true || Headline == Loc.T("Нет подключения к интернету");
 
         // ---- обход
@@ -177,7 +177,7 @@ public sealed partial class MainViewModel
         {
             ZapretOrb = _protecting ? OrbState.Problem : OrbState.Off;
             ZapretStatus = Loc.T("Нет сети");
-            ZapretDetail = Loc.T("Контрольные сайты не открываются: дело не в блокировке. Как только сеть появится, Тропа проверит снова.");
+            ZapretDetail = Loc.T("Контрольные сайты не открываются: дело не в блокировке. Как только сеть появится, Сквозь проверит снова.");
         }
         else if (_protecting)
         {
@@ -202,8 +202,8 @@ public sealed partial class MainViewModel
             ZapretDetail = ready ? Loc.T("Стратегии уже подобраны: включится за пару секунд.")
                 : pending ? Loc.T("Проверяю, что режут…")
                 : broken.Count > 0
-                    ? Loc.F("{0} {1}. Нажмите — Тропа сама подберёт обход за пару минут", Wording.JoinAnd(broken), (broken.Count == 1 ? Loc.T("не открывается") : Loc.T("не открываются"))) + (_client is null ? Loc.T(" (Windows один раз спросит разрешение).") : ".")
-                    : Loc.T("Сейчас всё открывается и так. Если что-то начнёт тормозить, нажмите — Тропа подберёт обход.");
+                    ? Loc.F("{0} {1}. Нажмите — Сквозь сама подберёт обход за пару минут", Wording.JoinAnd(broken), (broken.Count == 1 ? Loc.T("не открывается") : Loc.T("не открываются"))) + (_client is null ? Loc.T(" (Windows один раз спросит разрешение).") : ".")
+                    : Loc.T("Сейчас всё открывается и так. Если что-то начнёт тормозить, нажмите — Сквозь подберёт обход.");
         }
         if (slow.Count > 0 && ZapretOrb != OrbState.Busy && broken.Count == 0)
             ZapretDetail += Loc.F(" {0} — медленно.", Wording.JoinAnd(slow));
@@ -220,7 +220,7 @@ public sealed partial class MainViewModel
         {
             TgOrb = OrbState.Off;
             TgStatus = Loc.T("Выключен");
-            TgDetail = Loc.T("Нажмите — Тропа поднимет прокси и сама добавит его в Telegram. Telegram будет ходить через веб-версию, которую режут реже.");
+            TgDetail = Loc.T("Нажмите — Сквозь поднимет прокси и сама добавит его в Telegram. Telegram будет ходить через веб-версию, которую режут реже.");
         }
         else if (!t.Running)
         {
@@ -244,12 +244,12 @@ public sealed partial class MainViewModel
         // ---- общий заголовок
         HomeHeadline = (ZapretOrb, TgOrb) switch
         {
-            (OrbState.Busy, _) or (_, OrbState.Busy) => Loc.T("Минутку, Тропа работает"),
+            (OrbState.Busy, _) or (_, OrbState.Busy) => Loc.T("Минутку, Сквозь работает"),
             _ when netDown => Loc.T("Нет подключения к интернету"),
             (OrbState.Problem, _) or (_, OrbState.Problem) => Loc.T("Кое-что требует внимания"),
             (OrbState.On, OrbState.On) => Loc.T("Интернет без лишних ограничений"),
             (OrbState.On, _) => Loc.T("Обход работает"),
-            (_, OrbState.On) => Loc.T("Telegram работает через Тропу"),
+            (_, OrbState.On) => Loc.T("Telegram работает через Сквозь"),
             _ when pending => Loc.T("Проверяю, что открывается"),
             _ when broken.Count > 0 => Loc.T("Часть сервисов режут"),
             _ => Loc.T("Всё открывается и так"),

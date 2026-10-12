@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Карта блокировок — Тропа</title>
-<meta name="description" content="Что и у какого провайдера режут сейчас и какая стратегия помогает. По данным пользователей Тропы.">
+<title>Карта блокировок — Сквозь</title>
+<meta name="description" content="Что и у какого провайдера режут сейчас и какая стратегия помогает. По данным пользователей Сквозь.">
 <link rel="icon" href="img/favicon.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -49,12 +49,12 @@
 <body>
 <div class="wrap">
   <header>
-    <a class="brand" href="./"><span class="mark" aria-hidden="true"></span>Тропа</a>
+    <a class="brand" href="./"><span class="mark" aria-hidden="true"></span>Сквозь</a>
     <a class="pill" href="./" style="text-decoration:none">← На главную</a>
   </header>
   <h1>Карта блокировок</h1>
-  <p class="sub">Что сейчас режут у каждого провайдера, каким способом и какая стратегия Тропы помогает.
-    Это данные людей, которые включили в Тропе «Делиться итогами подбора», за последние 7 дней.
+  <p class="sub">Что сейчас режут у каждого провайдера, каким способом и какая стратегия Сквозь помогает.
+    Это данные людей, которые включили в Сквозь «Делиться итогами подбора», за последние 7 дней.
     Показаны провайдеры, где данные прислали хотя бы двое; без IP-адресов и идентификаторов.</p>
 
   <div class="bar">
@@ -87,7 +87,7 @@
     out.classList.remove("loading");
     if (data.length === 0) {
       out.className = "empty";
-      out.textContent = "Пока мало данных. Включите в Тропе «Делиться итогами подбора» — карта наполнится.";
+      out.textContent = "Пока мало данных. Включите в Сквозь «Делиться итогами подбора» — карта наполнится.";
       return;
     }
     const services = [...new Set(data.map(r => r.service))].sort((a, b) => (TITLES[a] ? 0 : 1) - (TITLES[b] ? 0 : 1) || a.localeCompare(b));

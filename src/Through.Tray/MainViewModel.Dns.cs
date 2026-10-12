@@ -15,7 +15,7 @@ public sealed partial class MainViewModel
     {
         null or { Enabled: false } => Loc.T("Провайдер видит, какие сайты вы открываете, и может подменить их адреса. С защищённым DNS запросы идут через HTTPS к Cloudflare или Google."),
         { Running: true, Error: null, Stats: { } st } => Loc.F("Включён: адреса сайтов приходят через {0} по HTTPS. Запросов {1}, из кэша {2}.", st.Upstream, st.Queries, st.CacheHits),
-        { Error: { } e } => Loc.F("Пока не работает: {0}. Интернет идёт через прежний DNS, Тропа попробует снова сама.", Loc.Msg(e)),
+        { Error: { } e } => Loc.F("Пока не работает: {0}. Интернет идёт через прежний DNS, Сквозь попробует снова сама.", Loc.Msg(e)),
         _ => Loc.T("Включаю…"),
     };
 

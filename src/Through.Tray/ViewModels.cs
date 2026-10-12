@@ -177,7 +177,7 @@ public sealed class ServiceVm : Observable
         PlanItems.Clear();
         var name = presetName ?? (id => id);
         PlanHeading = active is { Length: > 0 }
-            ? Loc.F("Работает через стратегию «{0}» ({1}).", name(active), active) + (report.Overrides.Count > 0 ? Loc.T(" Упрямым хостам Тропа подобрала свои:") : "")
+            ? Loc.F("Работает через стратегию «{0}» ({1}).", name(active), active) + (report.Overrides.Count > 0 ? Loc.T(" Упрямым хостам Сквозь подобрала свои:") : "")
             : active is not null
             ? Loc.T("Ни одна стратегия не взяла сервис целиком, поэтому у хостов свои:")
             : report.Plan switch
@@ -312,8 +312,8 @@ public sealed partial class MainViewModel : Observable
 
         TuneVisible = true;
         ModeNote = IsPortable
-            ? Loc.T("Переносная версия: обход работает, пока открыта Тропа. При включении Windows спросит разрешение администратора.")
-            : Loc.T("Обход настраивает служба Тропы. При первом подборе Windows один раз спросит разрешение администратора.");
+            ? Loc.T("Переносная версия: обход работает, пока открыта Сквозь. При включении Windows спросит разрешение администратора.")
+            : Loc.T("Обход настраивает служба Сквозь. При первом подборе Windows один раз спросит разрешение администратора.");
         await CheckAsync();
         KeepConnecting(20); // служба могла ещё запускаться/устанавливаться — продолжаем ловить её в фоне
     }
@@ -363,7 +363,7 @@ public sealed partial class MainViewModel : Observable
         try
         {
             var status = await client.CallAsync<StatusReport>("status", ct: _cts.Token);
-            // служба из прошлой версии Тропы: обновим её при следующем подборе
+            // служба из прошлой версии Сквозь: обновим её при следующем подборе
             _serviceOutdated = status.Build != Core.ThroughBuild.Id;
             TuneVisible = false; // подключились к живой службе — режим «не настроено» снимаем
             ApplyStatus(status);
@@ -385,7 +385,7 @@ public sealed partial class MainViewModel : Observable
     {
         var exe = Path.Combine(AppContext.BaseDirectory, "Through.Service.exe");
         if (!File.Exists(exe))
-            throw new InvalidOperationException(Loc.T("Рядом с программой нет Through.Service.exe. Переустановите Тропу."));
+            throw new InvalidOperationException(Loc.T("Рядом с программой нет Through.Service.exe. Переустановите Сквозь."));
 
         Process process;
         try
@@ -400,7 +400,7 @@ public sealed partial class MainViewModel : Observable
         catch (Win32Exception ex) when (ex.NativeErrorCode == 1223) // человек нажал «Нет» в окне UAC
         {
             throw new InvalidOperationException(
-                Loc.T("Без разрешения администратора Тропа не может настроить обход: winws работает с сетевым драйвером."));
+                Loc.T("Без разрешения администратора Сквозь не может настроить обход: winws работает с сетевым драйвером."));
         }
 
         using (process)
@@ -512,7 +512,7 @@ public sealed partial class MainViewModel : Observable
             await EnsureServiceAsync();
             Headline = Loc.T("Подбираю обход");
             Subline = _status?.EngineVersion is null
-                ? Loc.T("Сначала Тропа скачает zapret с GitHub (около 8 МБ) и сверит хеши, затем переберёт стратегии. Это займёт несколько минут.")
+                ? Loc.T("Сначала Сквозь скачает zapret с GitHub (около 8 МБ) и сверит хеши, затем переберёт стратегии. Это займёт несколько минут.")
                 : Loc.T("Это займёт несколько минут. Пока идёт подбор, сервисы могут открываться с перебоями.");
             Log(Loc.T("подбор начат") + (services is null ? "" : $": {string.Join(", ", services.Select(Wording.ServiceTitle))}"));
             var summary = await _client!.CallAsync<TuneSummary>("tune", services is null ? null : new { services }, _cts.Token);
@@ -542,7 +542,7 @@ public sealed partial class MainViewModel : Observable
     private async Task EnsureServiceAsync()
     {
         if (_client is not null && !_serviceOutdated) return;
-        if (_pipeName is null) throw new InvalidOperationException(Loc.T("Служба Тропы недоступна."));
+        if (_pipeName is null) throw new InvalidOperationException(Loc.T("Служба Сквозь недоступна."));
 
         // Служба могла быть жива, а трей просто не успел подключиться на старте (быстрый таймаут 400 мс)
         // или потерял связь на миг. Прежде чем переустанавливать — а это остановит и перезапустит службу —
@@ -560,7 +560,7 @@ public sealed partial class MainViewModel : Observable
             }
         }
 
-        Headline = _serviceOutdated ? Loc.T("Обновляю службу Тропы") : Loc.T("Устанавливаю службу Тропы");
+        Headline = _serviceOutdated ? Loc.T("Обновляю службу Сквозь") : Loc.T("Устанавливаю службу Сквозь");
         Subline = _serviceOutdated
             ? Loc.T("Служба осталась от прошлой версии. Windows спросит разрешение администратора, чтобы её заменить.")
             : Loc.T("Windows спросит разрешение администратора. Оно нужно один раз: служба запускает winws, а тот работает с сетевым драйвером.");
@@ -571,13 +571,13 @@ public sealed partial class MainViewModel : Observable
         }
         if (IsPortable)
         {
-            Headline = Loc.T("Запускаю Тропу");
-            Subline = Loc.T("Windows спросит разрешение администратора: обход работает с сетевым драйвером. В переносной версии он держится, пока открыта Тропа.");
+            Headline = Loc.T("Запускаю Сквозь");
+            Subline = Loc.T("Windows спросит разрешение администратора: обход работает с сетевым драйвером. В переносной версии он держится, пока открыта Сквозь.");
             await StartPortableHostAsync();
         }
         else await InstallServiceAsync();
         _serviceOutdated = false;
-        Log(Headline == Loc.T("Обновляю службу Тропы") ? Loc.T("служба обновлена") : Loc.T("служба установлена"));
+        Log(Headline == Loc.T("Обновляю службу Сквозь") ? Loc.T("служба обновлена") : Loc.T("служба установлена"));
     }
 
     private static string OutcomeText(TuneOutcome o) => o switch
@@ -653,7 +653,7 @@ public sealed partial class MainViewModel : Observable
         _client = null;
         _recheckCts?.Cancel();
         ProtectVisible = false;
-        ModeNote = Loc.T("Связь со службой Тропы потеряна: она остановлена или перезапускается. Доступна только диагностика.");
+        ModeNote = Loc.T("Связь со службой Сквозь потеряна: она остановлена или перезапускается. Доступна только диагностика.");
         CommandManager.InvalidateRequerySuggested();
         // служба перезапускается (обновление, падение) — ловим её снова, чтобы окно вернулось в строй само
         KeepConnecting(30);
@@ -729,7 +729,7 @@ public sealed partial class MainViewModel : Observable
         Raise(nameof(ProtectLabel));
         ProtectVisible = s.Profile.Count > 0;
         TuneVisible = true;
-        ModeNote = _serviceOutdated ? Loc.T("Служба Тропы из прошлой версии: она обновится при подборе обхода.")
+        ModeNote = _serviceOutdated ? Loc.T("Служба Сквозь из прошлой версии: она обновится при подборе обхода.")
             : s.State == ControllerState.Tuning ? Loc.T("Служба подбирает обход.") : s.Protecting
             ? Loc.F("Защита включена (winws {0}). Если что-то сломается, служба подберёт заново.", s.EngineVersion)
             : s.Profile.Count > 0 ? Loc.T("Защита выключена.") : "";
@@ -775,7 +775,7 @@ public sealed partial class MainViewModel : Observable
             {
                 Subline = Loc.F("У {0} не открывается второстепенное ", Wording.JoinAnd(partial.Select(s => s.Title).ToList())) +
                           $"({string.Join(", ", partial.Select(s => s.MinorText))}). " +
-                          Loc.T("На работу это не влияет, переподбирать из-за этого Тропа не будет.");
+                          Loc.T("На работу это не влияет, переподбирать из-за этого Сквозь не будет.");
                 return;
             }
             var bypassed = services.Where(s => s.Report?.ActivePreset is not null).Select(s => s.Title).ToList();

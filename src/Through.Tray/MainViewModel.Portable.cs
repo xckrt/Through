@@ -41,6 +41,6 @@ public sealed partial class MainViewModel
             if (await ConnectAsync(TimeSpan.FromMilliseconds(500)) is not null) return;
             await Task.Delay(500, _cts.Token);
         }
-        throw new InvalidOperationException(@"Фоновый процесс Тропы не ответил. Подробности в data\service.log рядом с программой.");
+        throw new InvalidOperationException(@"Фоновый процесс Сквозь не ответил. Подробности в data\service.log рядом с программой.");
     }
 }

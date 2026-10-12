@@ -1,4 +1,4 @@
-# Подпись Тропы (SignPath Foundation)
+# Подпись Сквозь (SignPath Foundation)
 
 Без подписи Windows SmartScreen показывает «Неизвестный издатель» и прячет кнопку «Выполнить» за «Подробнее».
 [SignPath Foundation](https://signpath.org) бесплатно подписывает open-source проекты своим сертификатом.

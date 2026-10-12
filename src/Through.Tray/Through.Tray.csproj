@@ -16,7 +16,7 @@
     <Nullable>enable</Nullable>
     <AssemblyName>Through</AssemblyName>
     <RootNamespace>Through.Tray</RootNamespace>
-    <!-- знак Тропы: метка «бело-красно-белая» на табличке и пунктир тропы; рисует IconArt.cs -->
+    <!-- знак Сквозь: метка «бело-красно-белая» на табличке и пунктир тропы; рисует IconArt.cs -->
     <ApplicationIcon>through.ico</ApplicationIcon>
   </PropertyGroup>
 

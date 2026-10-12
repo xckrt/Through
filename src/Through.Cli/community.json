@@ -1,5 +1,5 @@
 {
   // общая база стратегий (server/strategy-base): адрес Cloudflare Worker после `wrangler deploy`.
-  // Пусто — база выключена: Тропа подбирает сама и никуда ничего не отправляет.
+  // Пусто — база выключена: Сквозь подбирает сама и никуда ничего не отправляет.
   "url": "https://tropa-strategy-base.xckrt.workers.dev"
 }

@@ -13,7 +13,7 @@ scoop bucket add through https://github.com/xckrt/Through
 scoop install through
 ```
 
-Через Scoop ставится переносная версия: обход работает, пока открыта Тропа, а папка `data` переживает
+Через Scoop ставится переносная версия: обход работает, пока открыта Сквозь, а папка `data` переживает
 `scoop update`.
 
 ## Что происходит при релизе
@@ -31,7 +31,7 @@ scoop install through
 
 1. Создайте classic Personal Access Token: GitHub → Settings → Developer settings → Tokens (classic), право
    `public_repo`. wingetcreate форкнет winget-pkgs в ваш аккаунт и откроет PR оттуда.
-2. Добавьте его в репозиторий Тропы как секрет `WINGET_TOKEN` (Settings → Secrets and variables → Actions).
+2. Добавьте его в репозиторий Сквозь как секрет `WINGET_TOKEN` (Settings → Secrets and variables → Actions).
 3. Первый PR проверяют модераторы winget, обычно 1–3 дня. Установщик тестируется в их песочнице, поэтому тихая
    установка (`Through-Setup.exe /silent`) должна проходить без окон. Это так: `/silent` ставит с ярлыком и
    автозапуском и возвращает 0. Следующие версии проходят быстрее.

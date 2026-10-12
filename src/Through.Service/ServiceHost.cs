@@ -133,7 +133,7 @@ internal sealed class ServiceHost(string? dataDir = null)
             {
                 var current = EngineManifest.Load(CurrentManifestPath);
                 current.Validate();
-                // extras и зеркала — из новой сборки Тропы, версия и хеши — из принятого обновления
+                // extras и зеркала — из новой сборки Сквозь, версия и хеши — из принятого обновления
                 if (ReleaseResolver.Compare(current.Version, pinned.Version) > 0)
                     manifest = pinned with { Version = current.Version, Sha256 = current.Sha256, WinwsSha256 = current.WinwsSha256 };
             }
@@ -231,7 +231,7 @@ internal sealed class ServiceHost(string? dataDir = null)
             var foreign = Process.GetProcessesByName("winws");
             foreach (var p in foreign) p.Dispose();
             if (foreign.Length > 0)
-                throw new InvalidOperationException("уже запущен другой winws (похоже, zapret). Остановите его, и Тропа включит защиту.");
+                throw new InvalidOperationException("уже запущен другой winws (похоже, zapret). Остановите его, и Сквозь включит защиту.");
             return inner.StartAsync(launches, ct);
         }
     }

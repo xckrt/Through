@@ -28,7 +28,7 @@ public enum SiteVerdict
 public sealed record SiteCheckResult(string Host, string Domain, ProbeResult Probe, SiteVerdict Verdict);
 
 /// <summary>
-/// «Почему не открывается?»: человек вставляет адрес, Тропа гоняет его по этапам и говорит, кто виноват.
+/// «Почему не открывается?»: человек вставляет адрес, Сквозь гоняет его по этапам и говорит, кто виноват.
 /// Если виноват провайдер и это лечится, домен можно сразу отдать в обход.
 /// </summary>
 public static partial class SiteCheck

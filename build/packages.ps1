@@ -88,7 +88,7 @@ PackageIdentifier: $id
 PackageVersion: $Version
 PackageLocale: ru-RU
 Publisher: xckrt
-PackageName: Тропа
+PackageName: Сквозь
 License: MIT
 ShortDescription: Сама находит, как провайдер режет YouTube, Discord и Telegram, и настраивает обход (zapret).
 ManifestType: locale
@@ -104,9 +104,9 @@ $scoop = [ordered]@{
     description = "Сама находит, как провайдер режет YouTube, Discord и Telegram, и настраивает обход (переносная версия)"
     homepage    = "https://xckrt.github.io/Through/"
     license     = "MIT"
-    notes       = "Обход работает, пока открыта Тропа. Чтобы он держался всегда, поставьте обычную версию: winget install xckrt.Through"
+    notes       = "Обход работает, пока открыта Сквозь. Чтобы он держался всегда, поставьте обычную версию: winget install xckrt.Through"
     architecture = [ordered]@{ "64bit" = [ordered]@{ url = "$base/Through-Portable-$Version.zip"; hash = $portableHash.ToLowerInvariant() } }
-    shortcuts   = @(, @("Through.exe", "Тропа"))
+    shortcuts   = @(, @("Through.exe", "Сквозь"))
     persist     = "data"
     checkver    = [ordered]@{ github = $repo }
     autoupdate  = [ordered]@{

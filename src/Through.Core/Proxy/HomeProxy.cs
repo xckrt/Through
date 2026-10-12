@@ -10,7 +10,7 @@ public sealed record HomeProxyOptions
     public int Port { get; init; } = 3128;
     public IPAddress Listen { get; init; } = IPAddress.Any;
 
-    /// <summary>Домены, которые идут через Тропу (для PAC). Остальное телефон отправляет напрямую.</summary>
+    /// <summary>Домены, которые идут через Сквозь (для PAC). Остальное телефон отправляет напрямую.</summary>
     public required Func<IReadOnlyList<string>> Domains { get; init; }
 
     /// <summary>Кого пускать: по умолчанию только частные адреса (дом, а не интернет). Тесты пускают loopback.</summary>
@@ -37,7 +37,7 @@ public sealed record HomeProxyStats(int Active, long Total, long Refused, long B
 /// <summary>
 /// Прокси для домашней сети: HTTP (CONNECT и обычные запросы) и SOCKS5 на одном порту, плюс /proxy.pac.
 /// Соединения телефона уходят с этого компьютера, поэтому их видит winws и обходит так же, как свои.
-/// PAC отправляет через Тропу только домены из обхода, остальное телефон гонит напрямую.
+/// PAC отправляет через Сквозь только домены из обхода, остальное телефон гонит напрямую.
 /// Пускает только адреса из частных сетей.
 /// </summary>
 public sealed class HomeProxy : IAsyncDisposable

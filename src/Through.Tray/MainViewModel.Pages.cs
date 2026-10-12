@@ -343,7 +343,7 @@ public sealed partial class MainViewModel
     });
     private ICommand? _setGameVariant;
 
-    // ---- авто-подбор игровой стратегии: Тропа включает варианты по очереди, человек говорит, заработало ли
+    // ---- авто-подбор игровой стратегии: Сквозь включает варианты по очереди, человек говорит, заработало ли
     private int _gameAutoStep; // 0 — не идёт, иначе номер проверяемого варианта (с 1)
     private string _gameAutoResult = "";
 
@@ -398,7 +398,7 @@ public sealed partial class MainViewModel
         }
         else
         {
-            GameAutoResult = Loc.T("Ни один вариант не подошёл. Попробуйте «Выбрать запущенную программу», выбрать игру и время 5 минут — Тропа настроит обход прямо под неё.");
+            GameAutoResult = Loc.T("Ни один вариант не подошёл. Попробуйте «Выбрать запущенную программу», выбрать игру и время 5 минут — Сквозь настроит обход прямо под неё.");
             Raise(nameof(HasGameAutoResult));
             SetGameStep(0);
         }
@@ -512,7 +512,7 @@ public sealed partial class MainViewModel
 
     public string EngineText { get => _engineText; private set => Set(ref _engineText, value); }
     public string UpdateText { get => _updateText; private set => Set(ref _updateText, value); }
-    public string BuildText => Loc.F("Тропа, сборка {0}", Core.ThroughBuild.Id);
+    public string BuildText => Loc.F("Сквозь, сборка {0}", Core.ThroughBuild.Id);
     public bool HasService => _client is not null;
     public bool CanUninstall => HasService && !IsPortable;
 
@@ -546,7 +546,7 @@ public sealed partial class MainViewModel
         {
             using var p = Process.Start(new ProcessStartInfo(exe, "uninstall") { UseShellExecute = true, Verb = "runas", WindowStyle = ProcessWindowStyle.Hidden });
             if (p is not null) await p.WaitForExitAsync();
-            Log(Loc.T("служба Тропы удалена, winws остановлен"));
+            Log(Loc.T("служба Сквозь удалена, winws остановлен"));
         }
         catch (System.ComponentModel.Win32Exception ex) when (ex.NativeErrorCode == 1223)
         {
@@ -594,12 +594,12 @@ public sealed partial class MainViewModel
 
     /// <summary>Заголовок уведомления для сообщений службы, о которых стоит сказать, пока окно закрыто.</summary>
     private static string? Notable(string msg) =>
-        msg.Contains("перестало работать") ? Loc.T("Тропа подбирает обход заново")
+        msg.Contains("перестало работать") ? Loc.T("Сквозь подбирает обход заново")
         : msg.Contains("zapret обновлён") ? Loc.T("zapret обновлён")
-        : msg.Contains("остановился сам") ? Loc.T("Тропа перезапустила движок")
-        : msg.Contains("не удалось включить защиту") || msg.Contains("не запустился") ? Loc.T("Тропа: нужна помощь")
+        : msg.Contains("остановился сам") ? Loc.T("Сквозь перезапустила движок")
+        : msg.Contains("не удалось включить защиту") || msg.Contains("не запустился") ? Loc.T("Сквозь: нужна помощь")
         : msg.StartsWith("подбор закончен") ? Loc.T("Подбор закончен")
-        : msg.StartsWith("ранний сигнал") ? Loc.T("Тропа: провайдер что-то поменял")
+        : msg.StartsWith("ранний сигнал") ? Loc.T("Сквозь: провайдер что-то поменял")
         : msg.StartsWith("Telegram: не отвечают") || msg.StartsWith("прокси Telegram не запустился") ? "Telegram"
         : msg.StartsWith("порт ") && msg.Contains("прокси Telegram") ? Loc.T("Telegram: подключите прокси заново")
         : null;

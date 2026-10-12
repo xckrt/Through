@@ -35,7 +35,7 @@ internal static class Installer
         var binPath = $"\"{exe}\"";
         var code = exists
             ? Sc("config", Name, "binPath=", binPath, "start=", "auto")
-            : Sc("create", Name, "binPath=", binPath, "start=", "auto", "DisplayName=", "Тропа");
+            : Sc("create", Name, "binPath=", binPath, "start=", "auto", "DisplayName=", "Сквозь");
         if (code != 0) throw new InvalidOperationException($"sc {(exists ? "config" : "create")} вернул {code}");
 
         Sc("description", Name, "Диагностика сети и настройка DPI-обработки");
@@ -94,7 +94,7 @@ internal static class Installer
         sc.WaitForStatus(ServiceControllerStatus.Stopped, TimeSpan.FromSeconds(30));
     }
 
-    /// <summary>Копия с заменой. Файл, занятый окном Тропы, запущенным из Program Files, пропускается, если он тот же.</summary>
+    /// <summary>Копия с заменой. Файл, занятый окном Сквозь, запущенным из Program Files, пропускается, если он тот же.</summary>
     private static void CopyTree(string from, string to)
     {
         foreach (var dir in Directory.EnumerateDirectories(from, "*", SearchOption.AllDirectories))

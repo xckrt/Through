@@ -1,7 +1,7 @@
 <Window x:Class="Through.Setup.SetupWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Установка Тропы" Width="640" Height="500" ResizeMode="NoResize" WindowStartupLocation="CenterScreen"
+        Title="Установка Сквозь" Width="640" Height="500" ResizeMode="NoResize" WindowStartupLocation="CenterScreen"
         Icon="through.ico" Background="{StaticResource Paper}" Foreground="{StaticResource Ink}"
         FontFamily="{StaticResource Body}" FontSize="14" UseLayoutRounding="True">
 
@@ -28,7 +28,7 @@
                             <Rectangle Fill="White" />
                         </UniformGrid>
                     </Border>
-                    <TextBlock Text="Тропа" FontFamily="{StaticResource Display}" FontSize="16" FontWeight="SemiBold" Margin="10,0,0,1" />
+                    <TextBlock Text="Сквозь" FontFamily="{StaticResource Display}" FontSize="16" FontWeight="SemiBold" Margin="10,0,0,1" />
                     <TextBlock x:Name="VersionText" FontFamily="{StaticResource DisplayNarrow}" Foreground="{StaticResource InkSoft}"
                                Margin="8,2,0,0" />
                 </StackPanel>
@@ -50,8 +50,8 @@
             <!-- выбор перед установкой -->
             <StackPanel x:Name="OptionsPanel" Grid.Row="1" Margin="0,24,0,0">
                 <CheckBox x:Name="DesktopBox" Style="{StaticResource Switch}" IsChecked="True" Content="Ярлык на рабочем столе" />
-                <CheckBox x:Name="AutostartBox" Style="{StaticResource Switch}" IsChecked="True" Content="Запускать Тропу вместе с Windows (в трее)" />
-                <CheckBox x:Name="LaunchBox" Style="{StaticResource Switch}" IsChecked="True" Content="Открыть Тропу после установки" />
+                <CheckBox x:Name="AutostartBox" Style="{StaticResource Switch}" IsChecked="True" Content="Запускать Сквозь вместе с Windows (в трее)" />
+                <CheckBox x:Name="LaunchBox" Style="{StaticResource Switch}" IsChecked="True" Content="Открыть Сквозь после установки" />
                 <TextBlock x:Name="FolderText" Foreground="{StaticResource InkSoft}" FontSize="13" Margin="0,8,0,0" />
             </StackPanel>
 

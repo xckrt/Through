@@ -3,14 +3,14 @@ using Through.Core.Engine;
 
 namespace Through.SelfTest;
 
-/// <summary>Проверка обновлений Тропы против «GitHub» без сети: редирект на тег и страница ассетов с хешем.</summary>
+/// <summary>Проверка обновлений Сквозь против «GitHub» без сети: редирект на тег и страница ассетов с хешем.</summary>
 internal static class AppUpdateTests
 {
     private const string Hash = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
 
     public static IEnumerable<(string, Func<Task>)> All() =>
     [
-        ("Обновления Тропы: новая версия находится вместе с хешем установщика", async () =>
+        ("Обновления Сквозь: новая версия находится вместе с хешем установщика", async () =>
         {
             using var http = new HttpClient(new FakeGitHub("v1.2.0", Assets("v1.2.0", "Through-Setup-1.2.0.exe", Hash)));
             var r = await AppUpdates.CheckAsync(http, new Version(1, 0, 0));
@@ -18,14 +18,14 @@ internal static class AppUpdateTests
             Assert(r!.SetupUrl == "https://github.com/xckrt/Through/releases/download/v1.2.0/Through-Setup-1.2.0.exe", r.SetupUrl);
         }),
 
-        ("Обновления Тропы: та же или старшая своя версия — обновления нет", async () =>
+        ("Обновления Сквозь: та же или старшая своя версия — обновления нет", async () =>
         {
             using var http = new HttpClient(new FakeGitHub("v1.0.0", Assets("v1.0.0", "Through-Setup-1.0.0.exe", Hash)));
             Assert(await AppUpdates.CheckAsync(http, new Version(1, 0, 0)) is null, "своя версия не обновление");
             Assert(await AppUpdates.CheckAsync(http, new Version(1, 1, 0)) is null, "старый релиз не обновление");
         }),
 
-        ("Обновления Тропы: у установщика в релизе нет хеша → такое не ставим", async () =>
+        ("Обновления Сквозь: у установщика в релизе нет хеша → такое не ставим", async () =>
         {
             using var http = new HttpClient(new FakeGitHub("v2.0.0", "<li><a href=\"/xckrt/Through/releases/download/v2.0.0/Through-Setup-2.0.0.exe\">x</a></li>"));
             try

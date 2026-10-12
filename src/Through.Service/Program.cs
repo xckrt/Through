@@ -50,7 +50,7 @@ try
             // переносная версия: окно запускает это с правами администратора; живёт, пока живо окно (args[1] — его PID)
             if (!Environment.IsPrivilegedProcess) return Fail("нужны права администратора: winws ставит драйвер WinDivert");
             if (System.ServiceProcess.ServiceController.GetServices().Any(s => s.ServiceName.Equals(Installer.Name, StringComparison.OrdinalIgnoreCase)))
-                return Fail("Тропа уже установлена как служба: переносная версия рядом с ней не запускается");
+                return Fail("Сквозь уже установлена как служба: переносная версия рядом с ней не запускается");
             using (var cts = new CancellationTokenSource())
             {
                 if (args.Length > 1 && int.TryParse(args[1], out var parent))

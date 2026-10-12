@@ -12,7 +12,7 @@ public enum OrbState { Off, On, Busy, Problem }
 
 /// <summary>
 /// Большая круглая кнопка «включить/выключить» на обзоре. Вокруг ядра — пунктирная тропа, которая идёт
-/// по кругу (медленно, когда всё работает; быстро, пока Тропа занята), и расходящиеся волны, пока обход включён.
+/// по кругу (медленно, когда всё работает; быстро, пока Сквозь занята), и расходящиеся волны, пока обход включён.
 /// Цвета берутся из темы и переливаются при смене состояния. Если в Windows выключены анимации, кнопка стоит.
 /// </summary>
 public sealed class PowerOrb : Button
@@ -136,7 +136,7 @@ public sealed class PowerOrb : Button
         _shadow.BeginAnimation(DropShadowEffect.OpacityProperty, new DoubleAnimation(lit ? 0.55 : 0.12, time));
         _trail.BeginAnimation(OpacityProperty, new DoubleAnimation(lit ? 0.95 : 0.45, time));
 
-        // тропа по кругу: спокойно — когда работает, бегом — пока Тропа занята
+        // тропа по кругу: спокойно — когда работает, бегом — пока Сквозь занята
         _spin.BeginAnimation(RotateTransform.AngleProperty, null);
         if (Motion && state != OrbState.Off)
         {

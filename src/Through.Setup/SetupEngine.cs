@@ -14,7 +14,7 @@ namespace Through.Setup;
 public sealed record SetupOptions(bool DesktopShortcut, bool Autostart, bool LaunchAfter);
 
 /// <summary>
-/// Установка, обновление и удаление Тропы. Файлы — в Program Files (туда без прав администратора не записать,
+/// Установка, обновление и удаление Сквозь. Файлы — в Program Files (туда без прав администратора не записать,
 /// так что exe службы от SYSTEM не подменить), служба ставится её же командой install, остальное — ярлыки
 /// и запись в «Приложения и возможности». Всё пишется в журнал установки.
 /// </summary>
@@ -30,10 +30,10 @@ public sealed class SetupEngine(Action<int, string> progress)
     public static string LogPath { get; } = Path.Combine(Path.GetTempPath(), "Through-Setup.log");
 
     private static string StartMenuLink =>
-        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonPrograms), "Тропа.lnk");
+        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonPrograms), "Сквозь.lnk");
 
     private static string DesktopLink =>
-        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonDesktopDirectory), "Тропа.lnk");
+        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonDesktopDirectory), "Сквозь.lnk");
 
     public static string Version =>
         typeof(SetupEngine).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion?.Split('+')[0] ?? "?";
@@ -49,7 +49,7 @@ public sealed class SetupEngine(Action<int, string> progress)
 
     public void Install(SetupOptions o)
     {
-        Log($"установка Тропы {Version} в {InstallDir}");
+        Log($"установка Сквозь {Version} в {InstallDir}");
         if (!HasPayload) throw new InvalidOperationException("в установщике нет файлов программы (payload.zip): соберите его через build/publish.ps1");
 
         Step(0, "Останавливаю прежнюю версию");
@@ -79,7 +79,7 @@ public sealed class SetupEngine(Action<int, string> progress)
 
     public void Uninstall(bool removeData)
     {
-        Log($"удаление Тропы из {InstallDir}");
+        Log($"удаление Сквозь из {InstallDir}");
         Step(0, "Останавливаю службу и winws");
         StopService();
         StopWindows();
@@ -137,7 +137,7 @@ public sealed class SetupEngine(Action<int, string> progress)
         sc.WaitForStatus(ServiceControllerStatus.Stopped, TimeSpan.FromSeconds(30));
     }
 
-    /// <summary>Окно Тропы (часто живёт в трее) держит DLL. При обновлении его закрывает само окно, тут — страховка.</summary>
+    /// <summary>Окно Сквозь (часто живёт в трее) держит DLL. При обновлении его закрывает само окно, тут — страховка.</summary>
     private static void StopWindows()
     {
         foreach (var p in Process.GetProcessesByName("Through"))
@@ -148,7 +148,7 @@ public sealed class SetupEngine(Action<int, string> progress)
                 {
                     var path = p.MainModule?.FileName ?? "";
                     if (!path.StartsWith(InstallDir, StringComparison.OrdinalIgnoreCase)) continue;
-                    Log($"закрываю окно Тропы (pid {p.Id})");
+                    Log($"закрываю окно Сквозь (pid {p.Id})");
                     p.CloseMainWindow();
                     if (!p.WaitForExit(3000)) p.Kill();
                 }
@@ -178,7 +178,7 @@ public sealed class SetupEngine(Action<int, string> progress)
         Log($"распаковано файлов: {zip.Entries.Count}");
     }
 
-    /// <summary>Копия установщика рядом с программой: ей «Приложения и возможности» удаляют Тропу.</summary>
+    /// <summary>Копия установщика рядом с программой: ей «Приложения и возможности» удаляют Сквозь.</summary>
     private static void CopySelf()
     {
         var self = SelfPath;
@@ -194,7 +194,7 @@ public sealed class SetupEngine(Action<int, string> progress)
         lnk.TargetPath = exe;
         lnk.WorkingDirectory = InstallDir;
         lnk.IconLocation = exe + ",0";
-        lnk.Description = "Тропа: диагностика сети и настройка DPI-обработки";
+        lnk.Description = "Сквозь: диагностика сети и настройка DPI-обработки";
         lnk.Save();
         Log($"ярлык: {path}");
     }
@@ -210,7 +210,7 @@ public sealed class SetupEngine(Action<int, string> progress)
     {
         using var k = Registry.LocalMachine.CreateSubKey(UninstallKey);
         var setup = Path.Combine(InstallDir, "Through.Setup.exe");
-        k.SetValue("DisplayName", "Тропа");
+        k.SetValue("DisplayName", "Сквозь");
         k.SetValue("DisplayVersion", Version);
         k.SetValue("Publisher", "Through");
         k.SetValue("DisplayIcon", Path.Combine(InstallDir, "Through.exe"));

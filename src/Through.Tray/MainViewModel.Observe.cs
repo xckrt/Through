@@ -47,7 +47,7 @@ public sealed partial class MainViewModel
         foreach (var app in WindowedApps()) RunningApps.Add(app);
         ObserveText = RunningApps.Count == 0
             ? Loc.T("Не вижу программ с окнами. Запустите игру или приложение и откройте список снова.")
-            : Loc.T("Выберите программу и время. Тропа послушает её, пока вы ей пользуетесь, и сама заполнит домены и порты. Для онлайн-игр берите больше времени — нужно успеть зайти в матч.");
+            : Loc.T("Выберите программу и время. Сквозь послушает её, пока вы ей пользуетесь, и сама заполнит домены и порты. Для онлайн-игр берите больше времени — нужно успеть зайти в матч.");
         PickerVisible = true;
         FormVisible = false;
         return Task.CompletedTask;
@@ -86,7 +86,7 @@ public sealed partial class MainViewModel
             }
             PickerVisible = false;
             UseTemplateCommand.Execute(new AppTemplate(app.Title,
-                Loc.F("Тропа услышала {0} {1} и {2} ", t.Hosts.Length, Wording.Plural(t.Hosts.Length, "имя", "имени", "имён"), t.Endpoints.Length) +
+                Loc.F("Сквозь услышала {0} {1} и {2} ", t.Hosts.Length, Wording.Plural(t.Hosts.Length, "имя", "имени", "имён"), t.Endpoints.Length) +
                 Loc.F("{0}. Лишнее можно удалить, недостающее — дописать.", Wording.Plural(t.Endpoints.Length, "адрес", "адреса", "адресов")),
                 suggestion));
             Log(Loc.F("«{0}»: услышал {1} доменов и {2} портов", app.Title, suggestion.Domains.Length, suggestion.UdpPorts.Length + suggestion.TcpPorts.Length));
@@ -103,7 +103,7 @@ public sealed partial class MainViewModel
     }, () => !Observing && !IsRunning);
     private ICommand? _observe;
 
-    /// <summary>Программы с видимым окном, кроме самой Тропы и оболочки Windows.</summary>
+    /// <summary>Программы с видимым окном, кроме самой Сквозь и оболочки Windows.</summary>
     private static List<RunningAppVm> WindowedApps()
     {
         var skip = new HashSet<string>(StringComparer.OrdinalIgnoreCase)

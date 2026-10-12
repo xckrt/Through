@@ -54,7 +54,7 @@ public sealed class StrategyBase(string baseUrl, HttpMessageHandler? handler = n
     /// <summary>
     /// Обновляемый список доменов с сервера: сервис → новые домены для обхода. Строго проверяется здесь,
     /// на входе из недоверенного источника: только нормальные имена, с ограничением по числу. Портов и
-    /// аргументов winws тут нет и быть не может — их Тропа с сервера не берёт. null — сервер не ответил.
+    /// аргументов winws тут нет и быть не может — их Сквозь с сервера не берёт. null — сервер не ответил.
     /// </summary>
     public async Task<CatalogOverlay?> CatalogAsync(CancellationToken ct)
     {

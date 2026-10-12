@@ -58,7 +58,7 @@ public static class CrashReports
         sb.AppendLine(summary);
         sb.AppendLine();
         sb.AppendLine(Loc.T("### Окружение"));
-        sb.AppendLine(Loc.F("- Тропа {0} (сборка {1})", ThroughBuild.VersionText, ThroughBuild.Id));
+        sb.AppendLine(Loc.F("- Сквозь {0} (сборка {1})", ThroughBuild.VersionText, ThroughBuild.Id));
         sb.AppendLine($"- {RuntimeInformation.OSDescription}, {RuntimeInformation.OSArchitecture}, .NET {Environment.Version}");
         if (status is not null) sb.AppendLine(Loc.F("- служба: {0}", status));
 
@@ -106,7 +106,7 @@ public static class CrashReports
         const int limit = 6000;
         var cut = report.Length > limit;
         var body = cut
-            ? report[..limit] + Loc.T("\n\n…отчёт сокращён: полный текст Тропа скопировала в буфер обмена, вставьте его сюда.")
+            ? report[..limit] + Loc.T("\n\n…отчёт сокращён: полный текст Сквозь скопировала в буфер обмена, вставьте его сюда.")
             : report;
         var url = $"https://github.com/{ThroughBuild.Repo}/issues/new?labels=bug" +
                   $"&title={Uri.EscapeDataString(title)}&body={Uri.EscapeDataString(body)}";

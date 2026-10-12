@@ -72,7 +72,7 @@ public partial class MainWindow : Window
         e.Cancel = true;
         Hide();
         if (_vm.FirstTrayHint())
-            _tray.Hint(Loc.T("Тропа работает"), Loc.T("Окно свернулось в трей. Защиту держит служба, окно открывается значком у часов."));
+            _tray.Hint(Loc.T("Сквозь работает"), Loc.T("Окно свернулось в трей. Защиту держит служба, окно открывается значком у часов."));
     }
 
     private void ShowFromTray()

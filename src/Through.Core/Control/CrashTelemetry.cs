@@ -11,7 +11,7 @@ public sealed record CrashSummary(string App, string Version, string Type, strin
 /// <summary>
 /// Сводки об ошибках — только если человек включил это в настройках. Сообщение исключения не уходит никогда:
 /// в нём бывают пути, адреса сайтов и имена. Уходит тип и до 8 кадров стека в виде «Namespace.Type.Method»
-/// (только методы Тропы и .NET), версия Тропы и Windows. Одинаковые ошибки на сервере склеиваются в счётчик.
+/// (только методы Сквозь и .NET), версия Сквозь и Windows. Одинаковые ошибки на сервере склеиваются в счётчик.
 /// </summary>
 public static partial class CrashTelemetry
 {

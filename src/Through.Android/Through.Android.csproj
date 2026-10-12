@@ -1,5 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  <!-- Тропа для Android: прокси Telegram на телефоне, проверка того, что режут в мобильной сети, связка с компьютером.
+  <!-- Сквозь для Android: прокси Telegram на телефоне, проверка того, что режут в мобильной сети, связка с компьютером.
        Общий код — Through.Core (тот же прокси, пробник и общая база). Собирается отдельно: нужен workload android. -->
   <PropertyGroup>
     <TargetFramework>net10.0-android</TargetFramework>
@@ -10,7 +10,7 @@
     <RootNamespace>Through.Droid</RootNamespace>
     <AssemblyName>Through.Android</AssemblyName>
     <ApplicationId>com.xckrt.through</ApplicationId>
-    <ApplicationTitle>Тропа</ApplicationTitle>
+    <ApplicationTitle>Сквозь</ApplicationTitle>
     <!-- versionCode растёт с версией: 1.2.0 → 10200 -->
     <ApplicationVersion>$([MSBuild]::Add($([MSBuild]::Multiply($([System.Version]::Parse('$(Version)').Major), 10000)), $([MSBuild]::Add($([MSBuild]::Multiply($([System.Version]::Parse('$(Version)').Minor), 100)), $([System.Version]::Parse('$(Version)').Build)))))</ApplicationVersion>
     <ApplicationDisplayVersion>$(Version)</ApplicationDisplayVersion>

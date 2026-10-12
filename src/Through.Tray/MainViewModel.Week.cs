@@ -2,7 +2,7 @@ using Through.Core.Control;
 
 namespace Through.Tray;
 
-/// <summary>«Неделя с Тропой»: строка на обзоре и одно уведомление со сводкой, когда неделя закончилась.</summary>
+/// <summary>«Неделя с Сквозь»: строка на обзоре и одно уведомление со сводкой, когда неделя закончилась.</summary>
 public sealed partial class MainViewModel
 {
     public string WeekText => _status?.Week?.Current is { } w ? Loc.T("Эта неделя: ") + Summary(w) : "";
@@ -29,7 +29,7 @@ public sealed partial class MainViewModel
         if (_ui.LastWeekNotified == key) return;
         _ui.LastWeekNotified = key;
         _ui.Save();
-        Notice?.Invoke(Loc.T("Неделя с Тропой"), Summary(prev));
+        Notice?.Invoke(Loc.T("Неделя с Сквозь"), Summary(prev));
     }
 
     private void RaiseWeek(StatusReport s)

@@ -57,24 +57,24 @@ public partial class SetupWindow : Window
         switch (mode)
         {
             case SetupMode.Install:
-                Title = "Установка Тропы";
-                Headline.Text = SetupEngine.IsInstalled ? "Переустановка Тропы" : "Установка Тропы";
-                Subline.Text = "Тропа проверяет, как провайдер режет YouTube, Discord и другие сайты, и сама подбирает обход. " +
+                Title = "Установка Сквозь";
+                Headline.Text = SetupEngine.IsInstalled ? "Переустановка Сквозь" : "Установка Сквозь";
+                Subline.Text = "Сквозь проверяет, как провайдер режет YouTube, Discord и другие сайты, и сама подбирает обход. " +
                                "Служба держит его после перезагрузки, окно живёт в трее.";
                 break;
             case SetupMode.Update:
-                Title = "Обновление Тропы";
-                Headline.Text = $"Обновляю Тропу до {SetupEngine.Version}";
+                Title = "Обновление Сквозь";
+                Headline.Text = $"Обновляю Сквозь до {SetupEngine.Version}";
                 Subline.Text = "Подобранные стратегии и свои приложения сохранятся.";
                 // при обновлении настройки уже выбраны: ярлыки и автозапуск оставляем как были
-                DesktopBox.IsChecked = File.Exists(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonDesktopDirectory), "Тропа.lnk"));
+                DesktopBox.IsChecked = File.Exists(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonDesktopDirectory), "Сквозь.lnk"));
                 AutostartBox.IsChecked = Microsoft.Win32.Registry.CurrentUser
                     .OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\Run")?.GetValue("Through") is not null;
                 Loaded += (_, _) => Start();
                 break;
             case SetupMode.Uninstall:
-                Title = "Удаление Тропы";
-                Headline.Text = "Удалить Тропу?";
+                Title = "Удаление Сквозь";
+                Headline.Text = "Удалить Сквозь?";
                 Subline.Text = "Служба и winws остановятся, обход выключится. Сайты будут работать так, как их пропускает провайдер.";
                 OptionsPanel.Visibility = Visibility.Collapsed;
                 UninstallPanel.Visibility = Visibility.Visible;
@@ -149,21 +149,21 @@ public partial class SetupWindow : Window
         switch (_mode)
         {
             case SetupMode.Uninstall:
-                Headline.Text = "Тропа удалена";
+                Headline.Text = "Сквозь удалена";
                 Subline.Text = "Спасибо, что пользовались. Вернуться можно в любой момент: github.com/xckrt/Through.";
                 PrimaryButton.Content = "Закрыть";
                 PrimaryButton.Background = (Brush)FindResource("Pine");
                 break;
             case SetupMode.Update:
-                // при обновлении окно Тропы закрылось ради установки: открываем его снова сами
+                // при обновлении окно Сквозь закрылось ради установки: открываем его снова сами
                 SetupEngine.LaunchThrough();
                 Close();
                 break;
             default:
-                Headline.Text = "Тропа установлена";
-                Subline.Text = "Ярлык в меню «Пуск». В Тропе нажмите «Подобрать обход»: остальное она сделает сама.";
+                Headline.Text = "Сквозь установлена";
+                Subline.Text = "Ярлык в меню «Пуск». В Сквозь нажмите «Подобрать обход»: остальное она сделает сама.";
                 _launchPending = LaunchBox.IsChecked == true;
-                PrimaryButton.Content = _launchPending ? "Открыть Тропу" : "Готово";
+                PrimaryButton.Content = _launchPending ? "Открыть Сквозь" : "Готово";
                 break;
         }
     }

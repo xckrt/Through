@@ -1,4 +1,4 @@
--- Общая база стратегий Тропы (Cloudflare D1)
+-- Общая база стратегий Сквозь (Cloudflare D1)
 CREATE TABLE IF NOT EXISTS reports (
   id      INTEGER PRIMARY KEY AUTOINCREMENT,
   day     INTEGER NOT NULL,          -- сутки от 1970-01-01 (без точного времени)

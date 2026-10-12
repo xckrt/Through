@@ -281,7 +281,7 @@ public sealed class ThroughController(ControllerOptions o) : IAsyncDisposable
         if (_settings.Telegram.Enabled)
         {
             await SetTelegramAsync(true, ct);
-            // правило брандмауэра — заново при каждом старте: после обновления Тропы оно могло быть старым
+            // правило брандмауэра — заново при каждом старте: после обновления Сквозь оно могло быть старым
             if (_settings.Telegram.Lan && _tg is { } tg && o.Firewall is { } fw)
             {
                 try { await fw(TelegramRule, tg.Port, true, ct); }
@@ -707,7 +707,7 @@ public sealed class ThroughController(ControllerOptions o) : IAsyncDisposable
         {
             _prevWeek = w;
             w = _week = new WeekReport { Start = now };
-            _message = "неделя с Тропой: сводка готова";
+            _message = "неделя с Сквозь: сводка готова";
         }
 
         var elapsed = _lastSample is { } last ? now - last : TimeSpan.Zero;
@@ -975,7 +975,7 @@ public sealed class ThroughController(ControllerOptions o) : IAsyncDisposable
         };
     }
 
-    /// <summary>Домены для PAC: всё, что Тропа обходит (встроенные сервисы и свои приложения), без «не трогать».</summary>
+    /// <summary>Домены для PAC: всё, что Сквозь обходит (встроенные сервисы и свои приложения), без «не трогать».</summary>
     private IReadOnlyList<string> HomeDomains() =>
         [.. _catalog.Services.Keys.SelectMany(s => _catalog.BypassScope(s).Hosts)
             .Select(d => d.Trim().ToLowerInvariant()).Where(d => d.Length > 0)

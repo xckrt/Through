@@ -10,8 +10,8 @@ using Through.Core.Engine;
 namespace Through.Tray;
 
 /// <summary>
-/// Обновления самой Тропы и отчёты об ошибках. Обе вещи показываются полосой под заголовком окна:
-/// «вышла новая версия» или «в прошлый раз Тропа упала».
+/// Обновления самой Сквозь и отчёты об ошибках. Обе вещи показываются полосой под заголовком окна:
+/// «вышла новая версия» или «в прошлый раз Сквозь упала».
 /// </summary>
 public sealed partial class MainViewModel
 {
@@ -25,7 +25,7 @@ public sealed partial class MainViewModel
     public bool HasBanner => BannerText is not null;
     public string BannerAction { get => _bannerAction; private set => Set(ref _bannerAction, value); }
     public bool BannerIsUpdate => _release is not null && !_bannerIsCrash;
-    public string VersionText => Loc.F("Тропа {0}", ThroughBuild.VersionText);
+    public string VersionText => Loc.F("Сквозь {0}", ThroughBuild.VersionText);
 
     public bool CheckAppUpdates
     {
@@ -103,7 +103,7 @@ public sealed partial class MainViewModel
         if (CrashReports.Pending().Count > 0)
         {
             _bannerIsCrash = true;
-            BannerText = Loc.T("В прошлый раз Тропа упала. Отправите отчёт? Это поможет её починить.");
+            BannerText = Loc.T("В прошлый раз Сквозь упала. Отправите отчёт? Это поможет её починить.");
             BannerAction = Loc.T("Отправить отчёт");
             Raise(nameof(BannerIsUpdate));
         }
@@ -129,12 +129,12 @@ public sealed partial class MainViewModel
                 if (manual) AppUpdateText = Loc.F("У вас последняя версия ({0}).", ThroughBuild.VersionText);
                 return;
             }
-            AppUpdateText = Loc.F("Вышла Тропа {0}.", release.Version);
+            AppUpdateText = Loc.F("Вышла Сквозь {0}.", release.Version);
             if (!manual && _ui.SkippedVersion == release.Version.ToString()) return;
             if (_bannerIsCrash && HasBanner) return; // отчёт о падении важнее, обновление покажем в настройках
             _release = release;
             _bannerIsCrash = false;
-            BannerText = Loc.F("Вышла Тропа {0}. Обновление займёт минуту, подобранные стратегии сохранятся.", release.Version);
+            BannerText = Loc.F("Вышла Сквозь {0}. Обновление займёт минуту, подобранные стратегии сохранятся.", release.Version);
             BannerAction = Loc.T("Обновить");
             Raise(nameof(BannerIsUpdate));
         }
@@ -148,7 +148,7 @@ public sealed partial class MainViewModel
     public string AppUpdateText { get => _appUpdateText; private set => Set(ref _appUpdateText, value); }
 
     /// <summary>Скачать установщик, сверить SHA-256 с релизом и запустить обновление. Окно закрывается: установщик
-    /// заменит файлы, поднимет службу и откроет Тропу снова.</summary>
+    /// заменит файлы, поднимет службу и откроет Сквозь снова.</summary>
     private async Task InstallUpdateAsync()
     {
         if (_release is not { } r) return;
@@ -163,7 +163,7 @@ public sealed partial class MainViewModel
         var path = Path.Combine(Path.GetTempPath(), r.SetupName);
         try
         {
-            BannerText = Loc.F("Скачиваю Тропу {0}…", r.Version);
+            BannerText = Loc.F("Скачиваю Сквозь {0}…", r.Version);
             using (var http = new HttpClient { Timeout = TimeSpan.FromMinutes(10) })
             {
                 http.DefaultRequestHeaders.UserAgent.ParseAdd($"Through/{ThroughBuild.VersionText}");
@@ -179,7 +179,7 @@ public sealed partial class MainViewModel
                 {
                     await dst.WriteAsync(buf.AsMemory(0, n), _cts.Token);
                     done += n;
-                    if (total > 0) BannerText = Loc.F("Скачиваю Тропу {0}: {1} %", r.Version, done * 100 / total);
+                    if (total > 0) BannerText = Loc.F("Скачиваю Сквозь {0}: {1} %", r.Version, done * 100 / total);
                 }
             }
 
@@ -214,8 +214,8 @@ public sealed partial class MainViewModel
 
     private Task SendCrashAsync()
     {
-        var report = CrashReports.Build(Loc.T("Тропа упала. (Если помните, что делали перед этим, допишите сюда.)"), LogLinesText(), StatusLine());
-        var cut = CrashReports.OpenIssue(Loc.F("Падение Тропы {0}", ThroughBuild.VersionText), report);
+        var report = CrashReports.Build(Loc.T("Сквозь упала. (Если помните, что делали перед этим, допишите сюда.)"), LogLinesText(), StatusLine());
+        var cut = CrashReports.OpenIssue(Loc.F("Падение Сквозь {0}", ThroughBuild.VersionText), report);
         CrashReports.MarkSeen();
         BannerText = cut
             ? Loc.T("Черновик отчёта открыт в браузере. Отчёт длинный: полный текст в буфере обмена, вставьте его в issue.")

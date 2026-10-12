@@ -1,9 +1,9 @@
 namespace Through.Core.Engine;
 
-/// <summary>Новая версия Тропы на GitHub: установщик и его SHA-256 (как его посчитал GitHub).</summary>
+/// <summary>Новая версия Сквозь на GitHub: установщик и его SHA-256 (как его посчитал GitHub).</summary>
 public sealed record AppRelease(Version Version, string Tag, string SetupUrl, string SetupName, string Sha256, string PageUrl);
 
-/// <summary>Проверка обновлений самой Тропы: релизы github.com/xckrt/Through с тегами v1.2.3.</summary>
+/// <summary>Проверка обновлений самой Сквозь: релизы github.com/xckrt/Through с тегами v1.2.3.</summary>
 public static class AppUpdates
 {
     public static string SetupName(Version v) => $"Through-Setup-{v.Major}.{v.Minor}.{v.Build}.exe";

@@ -43,7 +43,7 @@ public static class ThemeManager
             ThemeChoice.Light => false,
             _ => SystemPrefersDark(),
         };
-        // путь с именем сборки: относительный ищется в запущенной программе, а не в Тропе
+        // путь с именем сборки: относительный ищется в запущенной программе, а не в Сквозь
         var palette = new ResourceDictionary
         {
             Source = new Uri($"pack://application:,,,/Through;component/Themes/{(dark ? "Dark" : "Light")}.xaml", UriKind.Absolute),

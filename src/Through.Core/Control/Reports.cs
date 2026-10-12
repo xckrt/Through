@@ -128,7 +128,7 @@ public sealed record StatusReport
 /// <summary>Общая база стратегий подключена: берём ли подсказки и делимся ли итогами.</summary>
 public sealed record CommunityReport(bool Use, bool Share);
 
-/// <summary>Что Тропа сделала за неделю: для строки на обзоре и уведомления в конце недели.</summary>
+/// <summary>Что Сквозь сделала за неделю: для строки на обзоре и уведомления в конце недели.</summary>
 public sealed record WeekReport
 {
     public DateTimeOffset Start { get; init; }

@@ -1,7 +1,7 @@
 name: release
 
 # тег v1.2.3 → тесты → программа → (подпись) → переносная версия и установщик → (подпись) → релиз на GitHub.
-# Окно Тропы находит релиз по тегу и сверяет SHA-256 установщика со страницы релиза.
+# Окно Сквозь находит релиз по тегу и сверяет SHA-256 установщика со страницы релиза.
 # Подпись SignPath включается сама, когда в секретах репозитория есть SIGNPATH_API_TOKEN (см. docs/signing.md).
 on:
   push:
@@ -38,7 +38,7 @@ jobs:
         shell: pwsh
         run: ./build/publish.ps1 -Version ${{ steps.v.outputs.version }} -Step stage
 
-      # ---- подпись программы: Through.exe, Through.Service.exe и сборки Тропы (конфигурация app в SignPath)
+      # ---- подпись программы: Through.exe, Through.Service.exe и сборки Сквозь (конфигурация app в SignPath)
       - name: Неподписанная программа
         id: app
         if: env.SIGNPATH_API_TOKEN != ''
@@ -115,24 +115,24 @@ jobs:
           ## Установка
 
           Скачайте **Through-Setup-$v.exe** и запустите. Windows один раз спросит разрешение администратора:
-          Тропа ставит службу, которая держит обход после перезагрузки. Дальше откройте Тропу и нажмите
+          Сквозь ставит службу, которая держит обход после перезагрузки. Дальше откройте Сквозь и нажмите
           «Подобрать обход».
 
-          Уже стоит Тропа — она сама предложит обновиться.
+          Уже стоит Сквозь — она сама предложит обновиться.
 
           Без установки: **Through-Portable-$v.zip** — распакуйте и запустите Through.exe. Обход работает,
-          пока открыта Тропа; данные лежат в папке data рядом.
+          пока открыта Сквозь; данные лежат в папке data рядом.
 
           SHA-256 установщика: ``$sha``
           SHA-256 переносной версии: ``$psha``
           $signNote
 
-          Тропа скачивает zapret из официальных релизов [bol-van/zapret](https://github.com/bol-van/zapret)
+          Сквозь скачивает zapret из официальных релизов [bol-van/zapret](https://github.com/bol-van/zapret)
           и сверяет хеши; бинарей zapret в этом репозитории нет.
           "@
           gh release create "${{ github.ref_name }}" "artifacts/Through-Setup-$v.exe" "artifacts/Through-Setup-$v.exe.sha256" `
             "artifacts/Through-Portable-$v.zip" "artifacts/Through-Portable-$v.zip.sha256" `
-            --title "Тропа $v" --notes $notes
+            --title "Сквозь $v" --notes $notes
 
       # Scoop: бакет лежит в этом репозитории, после релиза в нём новая версия и хеш
       - name: Scoop-бакет
@@ -144,7 +144,7 @@ jobs:
           git checkout -B bucket-update origin/main
           ./build/packages.ps1 -Version ${{ steps.v.outputs.version }} | Out-Null
           git add bucket/through.json
-          git diff --cached --quiet || (git commit -m "Scoop: Тропа ${{ steps.v.outputs.version }}" && git push origin HEAD:main)
+          git diff --cached --quiet || (git commit -m "Scoop: Сквозь ${{ steps.v.outputs.version }}" && git push origin HEAD:main)
 
       # winget: PR в microsoft/winget-pkgs от имени владельца токена (секрет WINGET_TOKEN, classic PAT с public_repo)
       - name: winget
@@ -154,7 +154,7 @@ jobs:
           Invoke-WebRequest https://aka.ms/wingetcreate/latest -OutFile wingetcreate.exe
           ./wingetcreate.exe submit --token $env:WINGET_TOKEN "artifacts/winget/${{ steps.v.outputs.version }}"
 
-  # Тропа для Android: собирается всегда (проверка), к релизу прикладывается только с постоянным ключом
+  # Сквозь для Android: собирается всегда (проверка), к релизу прикладывается только с постоянным ключом
   # (секреты ANDROID_KEYSTORE — base64 от .jks, ANDROID_KEY_ALIAS, ANDROID_KEY_PASS; см. docs/android.md).
   # С отладочной подписью новая версия не встала бы поверх старой.
   android:
