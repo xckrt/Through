@@ -134,6 +134,20 @@ jobs:
             "artifacts/Through-Portable-$v.zip" "artifacts/Through-Portable-$v.zip.sha256" `
             --title "Сквозь $v" --notes $notes
 
+      # Мост для старых установок «Тропа»: их апдейтер ищет Tropa-Setup-<v>.exe на странице релиза.
+      # Кладём тот же (подписанный) установщик под старым именем, чтобы они обновились и мигрировали на Through.
+      # Установщик делает миграцию сам. Этот шаг можно убрать через пару версий, когда почти все обновятся.
+      - name: Совместимость со старым именем (Тропа → Through)
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $v = "${{ steps.v.outputs.version }}"
+          Copy-Item "artifacts/Through-Setup-$v.exe" "artifacts/Tropa-Setup-$v.exe"
+          $h = (Get-FileHash "artifacts/Tropa-Setup-$v.exe" -Algorithm SHA256).Hash.ToLowerInvariant()
+          "$h  Tropa-Setup-$v.exe" | Set-Content -Encoding ascii "artifacts/Tropa-Setup-$v.exe.sha256"
+          gh release upload "${{ github.ref_name }}" "artifacts/Tropa-Setup-$v.exe" "artifacts/Tropa-Setup-$v.exe.sha256"
+
       # Scoop: бакет лежит в этом репозитории, после релиза в нём новая версия и хеш
       - name: Scoop-бакет
         shell: pwsh
