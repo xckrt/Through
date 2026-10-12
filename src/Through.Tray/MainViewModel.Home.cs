@@ -46,6 +46,13 @@ public sealed partial class MainViewModel
         }
     }
     public bool HasSpeed => SpeedText.Length > 0;
+
+    /// <summary>Короткие показатели для строки-дашборда на обзоре.</summary>
+    public string ServicesStat => HomeServices.Count > 0
+        ? $"{HomeServices.Count(s => s.Health is Health.Ok or Health.Partial)}/{HomeServices.Count}"
+        : "—";
+    public string SpeedStat => _status?.Speed?.With is { Error: null } w ? Loc.F("{0} Мбит/с", $"{w.Mbps:0.#}") : "—";
+
     private bool _speedBusy;
 
     public ICommand MeasureSpeedCommand => _measureSpeed ??= new RelayCommand(async () =>
@@ -57,6 +64,7 @@ public sealed partial class MainViewModel
             Log(Loc.T("замеряю скорость YouTube…"));
             ApplyStatus(await _client!.CallAsync<StatusReport>("speed", ct: _cts.Token));
             Raise(nameof(SpeedText));
+            Raise(nameof(SpeedStat));
             Raise(nameof(HasSpeed));
         }
         catch (Exception ex) when (ex is InvalidOperationException or System.IO.IOException) { Log(Loc.F("скорость: {0}", ex.Message), error: true); }
@@ -259,6 +267,8 @@ public sealed partial class MainViewModel
         Raise(nameof(VoiceBroken));
         Raise(nameof(SpeedText));
         Raise(nameof(HasSpeed));
+        Raise(nameof(SpeedStat));
+        Raise(nameof(ServicesStat));
         Raise(nameof(ZapretNetwork));
         Raise(nameof(HasZapretNetwork));
         Raise(nameof(TgConnectVisible));

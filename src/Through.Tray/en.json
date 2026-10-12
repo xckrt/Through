@@ -732,5 +732,9 @@
  "zapret обновлён: {0} → {1}, всё, что работало, работает": "zapret updated: {0} → {1}, everything that worked still works",
  "Отправлять сводки об ошибках: тип ошибки и имена методов Сквозь, версии Сквозь и Windows. Без текста ошибок, путей, адресов сайтов и имён — помогает чинить то, что ломается у многих.": "Send error summaries: the error type and Through method names, Through and Windows versions. No error text, paths, site addresses or names; it helps fix what breaks for many people.",
  "сводки об ошибках будут отправляться (без сообщений, путей и данных)": "error summaries will be sent (no messages, paths or data)",
- "сводки об ошибках не отправляются": "error summaries are not sent"
+ "сводки об ошибках не отправляются": "error summaries are not sent",
+ "ЗАЩИТА": "PROTECTION",
+ "СЕРВИСЫ": "SERVICES",
+ "СКОРОСТЬ": "SPEED",
+ "{0} Мбит/с": "{0} Mbps"
 }

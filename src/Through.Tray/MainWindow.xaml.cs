@@ -43,10 +43,19 @@ public partial class MainWindow : Window
             };
         }
 
-        // карточки обзора выезжают при каждом возвращении на него
+        // при каждой смене вкладки её содержимое проявляется: обзор — лесенкой, остальные — мягким входом
         _vm.PropertyChanged += (_, e) =>
         {
-            if (e.PropertyName == nameof(MainViewModel.Page) && _vm.Page == Pages.Overview) AnimateHome();
+            if (e.PropertyName != nameof(MainViewModel.Page)) return;
+            switch (_vm.Page)
+            {
+                case Pages.Overview: AnimateHome(); break;
+                case Pages.Diagnostics: FadeIn(DiagnosticsPage); break;
+                case Pages.Apps: FadeIn(AppsPage); break;
+                case Pages.Telegram: FadeIn(TelegramPage); break;
+                case Pages.Log: FadeIn(LogPage); break;
+                case Pages.Settings: FadeIn(SettingsPage); break;
+            }
         };
 
         // живой отклик: карточка приподнимается под курсором
@@ -97,8 +106,9 @@ public partial class MainWindow : Window
         if (!SystemParameters.ClientAreaAnimation) return;
         // сцена-герой врывается с лёгким приближением, остальное — просто поднимается лесенкой
         Rise(HomeHead, 0);
-        Rise(HomeHero, 90, scaleFrom: 0.94);
-        var delay = 170;
+        Rise(HomeStats, 70);
+        Rise(HomeHero, 150, scaleFrom: 0.94);
+        var delay = 230;
         foreach (var el in new FrameworkElement[] { HomeHintCard, ZapretCard, TgCard, DnsCard, HomeCard })
         {
             Rise(el, delay);
@@ -125,6 +135,18 @@ public partial class MainWindow : Window
         el.Opacity = 0;
         el.BeginAnimation(OpacityProperty, new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(440)) { BeginTime = begin, EasingFunction = ease });
         move.BeginAnimation(TranslateTransform.YProperty, new DoubleAnimation(22, 0, TimeSpan.FromMilliseconds(560)) { BeginTime = begin, EasingFunction = ease });
+    }
+
+    /// <summary>Мягкий вход страницы при переключении вкладки: проявление и лёгкий подъём.</summary>
+    private static void FadeIn(FrameworkElement el)
+    {
+        if (!SystemParameters.ClientAreaAnimation) return;
+        var ease = new CubicEase { EasingMode = EasingMode.EaseOut };
+        var move = new TranslateTransform(0, 12);
+        el.RenderTransform = move;
+        el.Opacity = 0;
+        el.BeginAnimation(OpacityProperty, new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(300)) { EasingFunction = ease });
+        move.BeginAnimation(TranslateTransform.YProperty, new DoubleAnimation(12, 0, TimeSpan.FromMilliseconds(360)) { EasingFunction = ease });
     }
 
     /// <summary>Карточка слегка приподнимается под курсором — живой отклик. Переиспользует тот же сдвиг, что и вход.</summary>

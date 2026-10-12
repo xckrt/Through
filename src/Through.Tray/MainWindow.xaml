@@ -264,6 +264,48 @@
                                    TextWrapping="Wrap" Margin="0,0,0,20" />
                     </StackPanel>
 
+                    <!-- строка-дашборд: короткие живые показатели одним взглядом -->
+                    <Grid x:Name="HomeStats" Margin="0,0,0,18">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="14" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="14" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <Border Style="{StaticResource HomeCard}" Padding="18,12,18,13">
+                            <StackPanel>
+                                <TextBlock Text="{local:Tr 'ЗАЩИТА'}" Style="{StaticResource CardLabel}" />
+                                <TextBlock Text="{Binding ZapretStatus}" FontFamily="{StaticResource Display}" FontSize="20" FontWeight="SemiBold" Margin="0,2,0,0">
+                                    <TextBlock.Style>
+                                        <Style TargetType="TextBlock">
+                                            <Setter Property="Foreground" Value="{DynamicResource Ink}" />
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding ZapretOrb}" Value="On"><Setter Property="Foreground" Value="{DynamicResource Go}" /></DataTrigger>
+                                                <DataTrigger Binding="{Binding ZapretOrb}" Value="Problem"><Setter Property="Foreground" Value="{DynamicResource Signal}" /></DataTrigger>
+                                                <DataTrigger Binding="{Binding ZapretOrb}" Value="Busy"><Setter Property="Foreground" Value="{DynamicResource Amber}" /></DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
+                            </StackPanel>
+                        </Border>
+                        <Border Grid.Column="2" Style="{StaticResource HomeCard}" Padding="18,12,18,13">
+                            <StackPanel>
+                                <TextBlock Text="{local:Tr 'СЕРВИСЫ'}" Style="{StaticResource CardLabel}" />
+                                <TextBlock Text="{Binding ServicesStat}" FontFamily="{StaticResource Display}" FontSize="20" FontWeight="SemiBold"
+                                           Foreground="{DynamicResource Ink}" Margin="0,2,0,0" />
+                            </StackPanel>
+                        </Border>
+                        <Border Grid.Column="4" Style="{StaticResource HomeCard}" Padding="18,12,18,13">
+                            <StackPanel>
+                                <TextBlock Text="{local:Tr 'СКОРОСТЬ'}" Style="{StaticResource CardLabel}" />
+                                <TextBlock Text="{Binding SpeedStat}" FontFamily="{StaticResource Display}" FontSize="20" FontWeight="SemiBold"
+                                           Foreground="{DynamicResource Pine}" Margin="0,2,0,0" />
+                            </StackPanel>
+                        </Border>
+                    </Grid>
+
                     <!-- фирменная сцена «прорыв сквозь стену»: поток идёт сквозь, когда обход включён -->
                     <Border x:Name="HomeHero" Style="{StaticResource HomeCard}" Padding="0" Margin="0,0,0,18" ClipToBounds="True">
                         <local:BreakthroughView Height="172"
@@ -510,7 +552,7 @@
             </ScrollViewer>
 
             <!-- ======== Диагностика: проверка по этапам (раньше была обзором) ======== -->
-            <Grid Grid.Row="2" Margin="48,26,48,26" Visibility="{Binding Page, Converter={StaticResource IsVisible}, ConverterParameter=Diagnostics}">
+            <Grid x:Name="DiagnosticsPage" Grid.Row="2" Margin="48,26,48,26" Visibility="{Binding Page, Converter={StaticResource IsVisible}, ConverterParameter=Diagnostics}">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="Auto" />
@@ -579,7 +621,7 @@
             </Grid>
 
             <!-- ======== Приложения ======== -->
-            <Grid Grid.Row="2" Margin="48,26,48,26" Visibility="{Binding Page, Converter={StaticResource IsVisible}, ConverterParameter=Apps}">
+            <Grid x:Name="AppsPage" Grid.Row="2" Margin="48,26,48,26" Visibility="{Binding Page, Converter={StaticResource IsVisible}, ConverterParameter=Apps}">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="44" />
@@ -779,7 +821,7 @@
             </Grid>
 
             <!-- ======== Telegram: локальный прокси службы ======== -->
-            <Grid Grid.Row="2" Margin="48,26,48,26" Visibility="{Binding Page, Converter={StaticResource IsVisible}, ConverterParameter=Telegram}">
+            <Grid x:Name="TelegramPage" Grid.Row="2" Margin="48,26,48,26" Visibility="{Binding Page, Converter={StaticResource IsVisible}, ConverterParameter=Telegram}">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="44" />
@@ -896,7 +938,7 @@
             </Grid>
 
             <!-- ======== Журнал ======== -->
-            <Grid Grid.Row="2" Margin="48,26,48,26" Visibility="{Binding Page, Converter={StaticResource IsVisible}, ConverterParameter=Log}">
+            <Grid x:Name="LogPage" Grid.Row="2" Margin="48,26,48,26" Visibility="{Binding Page, Converter={StaticResource IsVisible}, ConverterParameter=Log}">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="*" />
@@ -942,7 +984,7 @@
             </Grid>
 
             <!-- ======== Настройки ======== -->
-            <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto" Focusable="False"
+            <ScrollViewer x:Name="SettingsPage" Grid.Row="2" VerticalScrollBarVisibility="Auto" Focusable="False"
                           Visibility="{Binding Page, Converter={StaticResource IsVisible}, ConverterParameter=Settings}">
                 <StackPanel Margin="48,26,48,26" MaxWidth="720" HorizontalAlignment="Left">
                     <TextBlock Text="{local:Tr 'Настройки'}" Style="{StaticResource PageTitle}" Margin="0,0,0,24" />
