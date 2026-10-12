@@ -8,7 +8,11 @@
     "youtube": [
       { "name": "youtube web", "host": "www.youtube.com", "path": "/generate_204" },
       { "name": "youtube video", "host": "redirector.googlevideo.com" },
-      { "name": "youtube img", "host": "i.ytimg.com" }
+      // крупная передача с CDN YouTube (maxres-обложка, ~100 КБ): ловит «заморозку 16 КБ» (ТСПУ), которую
+      // короткие проверки не видят. Без неё ни подбор, ни сторож не замечают, что видео морозится, — как
+      // было с Discord. Рестарт winws глобален, так что лечит и googlevideo. dQw4w9WgXcQ — самый стабильный
+      // ролик, maxres-обложка есть всегда
+      { "name": "youtube thumb", "host": "i.ytimg.com", "path": "/vi/dQw4w9WgXcQ/maxresdefault.jpg", "minBytes": 49152 }
     ],
     "discord": [
       { "name": "discord api", "host": "discord.com", "path": "/api/v9/gateway" },
