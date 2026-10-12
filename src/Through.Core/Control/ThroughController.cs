@@ -34,6 +34,10 @@ public sealed record ControllerOptions
     /// одна неудача бывает случайной.</summary>
     public int WatchdogStrikes { get; init; } = 2;
 
+    /// <summary>Как редко сторож пробует вылечить заморозку передачи перезапуском winws до переподбора:
+    /// залипание ТСПУ часто снимается рестартом, но при настоящей поломке стратегии топтаться на нём нельзя.</summary>
+    public TimeSpan FreezeRestartGap { get; init; } = TimeSpan.FromMinutes(10);
+
     public Func<DateTimeOffset> Clock { get; init; } = () => DateTimeOffset.Now;
 
     /// <summary>Есть ли zapret новее текущей версии: готовый движок или null. null целиком — обновлений нет.</summary>
@@ -147,6 +151,7 @@ public sealed class ThroughController(ControllerOptions o) : IAsyncDisposable
     private readonly SemaphoreSlim _busy = new(1, 1);
     private readonly ProbeRunner _runner = new(new ServiceProber(o.Probe));
     private readonly Dictionary<string, int> _strikes = new(StringComparer.OrdinalIgnoreCase);
+    private DateTimeOffset _lastFreezeRestart = DateTimeOffset.MinValue;
     // у каждой сети свой профиль: дома одна стратегия, на телефонном интернете другая
     private NetworkId? _network;
     private string _profilePath = Path.Combine(o.DataDir, "profile.json");
@@ -593,6 +598,38 @@ public sealed class ThroughController(ControllerOptions o) : IAsyncDisposable
             {
                 await MaybeTuneVoiceAsync(ct);
                 return;
+            }
+
+            // заморозка передачи (почерк ТСПУ «16 КБ») часто лечится чистым перезапуском winws —
+            // это залипшее состояние фильтра, а не плохая стратегия. Сначала дешёвый рестарт и повторная
+            // проверка; что осталось сломано — переподбор. Не чаще раза в FreezeRestartGap, иначе при
+            // настоящей поломке стратегии сторож топтался бы на рестартах вместо смены стратегии.
+            bool Frozen(string service) => _targets.Any(t =>
+                t.Service.Equals(service, StringComparison.OrdinalIgnoreCase) && !t.IsOk && !t.Optional && t.Failure == Failure.TransferStalled);
+            var frozen = degraded.Where(Frozen).ToList();
+            if (frozen.Count > 0 && o.Clock() - _lastFreezeRestart >= o.FreezeRestartGap)
+            {
+                _lastFreezeRestart = o.Clock();
+                _message = $"возможная заморозка ({string.Join(", ", frozen)}): перезапускаю обход";
+                _state = ControllerState.Tuning;
+                Changed();
+                await StopEngineAsync();
+                await StartEngineAsync(ct);
+                _state = ControllerState.Checking;
+                await CheckCoreAsync(ct);
+                if (_networkDown) return; // сеть отвалилась во время рестарта — не наказываем
+                ShareStatus();
+                var stillBroken = degraded.Where(service => _targets.Any(t =>
+                    t.Service.Equals(service, StringComparison.OrdinalIgnoreCase) && !t.IsOk && !t.Optional)).ToList();
+                var healed = degraded.Except(stillBroken).ToList();
+                foreach (var s in healed) _strikes[s] = 0;
+                if (healed.Count > 0 && _week is not null) _week = _week with { AutoFixes = _week.AutoFixes + healed.Count };
+                degraded = stillBroken;
+                if (degraded.Count == 0)
+                {
+                    _message = "обход перезапущен — снова работает";
+                    return;
+                }
             }
 
             _message = $"перестало работать: {string.Join(", ", degraded)}, подбираю заново";

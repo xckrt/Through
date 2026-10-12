@@ -122,6 +122,53 @@ internal static class ControlTests
                 $"beta должна работать всё время переподбора alpha: {string.Join(" ", w.Engine.Started.Skip(before))}");
         })),
 
+        ("Сторож: заморозку передачи сперва лечит перезапуском winws, без переподбора", async () =>
+        {
+            var dir = Path.Combine(Path.GetTempPath(), $"through-freeze-{Guid.NewGuid():N}");
+            Directory.CreateDirectory(dir);
+            var engine = new FakeEngineHost((_, _) => false);
+            var freezing = false;
+            var frozenAt = 0;
+            // здоров, пока обход активен (пресет a) и нет «залипания»; залипание снимается перезапуском (новый Started)
+            await using var frost = FakeServer.FreezeUnless(
+                () => engine.PresetFor("frost.test") == "a" && !(freezing && engine.Started.Count == frozenAt));
+            try
+            {
+                await using var c = new ThroughController(new ControllerOptions
+                {
+                    Targets = new TargetCatalog
+                    {
+                        Services = new() { ["frost"] = [new ProbeTarget { Name = "frost", Host = "frost.test", Port = frost.Port, Path = "/big", MinBytes = 8192 }] },
+                    },
+                    Presets = new PresetCatalog { Presets = [new StrategyPreset { Id = "a", Cost = 1, Treats = [Failure.TransferStalled], Args = ["--hostlist={hostlist}"] }] },
+                    Engine = _ => Task.FromResult(new EngineContext(engine, "test")),
+                    DataDir = dir,
+                    Probe = Opts,
+                });
+                await c.StartAsync();
+                await c.TuneAsync();
+                Assert(c.Status().Profile["frost"] == "a", "frost должен подобраться на пресет a");
+
+                freezing = true;                 // началась заморозка на текущей сессии движка
+                frozenAt = engine.Started.Count;
+
+                await c.WatchdogTickAsync();      // strike 1 — ещё не повод
+                Assert(engine.Started.Count == frozenAt, "одна неудача не должна ничего перезапускать");
+
+                var before = engine.Started.Count;
+                await c.WatchdogTickAsync();      // strike 2 — должен быть РЕСТАРТ, не переподбор
+                var st = c.Status();
+                Assert(engine.Started.Count == before + 1, $"ожидали ровно один перезапуск, стало +{engine.Started.Count - before}");
+                Assert(st.Profile["frost"] == "a", "стратегию менять не должны — лечил рестарт, не переподбор");
+                Assert(st.Message?.Contains("перезапущен") == true, st.Message ?? "");
+                Assert(st.Targets.Where(t => !t.IsControl).All(t => t.IsOk), "после рестарта всё зелёное");
+            }
+            finally
+            {
+                Directory.Delete(dir, true);
+            }
+        }),
+
         ("Служба: подбор без результата не оставляет без старой защиты", () => With(async w =>
         {
             await w.Controller.TuneAsync();

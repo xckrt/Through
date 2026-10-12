@@ -76,6 +76,25 @@ internal sealed class FakeServer : IAsyncDisposable
         await Task.Delay(Timeout.Infinite, ct);
     });
 
+    /// <summary>
+    /// Имитация заморозки передачи (почерк ТСПУ «16 КБ»): TLS и заголовки проходят, но тело зависает.
+    /// healthy() == true — отдаёт всё тело (Ok); false — немного байт и зависание (TransferStalled).
+    /// </summary>
+    public static FakeServer FreezeUnless(Func<bool> healthy, int fullBytes = 16384) => new(async (s, ct) =>
+    {
+        await using var ssl = new SslStream(new NetworkStream(s, ownsSocket: false));
+        await ssl.AuthenticateAsServerAsync(new SslServerAuthenticationOptions { ServerCertificate = Cert.Value }, ct);
+        await ReadRequestAsync(ssl, ct);
+        await WriteAsync(ssl, $"HTTP/1.1 200 OK\r\nContent-Length: {fullBytes}\r\n\r\n", ct);
+        if (healthy())
+        {
+            await WriteBodyAsync(ssl, fullBytes, ct);
+            return;
+        }
+        await WriteBodyAsync(ssl, 2048, ct); // немного тела — и зависаем посреди передачи
+        await Task.Delay(Timeout.Infinite, ct);
+    });
+
     /// <summary>Ждёт TLS-запись с ClientHello целиком, не забирая её из сокета.</summary>
     private static async Task<byte[]> PeekClientHelloAsync(Socket s, CancellationToken ct)
     {
