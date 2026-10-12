@@ -41,10 +41,10 @@ public sealed class TrayIcon : IDisposable
     {
         var stripe = pill switch
         {
-            Pill.On => Color.FromArgb(0x2E, 0x7D, 0x5B),
-            Pill.Warn => Color.FromArgb(0xC8, 0x32, 0x2B),
-            Pill.Busy => Color.FromArgb(0xB7, 0x79, 0x1F),
-            _ => Color.FromArgb(0x9A, 0xA5, 0x9F),
+            Pill.On => Color.FromArgb(0x2B, 0xE3, 0xA6),   // мята — работает
+            Pill.Warn => Color.FromArgb(0xFF, 0x52, 0x30), // коралл — беда
+            Pill.Busy => Color.FromArgb(0xE3, 0xA5, 0x3C), // янтарь — занят
+            _ => Color.FromArgb(0xB3, 0xAB, 0xD6),         // приглушённый — нет службы/выключено
         };
         var old = _current;
         _current = Draw(stripe);

@@ -5,114 +5,76 @@ using System.IO;
 namespace Through.Tray;
 
 /// <summary>
-/// Знак Сквозь: туристическая метка «бело-цветно-белая», нарисованная краской на тёмной табличке,
-/// и пунктир тропы, который её огибает. Рисуется отдельно под каждый размер: на 16 пикселях
-/// только табличка и метка по сетке пикселей, на крупных — наклон, неровный край краски и тропа.
+/// Знак «Сквозь»: буква-портал. На индиго-табличке белое кольцо (проём), сквозь которое справа проходит
+/// искра с коротким следом — метафора имени. Цвет искры = состояние (мята — работает, коралл — беда).
+/// Рисуется под каждый размер: на 16 пикселях — только кольцо и точка, крупнее — свечение и след.
 /// </summary>
 public static class IconArt
 {
-    public static readonly Color Plate = Color.FromArgb(0x1C, 0x2A, 0x2E);
-    public static readonly Color Paint = Color.FromArgb(0xF4, 0xF1, 0xE6);
-    public static readonly Color Signal = Color.FromArgb(0xD2, 0x3A, 0x2F);
-    public static readonly Color Trail = Color.FromArgb(0x4C, 0xA3, 0x7C);
-    public static readonly Color Rim = Color.FromArgb(0x3A, 0x4F, 0x54);
+    public static readonly Color PlateTop = Color.FromArgb(0x5A, 0x47, 0xFF);
+    public static readonly Color PlateBottom = Color.FromArgb(0x3A, 0x28, 0xD6);
+    public static readonly Color Ring = Color.FromArgb(0xF4, 0xF2, 0xFF);
+    public static readonly Color Rim = Color.FromArgb(0x6E, 0x5C, 0xF0);
+    // цвет искры по умолчанию — мята «сквозь»
+    public static readonly Color Spark = Color.FromArgb(0x2B, 0xE3, 0xA6);
 
-    public static Bitmap Draw(int size, Color stripe)
+    public static Bitmap Draw(int size, Color spark)
     {
         var bmp = new Bitmap(size, size, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
         using var g = Graphics.FromImage(bmp);
         g.SmoothingMode = SmoothingMode.AntiAlias;
         g.PixelOffsetMode = PixelOffsetMode.HighQuality;
         g.Clear(Color.Transparent);
-
         float s = size;
-        using (var plate = RoundRect(new RectangleF(0, 0, s, s), MathF.Max(3, s * 0.22f)))
-        using (var fill = new SolidBrush(Plate))
+
+        // табличка: индиго-градиент
+        var radius = MathF.Max(3, s * 0.24f);
+        using (var plate = RoundRect(new RectangleF(0, 0, s, s), radius))
+        using (var fill = new LinearGradientBrush(new RectangleF(0, 0, s, s), PlateTop, PlateBottom, LinearGradientMode.Vertical))
         {
             g.FillPath(fill, plate);
-            // тонкий светлый кант: на тёмной панели задач табличка не сливается с фоном
             if (size >= 24)
             {
                 var inset = MathF.Max(0.5f, s * 0.012f);
-                using var rim = RoundRect(new RectangleF(inset, inset, s - inset * 2, s - inset * 2), MathF.Max(3, s * 0.22f) - inset);
+                using var rim = RoundRect(new RectangleF(inset, inset, s - inset * 2, s - inset * 2), radius - inset);
                 using var pen = new Pen(Rim, MathF.Max(1, s * 0.016f));
                 g.DrawPath(pen, rim);
             }
         }
 
-        if (size >= 40) DrawTrail(g, s);
+        // проём (кольцо) слева от центра
+        float cx = s * 0.42f, cy = s * 0.5f, rO = s * 0.27f;
+        float thick = MathF.Max(2, s * 0.11f);
+        using (var ringPen = new Pen(Ring, thick))
+            g.DrawEllipse(ringPen, cx - rO, cy - rO, rO * 2, rO * 2);
 
-        if (size <= 24) DrawBlazeCrisp(g, size, stripe);
-        else DrawBlazePainted(g, s, stripe, rough: size >= 64);
-        return bmp;
-    }
-
-    /// <summary>Пунктир тропы: снизу слева, вокруг метки, наверх вправо.</summary>
-    private static void DrawTrail(Graphics g, float s)
-    {
-        // штрихи, как пунктир тропы на туристической карте
-        using var pen = new Pen(Trail, s * 0.04f)
+        // искра, проходящая сквозь проём, с коротким следом и свечением
+        float sparkX = s * 0.64f, sparkR = MathF.Max(1.5f, s * 0.085f);
+        if (size >= 40)
         {
-            StartCap = LineCap.Round, EndCap = LineCap.Round, DashCap = DashCap.Round,
-            DashPattern = [1.6f, 1.5f],
-        };
-        g.DrawBezier(pen, s * 0.13f, s * 0.90f, s * 0.70f, s * 0.98f, s * 0.95f, s * 0.55f, s * 0.84f, s * 0.12f);
-    }
-
-    /// <summary>Маленькие размеры: прямоугольники по пикселям, без наклона — иначе метка размоется.</summary>
-    private static void DrawBlazeCrisp(Graphics g, int size, Color stripe)
-    {
-        g.SmoothingMode = SmoothingMode.None;
-        var w = size <= 16 ? 8 : 10;
-        var band = size <= 16 ? 4 : 5;
-        var x = (size - w) / 2;
-        var y = (size - band * 3) / 2;
-        using var paint = new SolidBrush(Paint);
-        using var mid = new SolidBrush(stripe);
-        g.FillRectangle(paint, x, y, w, band);
-        g.FillRectangle(mid, x, y + band, w, band);
-        g.FillRectangle(paint, x, y + band * 2, w, band);
-    }
-
-    /// <summary>Крупные размеры: метка чуть наклонена, как нарисованная на столбе, край краски неровный.</summary>
-    private static void DrawBlazePainted(Graphics g, float s, Color stripe, bool rough)
-    {
-        var w = s * 0.36f;
-        var h = s * 0.54f;
-        var band = h / 3;
-        var state = g.Save();
-        g.TranslateTransform(s * 0.46f, s * 0.47f);
-        g.RotateTransform(-6);
-        g.TranslateTransform(-w / 2, -h / 2);
-
-        var rng = new Random(7); // один и тот же «мазок» на каждой сборке
-        using var paint = new SolidBrush(Paint);
-        using var mid = new SolidBrush(stripe);
-        g.FillPath(paint, Stroke(0, 0, w, band * 1.04f, rough, rng, s));
-        g.FillPath(mid, Stroke(0, band, w, band, rough, rng, s));
-        g.FillPath(paint, Stroke(0, band * 1.96f, w, band * 1.04f, rough, rng, s));
-        g.Restore(state);
-    }
-
-    /// <summary>Прямоугольник краски: на крупном размере края слегка гуляют, как от кисти.</summary>
-    private static GraphicsPath Stroke(float x, float y, float w, float h, bool rough, Random rng, float s)
-    {
-        var path = new GraphicsPath();
-        if (!rough)
-        {
-            path.AddRectangle(new RectangleF(x, y, w, h));
-            return path;
+            // свечение
+            using var glowPath = new GraphicsPath();
+            glowPath.AddEllipse(sparkX - sparkR * 2.4f, cy - sparkR * 2.4f, sparkR * 4.8f, sparkR * 4.8f);
+            using var glow = new PathGradientBrush(glowPath)
+            {
+                CenterColor = Color.FromArgb(150, spark),
+                SurroundColors = [Color.FromArgb(0, spark)],
+                CenterPoint = new PointF(sparkX, cy),
+            };
+            g.FillPath(glow, glowPath);
+            // след: две затухающие точки через проём
+            using var t1 = new SolidBrush(Color.FromArgb(70, spark));
+            using var t2 = new SolidBrush(Color.FromArgb(130, spark));
+            g.FillEllipse(t1, cx - sparkR * 0.5f, cy - sparkR * 0.5f, sparkR, sparkR);
+            g.FillEllipse(t2, s * 0.53f - sparkR * 0.6f, cy - sparkR * 0.6f, sparkR * 1.2f, sparkR * 1.2f);
         }
-        var j = s * 0.006f;
-        float J() => (float)(rng.NextDouble() * 2 - 1) * j;
-        var pts = new List<PointF>();
-        const int steps = 4;
-        for (var i = 0; i <= steps; i++) pts.Add(new(x + w * i / steps + J(), y + J()));
-        for (var i = 1; i <= 3; i++) pts.Add(new(x + w + J() * 1.6f, y + h * i / 3 + J()));
-        for (var i = steps - 1; i >= 0; i--) pts.Add(new(x + w * i / steps + J(), y + h + J()));
-        for (var i = 2; i >= 1; i--) pts.Add(new(x + J() * 1.6f, y + h * i / 3 + J()));
-        path.AddPolygon(pts.ToArray());
-        return path;
+        using (var core = new SolidBrush(spark))
+            g.FillEllipse(core, sparkX - sparkR, cy - sparkR, sparkR * 2, sparkR * 2);
+        if (size >= 32)
+            using (var hi = new SolidBrush(Color.FromArgb(220, 255, 255, 255)))
+                g.FillEllipse(hi, sparkX - sparkR * 0.35f, cy - sparkR * 0.55f, sparkR * 0.8f, sparkR * 0.8f);
+
+        return bmp;
     }
 
     private static GraphicsPath RoundRect(RectangleF r, float radius)
@@ -128,11 +90,11 @@ public static class IconArt
     }
 
     /// <summary>Файл .ico из нескольких размеров (PNG внутри, Windows Vista+).</summary>
-    public static void SaveIco(string path, Color stripe, params int[] sizes)
+    public static void SaveIco(string path, Color spark, params int[] sizes)
     {
         var frames = sizes.Select(size =>
         {
-            using var bmp = Draw(size, stripe);
+            using var bmp = Draw(size, spark);
             using var ms = new MemoryStream();
             bmp.Save(ms, System.Drawing.Imaging.ImageFormat.Png);
             return (size, data: ms.ToArray());

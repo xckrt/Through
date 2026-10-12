@@ -11,6 +11,7 @@
     <SolidColorBrush x:Key="Fog" Color="#4A4468" />
     <SolidColorBrush x:Key="Pine" Color="#8977FF" />
     <SolidColorBrush x:Key="PineDark" Color="#6E5CF0" />
+    <SolidColorBrush x:Key="Go" Color="#2BE3A6" />
     <SolidColorBrush x:Key="Signal" Color="#FF6F50" />
     <SolidColorBrush x:Key="Amber" Color="#E3A53C" />
     <SolidColorBrush x:Key="OnAccent" Color="#140F26" />

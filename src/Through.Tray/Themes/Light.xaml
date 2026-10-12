@@ -11,6 +11,7 @@
     <SolidColorBrush x:Key="Fog" Color="#B3ABD6" />
     <SolidColorBrush x:Key="Pine" Color="#4B37F5" />
     <SolidColorBrush x:Key="PineDark" Color="#3A28D6" />
+    <SolidColorBrush x:Key="Go" Color="#10C488" />
     <SolidColorBrush x:Key="Signal" Color="#FF5230" />
     <SolidColorBrush x:Key="Amber" Color="#C57B10" />
     <!-- текст на индиго-кнопке и бегунок переключателя -->
