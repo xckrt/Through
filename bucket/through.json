@@ -1,13 +1,13 @@
 {
-  "version": "1.2.8",
+  "version": "1.2.9",
   "description": "Сама находит, как провайдер режет YouTube, Discord и Telegram, и настраивает обход (переносная версия)",
   "homepage": "https://xckrt.github.io/Through/",
   "license": "MIT",
   "notes": "Обход работает, пока открыта Сквозь. Чтобы он держался всегда, поставьте обычную версию: winget install xckrt.Through",
   "architecture": {
     "64bit": {
-      "url": "https://github.com/xckrt/Through/releases/download/v1.2.8/Through-Portable-1.2.8.zip",
-      "hash": "ca8ed912f5a3405dcf9d0397ceb887d9688523822572b25c78e9d5267816dedf"
+      "url": "https://github.com/xckrt/Through/releases/download/v1.2.9/Through-Portable-1.2.9.zip",
+      "hash": "b3732ff6ff88f1effaa0c9a92bb8d78f3cd0c0141ef2bd859e9d98ff70702fef"
     }
   },
   "shortcuts": [
