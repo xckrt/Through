@@ -20,6 +20,11 @@ public partial class App : Application
         DispatcherUnhandledException += OnUiException;
         // язык — до первого окна: строки XAML переводятся при загрузке
         Loc.Use(UiSettings.Load().Language);
+        // запуск вместе с Windows у ранней загрузки ПК: GPU и композиция DWM ещё не готовы, и окно,
+        // показанное из трея, бывает полностью чёрным. Для автозапуска рисуем программно — это надёжно
+        // убирает чёрный экран, а нашей скромной анимации CPU достаточно. Обычный запуск не трогаем.
+        if (e.Args.Contains("--tray"))
+            System.Windows.Media.RenderOptions.ProcessRenderMode = System.Windows.Interop.RenderMode.SoftwareOnly;
         base.OnStartup(e);
     }
 

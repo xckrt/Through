@@ -30,8 +30,10 @@ public sealed class BreakthroughView : FrameworkElement
     public BreakthroughView()
     {
         IsHitTestVisible = false;
-        Loaded += (_, _) => { if (W > 2) Seed(); Start(); };
+        Loaded += (_, _) => { if (W > 2) Seed(); if (IsVisible) Start(); };
         Unloaded += (_, _) => Stop();
+        // в трее окно скрыто (но не выгружено): останавливаем цикл, чтобы сцена не тикала впустую
+        IsVisibleChanged += (_, _) => { if (IsVisible) Start(); else Stop(); };
         SizeChanged += (_, _) => { if (_parts.Count == 0 && W > 2) Seed(); };
         ThemeManager.Changed += () => Dispatcher.BeginInvoke(InvalidateVisual);
     }
