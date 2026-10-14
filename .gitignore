@@ -482,3 +482,7 @@ $RECYCLE.BIN/
 
 # Vim temporary swap files
 *.swp
+
+# built Go engine binaries (эксперимент, не для основного репо)
+engine-divert/*.exe
+engine-go/*.exe
