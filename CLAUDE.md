@@ -66,7 +66,7 @@ Error summaries (`Core/Control/CrashTelemetry`, opt-in `ShareCrashes` in both `u
 
 ## Release & install
 
-- `build/publish.ps1 -Step stage|package|all`. The release signs in two passes: stage (exes and Through dlls, SignPath config `app`), then package (portable zip and setup from the signed stage), then the setup (`setup`), then hashes are recomputed. Signing steps run only when the `SIGNPATH_API_TOKEN` secret exists. See `docs/signing.md`.
+- `build/publish.ps1 -Step stage|package|all`. The release runs stage (exes and Through dlls), then package (portable zip and setup from the stage), then hashes. Builds are unsigned (no code-signing certificate).
 - The version lives in `Directory.Build.props` (`ThroughBuild.Version`). To ship: push tag `v1.2.3`, and `.github/workflows/release.yml` runs the tests, then `build/publish.ps1`, then creates the GitHub release with `Through-Setup-1.2.3.exe` + `.sha256`. The tray's update check expects exactly that asset name.
 - `Through.Setup` targets **net48** on purpose (no bundled runtime, so the installer stays small). It needs `Prefer32Bit=false`, the `IsExternalInit` polyfill, and explicit `using`s; there are no implicit usings there. The payload is `artifacts/payload.zip`, embedded only when it exists.
 - Portable build (`Through-Portable-x.y.z.zip`, a `portable` marker next to Through.exe): no service. `EnsureServiceAsync` starts `Through.Service.exe portable <windowPid> <dataDir>` elevated, which is the same `ServiceHost` with data in `data\` beside it. It exits when the window process exits (winws stops and DNS is restored). It refuses to run next to an installed service. Updates open the releases page instead of running the setup.

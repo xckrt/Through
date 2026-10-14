@@ -1,8 +1,7 @@
 name: release
 
-# тег v1.2.3 → тесты → программа → (подпись) → переносная версия и установщик → (подпись) → релиз на GitHub.
+# тег v1.2.3 → тесты → программа → переносная версия и установщик → релиз на GitHub.
 # Окно Сквозь находит релиз по тегу и сверяет SHA-256 установщика со страницы релиза.
-# Подпись SignPath включается сама, когда в секретах репозитория есть SIGNPATH_API_TOKEN (см. docs/signing.md).
 on:
   push:
     tags: ['v*']
@@ -15,10 +14,6 @@ jobs:
   release:
     runs-on: windows-latest
     env:
-      SIGNPATH_API_TOKEN: ${{ secrets.SIGNPATH_API_TOKEN }}
-      SIGNPATH_ORG: ${{ vars.SIGNPATH_ORGANIZATION_ID }}
-      SIGNPATH_PROJECT: ${{ vars.SIGNPATH_PROJECT_SLUG || 'Through' }}
-      SIGNPATH_POLICY: ${{ vars.SIGNPATH_POLICY_SLUG || 'release-signing' }}
       WINGET_TOKEN: ${{ secrets.WINGET_TOKEN }}
     steps:
       - uses: actions/checkout@v4
@@ -38,53 +33,9 @@ jobs:
         shell: pwsh
         run: ./build/publish.ps1 -Version ${{ steps.v.outputs.version }} -Step stage
 
-      # ---- подпись программы: Through.exe, Through.Service.exe и сборки Сквозь (конфигурация app в SignPath)
-      - name: Неподписанная программа
-        id: app
-        if: env.SIGNPATH_API_TOKEN != ''
-        uses: actions/upload-artifact@v4
-        with:
-          name: app-unsigned
-          path: artifacts/stage/
-
-      - name: Подпись программы
-        if: env.SIGNPATH_API_TOKEN != ''
-        uses: signpath/github-action-submit-signing-request@v1
-        with:
-          api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
-          organization-id: ${{ env.SIGNPATH_ORG }}
-          project-slug: ${{ env.SIGNPATH_PROJECT }}
-          signing-policy-slug: ${{ env.SIGNPATH_POLICY }}
-          artifact-configuration-slug: app
-          github-artifact-id: ${{ steps.app.outputs.artifact-id }}
-          wait-for-completion: true
-          output-artifact-directory: artifacts/stage
-
       - name: Переносная версия и установщик
         shell: pwsh
         run: ./build/publish.ps1 -Version ${{ steps.v.outputs.version }} -Step package
-
-      # ---- подпись установщика (конфигурация setup), после неё хеш считается заново
-      - name: Неподписанный установщик
-        id: setup
-        if: env.SIGNPATH_API_TOKEN != ''
-        uses: actions/upload-artifact@v4
-        with:
-          name: setup-unsigned
-          path: artifacts/Through-Setup-${{ steps.v.outputs.version }}.exe
-
-      - name: Подпись установщика
-        if: env.SIGNPATH_API_TOKEN != ''
-        uses: signpath/github-action-submit-signing-request@v1
-        with:
-          api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
-          organization-id: ${{ env.SIGNPATH_ORG }}
-          project-slug: ${{ env.SIGNPATH_PROJECT }}
-          signing-policy-slug: ${{ env.SIGNPATH_POLICY }}
-          artifact-configuration-slug: setup
-          github-artifact-id: ${{ steps.setup.outputs.artifact-id }}
-          wait-for-completion: true
-          output-artifact-directory: artifacts
 
       - name: Хеши
         shell: pwsh
@@ -94,8 +45,6 @@ jobs:
             $h = (Get-FileHash "artifacts/$f" -Algorithm SHA256).Hash.ToLowerInvariant()
             "$h  $f" | Set-Content -Encoding ascii "artifacts/$f.sha256"
           }
-          $sig = (Get-AuthenticodeSignature "artifacts/Through-Setup-$v.exe").Status
-          "подпись установщика: $sig"
 
       - name: Манифесты winget и Scoop
         shell: pwsh
@@ -109,8 +58,6 @@ jobs:
           $v = "${{ steps.v.outputs.version }}"
           $sha = (Get-Content "artifacts/Through-Setup-$v.exe.sha256").Split(" ")[0]
           $psha = (Get-Content "artifacts/Through-Portable-$v.zip.sha256").Split(" ")[0]
-          $signed = (Get-AuthenticodeSignature "artifacts/Through-Setup-$v.exe").Status -eq "Valid"
-          $signNote = "Free code signing provided by [SignPath.io](https://about.signpath.io), certificate by [SignPath Foundation](https://signpath.org)."
           $notes = @"
           ## Установка
 
@@ -125,7 +72,6 @@ jobs:
 
           SHA-256 установщика: ``$sha``
           SHA-256 переносной версии: ``$psha``
-          $signNote
 
           Сквозь скачивает zapret из официальных релизов [bol-van/zapret](https://github.com/bol-van/zapret)
           и сверяет хеши; бинарей zapret в этом репозитории нет.
@@ -135,7 +81,7 @@ jobs:
             --title "Сквозь $v" --notes $notes
 
       # Мост для старых установок «Тропа»: их апдейтер ищет Tropa-Setup-<v>.exe на странице релиза.
-      # Кладём тот же (подписанный) установщик под старым именем, чтобы они обновились и мигрировали на Through.
+      # Кладём тот же установщик под старым именем, чтобы они обновились и мигрировали на Through.
       # Установщик делает миграцию сам. Этот шаг можно убрать через пару версий, когда почти все обновятся.
       - name: Совместимость со старым именем (Тропа → Through)
         shell: pwsh
