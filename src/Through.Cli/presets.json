@@ -174,12 +174,13 @@
     },
     {
       "id": "fakedsplit-ts", "name": "подложный пакет + разрез, fooling ts (ALT)",
-      "treats": ["TlsReset", "TlsTimeout", "TransferStalled", "Slow"], "cost": 29,
+      "treats": ["TlsReset", "TlsTimeout", "TransferStalled", "Slow"], "cost": 20,
       "args": ["--wf-tcp={ports}", "--filter-tcp={ports}", "--hostlist={hostlist}",
                "--dpi-desync=fake,fakedsplit", "--dpi-desync-repeats=6", "--dpi-desync-fooling=ts",
                "--dpi-desync-fakedsplit-pattern=0x00",
                "--dpi-desync-fake-tls={engineDir}/files/fake/stun.bin",
-               "--dpi-desync-fake-tls={engineDir}/files/fake/tls_clienthello_www_google_com.bin"]
+               "--dpi-desync-fake-tls={engineDir}/files/fake/tls_clienthello_www_google_com.bin",
+               "--dpi-desync-fake-http={engineDir}/files/extra/tls_clienthello_max_ru.bin"]
     },
     {
       "id": "fake-multisplit-badseq", "name": "подложный пакет + многократный разрез, badseq (ALT4)",
